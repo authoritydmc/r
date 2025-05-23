@@ -66,7 +66,7 @@ You can use the prebuilt Docker image from Docker Hub: [`rajlabs/redirect`](http
 1. **Pull and run the image:**
    ```sh
    docker pull rajlabs/redirect:latest
-   docker run -d -p 5000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener rajlabs/redirect:latest
+   docker run -d -p 5000:5000 -v ./redirects.db:/app/redirects.db --name url-shortener rajlabs/redirect:latest
    ```
    - The app will be available at [http://localhost:5000/](http://localhost:5000/)
    - The `redirects.db` file will persist on your host for data durability.
@@ -95,7 +95,7 @@ You can map any host port to the container's port 5000. For example, to use port
 ```sh
 # Map host port 3000 to container port 5000
 # (You can change 3000 to any available port)
-docker run -d -p 3000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener url-shortener
+docker run -d -p 3000:5000 -v ./redirects.db:/app/redirects.db --name url-shortener url-shortener
 ```
 
 The app will be available at `http://localhost:3000/`.

@@ -3,7 +3,10 @@ import sqlite3
 import json
 from flask import g
 
-DATABASE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'redirects.db')
+# Ensure data directory exists (cross-platform)
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE = os.path.join(DATA_DIR, 'redirects.db')
 
 # --- Add access_count to schema if missing ---
 def ensure_access_count_column(db):
