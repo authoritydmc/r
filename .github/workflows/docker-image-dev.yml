@@ -1,10 +1,10 @@
-name: Docker Image CI
+name: Docker Image CI-DEV
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "develop" ]
 
 jobs:
   build:
@@ -53,15 +53,15 @@ jobs:
       # Step to tag Docker images
       - name: Tag Docker images
         run: |
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:latest
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:$TIMESTAMP
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:latest
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:$TIMESTAMP
+          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev
+          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev.$TIMESTAMP
+          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev
+          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev.$TIMESTAMP
 
       # Step to push Docker images to Docker Hub
       - name: Push Docker images to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:$TIMESTAMP
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:$TIMESTAMP
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev.$TIMESTAMP
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev.$TIMESTAMP
