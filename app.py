@@ -1,5 +1,5 @@
 import sqlite3
-from flask import Flask, redirect, abort, g
+from flask import Flask, redirect, abort, g, request, render_template_string
 import re
 import os
 
@@ -30,7 +30,41 @@ def init_db():
         )''')
         db.commit()
 
-@app.route('/r/<path:subpath>')
+CREATE_FORM = '''
+<!DOCTYPE html>
+<html><body>
+<h2>Create new redirect for: <code>{{ pattern }}</code></h2>
+<form method="post">
+  <label>Type:</label>
+  <select name="type">
+    <option value="static">Static</option>
+    <option value="dynamic">Dynamic</option>
+  </select><br><br>
+  <label>Target URL (use {name} for dynamic):</label><br>
+  <input type="text" name="target" style="width:400px" required><br><br>
+  <button type="submit">Create Redirect</button>
+</form>
+</body></html>
+'''
+
+EDIT_FORM = '''
+<!DOCTYPE html>
+<html><body>
+<h2>Edit redirect for: <code>{{ pattern }}</code></h2>
+<form method="post">
+  <label>Type:</label>
+  <select name="type">
+    <option value="static" {% if type=='static' %}selected{% endif %}>Static</option>
+    <option value="dynamic" {% if type=='dynamic' %}selected{% endif %}>Dynamic</option>
+  </select><br><br>
+  <label>Target URL (use {name} for dynamic):</label><br>
+  <input type="text" name="target" style="width:400px" value="{{ target }}" required><br><br>
+  <button type="submit">Update Redirect</button>
+</form>
+</body></html>
+'''
+
+@app.route('/r/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
     db = get_db()
     # Check static
@@ -45,7 +79,33 @@ def handle_redirect(subpath):
             variable = subpath[len(pattern)+1:]
             dest_url = re.sub(r"\{\w+\}", variable, target)
             return redirect(dest_url, code=302)
-    abort(404)
+    # Not found: show create form
+    return render_template_string(CREATE_FORM, pattern=subpath)
+
+@app.route('/r/<path:subpath>', methods=['POST'])
+def create_redirect(subpath):
+    db = get_db()
+    type_ = request.form['type']
+    target = request.form['target']
+    db.execute('INSERT INTO redirects (type, pattern, target) VALUES (?, ?, ?)', (type_, subpath, target))
+    db.commit()
+    return f'Redirect for <b>{subpath}</b> created! <a href="/r/{subpath}">Test it</a>'
+
+@app.route('/r/edit/<path:subpath>', methods=['GET', 'POST'])
+def edit_redirect(subpath):
+    db = get_db()
+    if request.method == 'POST':
+        type_ = request.form['type']
+        target = request.form['target']
+        db.execute('UPDATE redirects SET type=?, target=? WHERE pattern=?', (type_, target, subpath))
+        db.commit()
+        return f'Redirect for <b>{subpath}</b> updated! <a href="/r/{subpath}">Test it</a>'
+    else:
+        cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
+        row = cursor.fetchone()
+        if not row:
+            return f'No redirect found for <b>{subpath}</b>. <a href="/r/{subpath}">Create it</a>'
+        return render_template_string(EDIT_FORM, pattern=subpath, type=row[0], target=row[1])
 
 if __name__ == '__main__':
     init_db()
