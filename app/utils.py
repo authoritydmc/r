@@ -15,6 +15,7 @@ def _load_config():
         import secrets
         import string
         random_pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        print(f"Generated password :{random_pwd} for admin access")
         default = {
             "port": 80,
             "auto_redirect_delay": 0,
