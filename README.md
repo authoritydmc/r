@@ -1,4 +1,4 @@
-# URL Shortener/Redirector [![Docker Image CI-PROD](https://github.com/authoritydmc/r/actions/workflows/docker-image-prod.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/docker-image-prod.yml) [![Python package](https://github.com/authoritydmc/r/actions/workflows/python-package.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/python-package.yml)[![Docker Image CI-DEV](https://github.com/authoritydmc/r/actions/workflows/docker-image-dev.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/docker-image-dev.yml)
+# URL Shortener/Redirector [![Docker Image CI](https://github.com/authoritydmc/r/actions/workflows/deploy.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/deploy.yml) [![Validate](https://github.com/authoritydmc/r/actions/workflows/validate.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/validate.yml)
 
 A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker support, and secure config management. Easily create, manage, and share custom short URLs for your team or company.
 
