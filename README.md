@@ -113,6 +113,38 @@ server {
 
 ---
 
+## Production Deployment
+
+For production, always use a production-grade WSGI server instead of Flask's built-in server.
+
+### Docker (Recommended)
+
+The official Docker image runs with Gunicorn (production WSGI server) by default. No extra steps needed.
+
+### Manual (Python)
+
+- **Development mode:**
+  - Run with Flask's built-in server (for local testing only):
+    ```sh
+    python app.py --debug
+    ```
+- **Production mode:**
+  - Use Gunicorn (Linux/macOS):
+    ```sh
+    pip install gunicorn
+    gunicorn -w 4 -b 0.0.0.0:80 app:app
+    ```
+  - Use Waitress (Windows):
+    ```sh
+    pip install waitress
+    waitress-serve --port=80 app:app
+    ```
+
+- The app prints an ASCII art banner and clearly shows whether it is running in DEV or PROD mode at startup.
+- By default, `python app.py` runs in production mode (debug=False). Use `--debug` for development.
+
+---
+
 ## Development & Testing
 
 - Run tests:
