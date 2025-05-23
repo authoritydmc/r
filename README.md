@@ -51,7 +51,7 @@ Just pull the latest image and restart:
 
 ```sh
 docker pull rajlabs/redirector
-docker stop redirector && docker rm redirect
+docker stop redirector && docker rm redirector
 ```
 > (then re-run the above docker run command)
 
