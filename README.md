@@ -1,11 +1,12 @@
 # URL Shortener/Redirector
 
-A simple Python Flask-based URL redirector with support for static and dynamic redirects, using SQLite for storage.
+A simple Python Flask-based URL redirector with support for static and dynamic redirects, using SQLite for storage and a web UI for management.
 
 ## Features
 - Static redirects: `/r/google` → `https://www.google.com`
 - Dynamic redirects: `/r/meetwith/raj` → `https://g.co/meet/raj`
-- Easy configuration via SQLite database
+- Easy redirect creation and editing via web UI
+- Configurable redirect delay and port
 - Cross-platform: Windows, macOS, Linux
 
 ## Setup
@@ -16,54 +17,27 @@ A simple Python Flask-based URL redirector with support for static and dynamic r
 pip install -r requirements.txt
 ```
 
-### 2. Initialize the database
-
-The database is auto-initialized on first run. To manually initialize:
-
+### 2. Initialize and Run the Server
+The database and config file are auto-initialized on first run.
 ```sh
 python app.py
 ```
+- The server will be available at `http://localhost/r/` (or the port you configure).
 
-### 3. Run the server
-
-```sh
-python app.py
-```
-
-The server will be available at http://localhost:5000/r/
-
-## Adding Redirects
-
-You can add redirects directly to the SQLite database (`redirects.db`). Example using Python:
-
-```
-import sqlite3
-conn = sqlite3.connect('redirects.db')
-cursor = conn.cursor()
-# Static redirect
-cursor.execute("INSERT INTO redirects (type, pattern, target) VALUES (?, ?, ?)", ('static', 'google', 'https://www.google.com'))
-# Dynamic redirect
-cursor.execute("INSERT INTO redirects (type, pattern, target) VALUES (?, ?, ?)", ('dynamic', 'meetwith', 'https://g.co/meet/{name}'))
-conn.commit()
-conn.close()
-```
-
-## Configuration (redirect.config.json)
-
+## Configuration (`redirect.config.json`)
 A file named `redirect.config.json` is used for configuration. It is auto-created if missing. Example:
-
-```
+```json
 {
-  "auto_redirect_delay": 0
+  "auto_redirect_delay": 0,
+  "port": 80
 }
 ```
 - `auto_redirect_delay`: Number of seconds to wait before redirecting. If set to 0, redirects are instant. If set to a positive number, users see a countdown page before being redirected.
 - `port`: The port the server will run on. Default is 80. Change this if you want to use a different port (e.g., 5000 for development).
 
-## Redirect Creation and Editing via UI
-
-- If you visit a URL like `/r/xyz` that does not exist, a web form will appear to create a new redirect for it.
-- To edit an existing redirect, visit `/r/edit/xyz` and use the form to update the redirect.
+## Managing Redirects via Web UI
+- To create a new redirect: Visit `/r/xyz` (where `xyz` is your desired shortcut) in your browser. If it doesn't exist, a form will appear to create it.
+- To edit an existing redirect: Visit `/r/edit/xyz` to update the shortcut and its target.
 
 ## Auto Start on Boot
 
@@ -100,23 +74,21 @@ A file named `redirect.config.json` is used for configuration. It is auto-create
   ```
   127.0.0.1   r.local
   ```
-- Access via `http://r.local:5000/r/google`
+- Access via `http://r.local/r/google`
 
 ### macOS/Linux
 - Edit `/etc/hosts` and add:
   ```
   127.0.0.1   r.local
   ```
-- Access via `http://r.local:5000/r/google`
+- Access via `http://r.local/r/google`
 
-For browser shortcut, you can also use custom search engines in Chrome/Firefox to map `r/` to `http://localhost:5000/r/%s`.
+For browser shortcut, you can also use custom search engines in Chrome/Firefox to map `r/` to `http://localhost/r/%s` (or the port you use).
 
 ## Troubleshooting: Port Already in Use
-
 If you see an error like `OSError: [Errno 98] Address already in use` or `OSError: [WinError 10013]`, it means the port (default 80) is already being used by another process.
 
 ### How to Fix
-
 #### 1. Change the Port
 - Edit `redirect.config.json` and set a different port (e.g., 5000):
   ```json
@@ -128,7 +100,6 @@ If you see an error like `OSError: [Errno 98] Address already in use` or `OSErro
 - Restart the server and access it at the new port (e.g., `http://localhost:5000/r/xyz`).
 
 #### 2. Free the Port
-
 ##### Windows
 - Open PowerShell as Administrator and run:
   ```powershell
@@ -152,5 +123,4 @@ If you see an error like `OSError: [Errno 98] Address already in use` or `OSErro
 - Always restart the server after changing the port.
 
 ---
-
 **Security note:** This is a local tool. Do not expose to the public internet without authentication.
