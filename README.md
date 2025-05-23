@@ -52,12 +52,29 @@ conn.close()
 
 ### Windows
 - Use Task Scheduler to create a task that runs `pythonw.exe app.py` at logon.
+- Or, use Windows Task Scheduler to run a batch file with:
+  ```bat
+  cd /d D:\codelab\r
+  pythonw.exe app.py
+  ```
+- Or, use Windows Subsystem for Linux (WSL) and add to crontab (see Linux section).
 
 ### macOS
 - Use `launchctl` with a plist file in `~/Library/LaunchAgents/` to run the script at login.
+- Or, add to your user crontab:
+  ```sh
+  @reboot cd /path/to/your/project && /usr/bin/python3 app.py
+  ```
 
 ### Linux
-- Use `systemd` user service or add to `crontab -@reboot`.
+- Use a `systemd` user service or add to your user crontab:
+  ```sh
+  @reboot cd /path/to/your/project && /usr/bin/python3 app.py
+  ```
+- To edit your crontab, run:
+  ```sh
+  crontab -e
+  ```
 
 ## Assigning `r/` using Local DNS
 
