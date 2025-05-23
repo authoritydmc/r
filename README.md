@@ -174,6 +174,24 @@ flake8 app/
 
 ---
 
+## Running Tests
+
+To run all tests for this app, use the following command from the project root:
+
+```
+python -m pytest tests --maxfail=2 --disable-warnings -v
+```
+
+If you see an error like `No module named pytest`, install pytest first:
+
+```
+pip install pytest
+```
+
+This will run all unit and integration tests, including those for the version endpoint and utility functions. Ensure you have all dependencies installed (see requirements.txt) and that you are in the project root directory.
+
+---
+
 ## Version & Credits
 
 - See `/version` in the app for live version, commit info, and accessible URLs.

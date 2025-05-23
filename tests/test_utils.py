@@ -1,9 +1,14 @@
+import sys
 import os
 import tempfile
 import sqlite3
 import pytest
-from app import utils
 from flask import Flask, g
+
+# Ensure app/ is importable
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import app.utils
+utils = app.utils
 
 @pytest.fixture
 def app():
