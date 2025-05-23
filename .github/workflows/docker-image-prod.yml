@@ -53,11 +53,14 @@ jobs:
         run: |
           docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
           docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:stable
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod
+
           docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod.$TIMESTAMP
 
       # Step to push Docker images to Docker Hub
       - name: Push Docker images to Docker Hub
         run: |
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:stable
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod.$TIMESTAMP
