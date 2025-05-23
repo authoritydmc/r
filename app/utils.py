@@ -51,16 +51,10 @@ DASHBOARD_TEMPLATE = '''
 <body class="bg-gray-100 min-h-screen">
   <div class="max-w-3xl mx-auto py-8">
     <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">URL Shortener/Redirector Dashboard</h1>
-    <div class="bg-white rounded-lg shadow p-6 mb-8">
-      <form class="flex flex-col md:flex-row gap-4" method="post" action="/create">
-        <input name="pattern" class="border rounded px-3 py-2 flex-1" placeholder="Shortcut (e.g. google)" required>
-        <select name="type" class="border rounded px-3 py-2">
-          <option value="static">Static</option>
-          <option value="dynamic">Dynamic</option>
-        </select>
-        <input name="target" class="border rounded px-3 py-2 flex-1" placeholder="Target URL (use {name} for dynamic)" required>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" type="submit">Create Shortcut</button>
-      </form>
+    <div class="flex flex-wrap justify-center gap-4 mb-8">
+      <a href="/version" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">Version</a>
+      <a href="/tutorial" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">Dynamic URL Tutorial</a>
+      <a href="https://github.com/authoritydmc/r/blob/main/README.md" target="_blank" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">GitHub README</a>
     </div>
     <div class="bg-white rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4">All Shortcuts</h2>
@@ -143,3 +137,10 @@ def get_auto_redirect_delay():
         return delay
     set_config('auto_redirect_delay', 0)
     return 0
+
+def get_delete_requires_password():
+    val = get_config('delete_requires_password')
+    if val is not None:
+        return val
+    set_config('delete_requires_password', True)
+    return True

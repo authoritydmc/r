@@ -39,6 +39,28 @@ A file named `redirect.config.json` is used for configuration. It is auto-create
 - To create a new redirect: Visit `/r/xyz` (where `xyz` is your desired shortcut) in your browser. If it doesn't exist, a form will appear to create it.
 - To edit an existing redirect: Visit `/r/edit/xyz` to update the shortcut and its target.
 
+## Creating and Editing Shortcuts
+
+- To create or edit a shortcut, go to `/edit/<shortcut>` (e.g. `/edit/meetwith`).
+- The edit page provides a form for both creating and updating shortcuts.
+- **Real-time suggestions:**
+  - The form will automatically detect if your shortcut is **Static** or **Dynamic** and show a colored message (green for static, blue for dynamic).
+  - If you forget to add `https://` to your target URL, it will be added automatically.
+- **Dynamic shortcuts:**
+  - Use curly braces in the target URL (e.g. `https://g.co/meet/{name}`) to create a dynamic shortcut.
+  - Visiting `/meetwith/raj` will redirect to `https://g.co/meet/raj`.
+- **Static shortcuts:**
+  - If you do not use curly braces, the shortcut will always redirect to the same address.
+
+## Dashboard
+
+- The dashboard (`/`) lists all shortcuts and provides links to edit, delete, or test them.
+- URL creation is now only available from the edit page.
+
+## Tutorial
+
+- For a step-by-step guide, visit `/tutorial` in your running app.
+
 ## Auto Start on Boot
 
 ### Windows

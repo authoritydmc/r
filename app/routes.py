@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template_string, request, redirect, url_for, g, session, abort
 import sqlite3, re
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password
 from functools import wraps
 
 bp = Blueprint('main', __name__)
@@ -51,12 +51,25 @@ def dashboard_create():
     db.commit()
     return redirect(url_for('main.dashboard'))
 
-@bp.route('/delete/<path:subpath>', methods=['GET'])
+@bp.route('/delete/<path:subpath>', methods=['GET', 'POST'])
 def dashboard_delete(subpath):
     db = get_db()
-    db.execute('DELETE FROM redirects WHERE pattern=?', (subpath,))
-    db.commit()
-    return redirect(url_for('main.dashboard'))
+    if get_delete_requires_password():
+        if request.method == 'POST':
+            admin_pwd = get_admin_password()
+            if request.form.get('password') == admin_pwd:
+                db.execute('DELETE FROM redirects WHERE pattern=?', (subpath,))
+                db.commit()
+                return redirect(url_for('main.dashboard'))
+            else:
+                error = 'Invalid password.'
+                return render_template_string('''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Delete Shortcut</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-gray-100 min-h-screen flex items-center justify-center"><div class="bg-white rounded-lg shadow p-8 w-full max-w-sm"><h2 class="text-2xl font-bold mb-4 text-red-700">Delete Shortcut</h2><form method="post" class="space-y-4"><input type="password" name="password" class="border rounded px-3 py-2 w-full" placeholder="Admin Password" required><button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full" type="submit">Delete</button></form>{% if error %}<div class="text-red-600 mt-2">{{ error }}</div>{% endif %}<div class="mt-4 text-center"><a href="/" class="text-gray-500 hover:underline">Back to Dashboard</a></div></div></body></html>''', error=error)
+        else:
+            return render_template_string('''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Delete Shortcut</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-gray-100 min-h-screen flex items-center justify-center"><div class="bg-white rounded-lg shadow p-8 w-full max-w-sm"><h2 class="text-2xl font-bold mb-4 text-red-700">Delete Shortcut</h2><form method="post" class="space-y-4"><input type="password" name="password" class="border rounded px-3 py-2 w-full" placeholder="Admin Password" required><button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full" type="submit">Delete</button></form><div class="mt-4 text-center"><a href="/" class="text-gray-500 hover:underline">Back to Dashboard</a></div></div></body></html>''')
+    else:
+        db.execute('DELETE FROM redirects WHERE pattern=?', (subpath,))
+        db.commit()
+        return redirect(url_for('main.dashboard'))
 
 @bp.route('/edit/<path:subpath>', methods=['GET', 'POST'])
 def edit_redirect(subpath):
@@ -86,21 +99,43 @@ def edit_redirect(subpath):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Shortcut</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function suggestTypeAndUrl() {
+      const targetInput = document.getElementById('target');
+      const typeSelect = document.getElementById('type');
+      let val = targetInput.value.trim();
+      // Suggest https:// if not present
+      if (val && !/^https?:\/\//i.test(val)) {
+        targetInput.value = 'https://' + val;
+        val = targetInput.value;
+      }
+      // Suggest type
+      const suggestion = document.getElementById('suggestion');
+      if (val.includes('{')) {
+        typeSelect.value = 'dynamic';
+        suggestion.innerHTML = '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-2">This will be a <b>Dynamic</b> shortcut. Use curly braces for variables, e.g. <span class="font-mono">{name}</span>.</div>';
+      } else {
+        typeSelect.value = 'static';
+        suggestion.innerHTML = '<div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-2">This will be a <b>Static</b> shortcut. The URL will always redirect to the same address.</div>';
+      }
+    }
+  </script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-4 text-blue-700">Create new shortcut: <span class="font-mono">{{ pattern }}</span></h2>
-    <form method="post" class="space-y-4">
+    <form method="post" class="space-y-4" oninput="suggestTypeAndUrl()">
+      <div id="suggestion"></div>
       <div>
         <label class="block mb-1 font-semibold">Type</label>
-        <select name="type" class="border rounded px-3 py-2 w-full">
+        <select name="type" id="type" class="border rounded px-3 py-2 w-full">
           <option value="static">Static</option>
           <option value="dynamic">Dynamic</option>
         </select>
       </div>
       <div>
         <label class="block mb-1 font-semibold">Target URL <span class="text-gray-500">(use {name} for dynamic)</span></label>
-        <input type="text" name="target" class="border rounded px-3 py-2 w-full" placeholder="Target URL" required>
+        <input type="text" name="target" id="target" class="border rounded px-3 py-2 w-full" placeholder="Target URL" required>
       </div>
       <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full" type="submit">Create Shortcut</button>
       <div class="mt-4 text-center">
@@ -108,6 +143,7 @@ def edit_redirect(subpath):
       </div>
     </form>
   </div>
+  <script>suggestTypeAndUrl();</script>
 </body>
 </html>
 ''', pattern=subpath)
@@ -119,21 +155,43 @@ def edit_redirect(subpath):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edit Shortcut</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function suggestTypeAndUrl() {
+      const targetInput = document.getElementById('target');
+      const typeSelect = document.getElementById('type');
+      let val = targetInput.value.trim();
+      // Suggest https:// if not present
+      if (val && !/^https?:\/\//i.test(val)) {
+        targetInput.value = 'https://' + val;
+        val = targetInput.value;
+      }
+      // Suggest type
+      const suggestion = document.getElementById('suggestion');
+      if (val.includes('{')) {
+        typeSelect.value = 'dynamic';
+        suggestion.innerHTML = '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-2">This is a <b>Dynamic</b> shortcut. Use curly braces for variables, e.g. <span class="font-mono">{name}</span>.</div>';
+      } else {
+        typeSelect.value = 'static';
+        suggestion.innerHTML = '<div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-2">This is a <b>Static</b> shortcut. The URL will always redirect to the same address.</div>';
+      }
+    }
+  </script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-4 text-blue-700">Edit shortcut: <span class="font-mono">{{ pattern }}</span></h2>
-    <form method="post" class="space-y-4">
+    <form method="post" class="space-y-4" oninput="suggestTypeAndUrl()">
+      <div id="suggestion"></div>
       <div>
         <label class="block mb-1 font-semibold">Type</label>
-        <select name="type" class="border rounded px-3 py-2 w-full">
+        <select name="type" id="type" class="border rounded px-3 py-2 w-full">
           <option value="static" {% if type=='static' %}selected{% endif %}>Static</option>
           <option value="dynamic" {% if type=='dynamic' %}selected{% endif %}>Dynamic</option>
         </select>
       </div>
       <div>
         <label class="block mb-1 font-semibold">Target URL <span class="text-gray-500">(use {name} for dynamic)</span></label>
-        <input type="text" name="target" class="border rounded px-3 py-2 w-full" value="{{ target }}" required>
+        <input type="text" name="target" id="target" class="border rounded px-3 py-2 w-full" value="{{ target }}" required>
       </div>
       <button class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full" type="submit">Update Shortcut</button>
       <div class="mt-4 flex justify-between">
@@ -142,6 +200,7 @@ def edit_redirect(subpath):
       </div>
     </form>
   </div>
+  <script>suggestTypeAndUrl();</script>
 </body>
 </html>
 ''', pattern=subpath, type=row[0], target=row[1])
@@ -165,3 +224,50 @@ def handle_redirect(subpath):
             return redirect(dest_url, code=302)
     # Not found: redirect to edit page for creation
     return redirect(url_for('main.edit_redirect', subpath=subpath), code=302)
+
+@bp.route('/tutorial', methods=['GET'])
+def tutorial():
+    return render_template_string('''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic URL Tutorial</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow p-8 w-full max-w-2xl">
+    <h2 class="text-2xl font-bold mb-4 text-blue-700">How to Create Dynamic Shortcuts</h2>
+    <div class="mb-4">
+      <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-2">
+        <b>New: URL creation is now only available from the <span class="font-mono">Edit</span> page.</b><br>
+        To create a shortcut, simply visit <span class="font-mono">/edit/&lt;shortcut&gt;</span> (e.g. <span class="font-mono">/edit/meetwith</span>) and use the form there.
+      </div>
+      <div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-2">
+        <b>Real-time suggestions:</b> The edit page will automatically detect if your shortcut is <b>Static</b> or <b>Dynamic</b> and show a colored message. It will also add <span class="font-mono">https://</span> to your target URL if you forget it.
+      </div>
+    </div>
+    <ol class="list-decimal list-inside mb-4 space-y-2">
+      <li>
+        <b>Go to the edit page</b> for your shortcut (e.g. <span class="font-mono">/edit/meetwith</span>).
+      </li>
+      <li>
+        <b>Type your target URL</b>. If you use curly braces (e.g. <span class="font-mono">{name}</span>), it will be a <b>Dynamic</b> shortcut. Otherwise, it will be <b>Static</b>.
+      </li>
+      <li>
+        <b>Let the form help you:</b> The page will show a green or blue box to indicate the type, and will add <span class="font-mono">https://</span> if missing.
+      </li>
+      <li>
+        <b>Save the shortcut</b>. Now, visiting <span class="font-mono">/meetwith/raj</span> will redirect to <span class="font-mono">https://g.co/meet/raj</span> if you used <span class="font-mono">https://g.co/meet/{name}</span> as the target.
+      </li>
+    </ol>
+    <div class="mb-4">
+      <b>Tip:</b> You can use any variable name inside curly braces (e.g. <span class="font-mono">{user}</span>, <span class="font-mono">{id}</span>). The part after the shortcut in the URL will be substituted in place of the variable.
+    </div>
+    <div class="mt-6 text-center">
+      <a href="/" class="text-blue-600 hover:underline">Back to Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>
+''')
