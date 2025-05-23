@@ -14,6 +14,7 @@ VERSION_TEMPLATE = '''
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>App Version</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
@@ -26,7 +27,15 @@ VERSION_TEMPLATE = '''
       <h3 class="text-xl font-semibold text-blue-600">Accessible URLs:</h3>
       <ul class="list-disc list-inside">
         {% for url in urls %}
-        <li><span class="font-mono">{{ url }}</span></li>
+        <li class="flex items-center gap-2 mb-1">
+          <a href="{{ url }}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:underline font-mono flex-1">{{ url }}</a>
+          <button onclick="navigator.clipboard.writeText('{{ url }}')" title="Copy URL" class="ml-2 text-gray-500 hover:text-blue-600 focus:outline-none">
+            <i class="fa-regular fa-copy"></i>
+          </button>
+          <a href="{{ url }}" target="_blank" rel="noopener noreferrer" title="Open URL" class="ml-2 text-gray-500 hover:text-green-600">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </li>
         {% endfor %}
       </ul>
     </div>
