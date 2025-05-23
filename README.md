@@ -219,6 +219,8 @@ To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1`
    ```
 3. Save and close. Now you can use `http://r/shortcut` in your browser.
 
+> **Note:** On first run, if you have just set up the `r` hostname (via hosts file or DNS), make sure to access `http://r/` (not just `r/`) in your browser at least once. This ensures your browser recognizes `r` as a valid domain and flushes any old cache or search behavior. This step is only needed if you are using the custom `r/` shortcut setup described above.
+
 ---
 
 ## Company-Wide Installation & Team Usage
