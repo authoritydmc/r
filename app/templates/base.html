@@ -18,6 +18,8 @@
     if (!document.documentElement.classList.contains('dark')) {
       document.documentElement.classList.add('dark');
     }
+
+    
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   {% block head %}{% endblock %}
@@ -60,22 +62,41 @@
       <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a>
     </div>
   </footer>
+<script>
+  // Check localStorage for stored theme preference
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.classList.remove('dark');
+  } else {
+    // Default to dark mode
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  }
 
-  <script>
-    function updateToggleIcon() {
-      const icon = document.getElementById('toggle-icon');
-      if (document.documentElement.classList.contains('dark')) {
-        icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
-      } else {
-        icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
-      }
+  function updateToggleIcon() {
+    const icon = document.getElementById('toggle-icon');
+    if (document.documentElement.classList.contains('dark')) {
+      icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    } else {
+      icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
     }
-    document.getElementById('toggle-dark').onclick = function() {
-      document.documentElement.classList.toggle('dark');
-      updateToggleIcon();
+  }
+
+  document.getElementById('toggle-dark').onclick = function() {
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
     }
     updateToggleIcon();
-  </script>
+  };
+
+  updateToggleIcon();
+</script>
+
   {% block scripts %}{% endblock %}
 </body>
 </html>
