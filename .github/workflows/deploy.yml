@@ -38,8 +38,6 @@ jobs:
           else
             echo "DOCKER_TAG=$BRANCH" >> $GITHUB_ENV
           fi
-          else
-            echo "DOCKER_TAG=$BRANCH" >> $GITHUB_ENV
           echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
 
       # Set up Docker Buildx for multi-platform builds
