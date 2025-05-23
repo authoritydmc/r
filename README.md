@@ -48,6 +48,22 @@ conn.commit()
 conn.close()
 ```
 
+## Configuration (redirect.config.json)
+
+A file named `redirect.config.json` is used for configuration. It is auto-created if missing. Example:
+
+```
+{
+  "auto_redirect_delay": 0
+}
+```
+- `auto_redirect_delay`: Number of seconds to wait before redirecting. If set to 0, redirects are instant. If set to a positive number, users see a countdown page before being redirected.
+
+## Redirect Creation and Editing via UI
+
+- If you visit a URL like `/r/xyz` that does not exist, a web form will appear to create a new redirect for it.
+- To edit an existing redirect, visit `/r/edit/xyz` and use the form to update the redirect.
+
 ## Auto Start on Boot
 
 ### Windows
