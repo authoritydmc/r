@@ -12,15 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check branch (only allow develop/main)
-        run: |
-          BRANCH="${{ github.event.workflow_run.head_branch }}"
-          echo "Running on branch: $BRANCH"
-          if [[ "$BRANCH" != "develop" && "$BRANCH" != "main" ]]; then
-            echo "Not on develop or main, exiting successfully."
-            exit 0
-          fi
-
       # Set IMAGE_NAME environment variable
       - name: Set image name
         run: echo "IMAGE_NAME=redirector" >> $GITHUB_ENV
@@ -45,7 +36,8 @@ jobs:
           elif [[ "$BRANCH" == "main" ]]; then
             echo "DOCKER_TAG=latest" >> $GITHUB_ENV
           fi
-
+          else
+            echo "DOCKER_TAG=$BRANCH" >> $GITHUB_ENV
           echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
 
       # Set up Docker Buildx for multi-platform builds
