@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template_string, request, redirect, url_for, g, session, abort
 import sqlite3, re
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated
 from functools import wraps
+from datetime import datetime
 
 bp = Blueprint('main', __name__)
 
@@ -37,8 +38,8 @@ def admin_logout():
 @bp.route('/', methods=['GET'])
 def dashboard():
     db = get_db()
-    cursor = db.execute('SELECT pattern, type, target FROM redirects ORDER BY pattern ASC')
-    shortcuts = [dict(pattern=row[0], type=row[1], target=row[2]) for row in cursor.fetchall()]
+    cursor = db.execute('SELECT pattern, type, target, access_count FROM redirects ORDER BY pattern ASC')
+    shortcuts = [dict(pattern=row[0], type=row[1], target=row[2], access_count=row[3] if row[3] is not None else 0) for row in cursor.fetchall()]
     return render_template_string(DASHBOARD_TEMPLATE, shortcuts=shortcuts)
 
 @bp.route('/create', methods=['POST'])
@@ -74,22 +75,27 @@ def dashboard_delete(subpath):
 @bp.route('/edit/<path:subpath>', methods=['GET', 'POST'])
 def edit_redirect(subpath):
     db = get_db()
+    from .utils import get_access_count, get_created_updated
     if request.method == 'POST':
         type_ = request.form['type']
         target = request.form['target']
+        now = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+        ip = request.remote_addr or ''
         cursor = db.execute('SELECT 1 FROM redirects WHERE pattern=?', (subpath,))
         exists = cursor.fetchone()
         if exists:
-            db.execute('UPDATE redirects SET type=?, target=? WHERE pattern=?', (type_, target, subpath))
+            db.execute('UPDATE redirects SET type=?, target=?, updated_at=?, updated_ip=? WHERE pattern=?', (type_, target, now, ip, subpath))
             db.commit()
             return f'Redirect for <b>{subpath}</b> updated! <a href="/{subpath}">Test it</a>'
         else:
-            db.execute('INSERT INTO redirects (type, pattern, target) VALUES (?, ?, ?)', (type_, subpath, target))
+            db.execute('INSERT INTO redirects (type, pattern, target, created_at, updated_at, created_ip, updated_ip) VALUES (?, ?, ?, ?, ?, ?, ?)', (type_, subpath, target, now, now, ip, ip))
             db.commit()
             return f'Redirect for <b>{subpath}</b> created! <a href="/{subpath}">Test it</a>'
     else:
         cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
         row = cursor.fetchone()
+        access_count = get_access_count(subpath)
+        created_at, updated_at = get_created_updated(subpath)
         if not row:
             # Enhanced UI for new shortcut creation
             return render_template_string('''<!DOCTYPE html>
@@ -180,6 +186,9 @@ def edit_redirect(subpath):
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-4 text-blue-700">Edit shortcut: <span class="font-mono">{{ pattern }}</span></h2>
+    <div class="mb-2 text-gray-600">Access count: <span class="font-mono">{{ access_count }}</span></div>
+    <div class="mb-2 text-gray-600">Created: <span class="font-mono">{{ created_at if created_at else 'N/A' }}</span></div>
+    <div class="mb-2 text-gray-600">Last updated: <span class="font-mono">{{ updated_at if updated_at else 'N/A' }}</span></div>
     <form method="post" class="space-y-4" oninput="suggestTypeAndUrl()">
       <div id="suggestion"></div>
       <div>
@@ -203,7 +212,7 @@ def edit_redirect(subpath):
   <script>suggestTypeAndUrl();</script>
 </body>
 </html>
-''', pattern=subpath, type=row[0], target=row[1])
+''', pattern=subpath, type=row[0], target=row[1], access_count=access_count, created_at=created_at, updated_at=updated_at)
 
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
@@ -211,13 +220,13 @@ def handle_redirect(subpath):
     cursor = db.execute('SELECT target FROM redirects WHERE type = ? AND pattern = ?', ('static', subpath))
     row = cursor.fetchone()
     if row:
+        increment_access_count(subpath)
         if get_auto_redirect_delay() > 0:
             return render_template_string('<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>', url=row[0], delay=get_auto_redirect_delay())
         return redirect(row[0], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
     for pattern, target in cursor.fetchall():
-        # Find the variable name in curly braces
         import re as _re
         match = _re.search(r'\{(\w+)\}', target)
         var_name = match.group(1) if match else 'name'
@@ -250,6 +259,7 @@ def handle_redirect(subpath):
         if subpath.startswith(pattern + "/"):
             variable = subpath[len(pattern)+1:]
             dest_url = _re.sub(r"\{\w+\}", variable, target)
+            increment_access_count(pattern)
             if get_auto_redirect_delay() > 0:
                 return render_template_string('<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>', url=dest_url, delay=get_auto_redirect_delay())
             return redirect(dest_url, code=302)
