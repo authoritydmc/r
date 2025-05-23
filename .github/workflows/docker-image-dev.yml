@@ -13,8 +13,7 @@ jobs:
     steps:
       - name: Set image names
         run: |
-          echo "IMAGE_NAME1=url-shortner" >> $GITHUB_ENV
-          echo "IMAGE_NAME2=redirect" >> $GITHUB_ENV
+          echo "IMAGE_NAME=redirect" >> $GITHUB_ENV
       # Step to check out the repository
       - uses: actions/checkout@v4
         with:
@@ -39,8 +38,7 @@ jobs:
         id: build
         run: |
           TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-          docker build . --file Dockerfile --tag $IMAGE_NAME1:$TIMESTAMP
-          docker build . --file Dockerfile --tag $IMAGE_NAME2:$TIMESTAMP
+          docker build . --file Dockerfile --tag $IMAGE_NAME:$TIMESTAMP
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
 
       # Step to log in to Docker Hub
@@ -53,15 +51,13 @@ jobs:
       # Step to tag Docker images
       - name: Tag Docker images
         run: |
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev.$TIMESTAMP
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev.$TIMESTAMP
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:dev
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:dev.$TIMESTAMP
 
       # Step to push Docker images to Docker Hub
       - name: Push Docker images to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:dev.$TIMESTAMP
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:dev.$TIMESTAMP
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:dev
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:dev.$TIMESTAMP

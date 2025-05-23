@@ -13,8 +13,7 @@ jobs:
     steps:
       - name: Set image names
         run: |
-          echo "IMAGE_NAME1=url-shortner" >> $GITHUB_ENV
-          echo "IMAGE_NAME2=redirect" >> $GITHUB_ENV
+          echo "IMAGE_NAME=redirect" >> $GITHUB_ENV
       # Step to check out the repository
       - uses: actions/checkout@v4
         with:
@@ -39,8 +38,7 @@ jobs:
         id: build
         run: |
           TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-          docker build . --file Dockerfile --tag $IMAGE_NAME1:$TIMESTAMP
-          docker build . --file Dockerfile --tag $IMAGE_NAME2:$TIMESTAMP
+          docker build . --file Dockerfile --tag $IMAGE_NAME:$TIMESTAMP
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
 
       # Step to log in to Docker Hub
@@ -53,23 +51,16 @@ jobs:
       # Step to tag Docker images
       - name: Tag Docker images
         run: |
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:latest
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:$TIMESTAMP
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:latest
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:$TIMESTAMP
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:stable
-          docker tag $IMAGE_NAME1:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:prod.$TIMESTAMP
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:stable
-          docker tag $IMAGE_NAME2:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:prod.$TIMESTAMP
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:stable
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod
+
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod.$TIMESTAMP
 
       # Step to push Docker images to Docker Hub
       - name: Push Docker images to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:$TIMESTAMP
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:$TIMESTAMP
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:stable
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME1:prod.$TIMESTAMP
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:stable
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME2:prod.$TIMESTAMP
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:stable
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod.$TIMESTAMP
