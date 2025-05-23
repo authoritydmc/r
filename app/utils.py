@@ -6,8 +6,7 @@ from flask import g
 DATABASE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'redirects.db')
 
 # --- Add access_count to schema if missing ---
-def ensure_access_count_column():
-    db = get_db()
+def ensure_access_count_column(db):
     try:
         db.execute('ALTER TABLE redirects ADD COLUMN access_count INTEGER DEFAULT 0')
         db.commit()
@@ -16,8 +15,7 @@ def ensure_access_count_column():
         pass
 
 # --- Add columns for audit logging if missing ---
-def ensure_audit_columns():
-    db = get_db()
+def ensure_audit_columns(db):
     # Add created_at
     try:
         db.execute('ALTER TABLE redirects ADD COLUMN created_at TEXT')
@@ -134,8 +132,8 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-    ensure_access_count_column()
-    ensure_audit_columns()
+        ensure_access_count_column(db)
+        ensure_audit_columns(db)
     return db
 
 def get_config(key, default=None):
