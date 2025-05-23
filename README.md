@@ -24,18 +24,24 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ### 1. Docker (Recommended)
 
+#### Using a named volume (managed by Docker)
+
 ```sh
 docker run -d -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect
 ```
+- Data is stored in the Docker-managed volume:
+  - **Linux/macOS:** `/var/lib/docker/volumes/redirect_data/_data`
+  - **Windows (Docker Desktop):** `\\wsl$\docker-desktop-data\data\docker\volumes\redirect_data\_data` (access via WSL or Docker Desktop's file explorer)
+
+#### Using your current folder (bind mount, recommended for easy access)
+
+```sh
+docker run -d -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect
+```
+- This will create (or use) a `data` folder in your current directory for persistent config and DB files.
+- Works in PowerShell (Windows) and most modern shells. On Linux/macOS, you can use `$(pwd)/data:/app/data` instead.
 
 - Visit: [http://localhost:80](http://localhost:80)
-- Data (config, DB) is stored in the Docker volume or bind mount you specify with `-v`.
-- With `-v redirect_data:/app/data`, Docker manages the volume named `redirect_data`:
-  - On Linux/macOS: `/var/lib/docker/volumes/redirect_data/_data`
-  - On Windows (Docker Desktop): `C:\ProgramData\Docker\volumes\redirect_data\_data`
-- You can also use a host folder instead of a named volume:
-  - Example: `-v $(pwd)/data:/app/data` (Linux/macOS)
-  - Example: `-v ${PWD}/data:/app/data` (PowerShell/Windows)
 - The app's data directory inside the container is always `/app/data`.
 - Admin password is auto-generated on first run (see container logs or the config file in the data folder).
 
