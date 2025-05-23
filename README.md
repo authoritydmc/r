@@ -1,4 +1,4 @@
-# URL Shortener/Redirector [![Docker Image CI](https://github.com/authoritydmc/r/actions/workflows/docker-image.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/docker-image.yml) [![Python package](https://github.com/authoritydmc/r/actions/workflows/python-package.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/python-package.yml)
+# URL Shortener/Redirector
 
 A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker support, and secure config management. Easily create, manage, and share custom short URLs for your team or company.
 
@@ -25,11 +25,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 ### 1. Docker (Recommended)
 
 ```sh
-docker run -d \
-  -p 80:80 \
-  -v ./data:/app/data \
-  --name redirect \
-  rajlabs/redirect
+docker run -d -p 80:80 -v ./data:/app/data --name redirect rajlabs/redirect
 ```
 
 - Visit: [http://localhost:80](http://localhost:80)
