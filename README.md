@@ -399,3 +399,30 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 - If a shortcut is found in any upstream, you are redirected to that URL; otherwise, you are allowed to proceed with creation.
 
 ---
+
+#### Accessing Config Data in a Docker Named Volume (macOS, Windows, Linux)
+
+> **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.json.config`), you need to use an interactive terminal inside the running container.
+
+**Steps:**
+
+1. Find your running container's name (default is `redirector`):
+   ```sh
+   docker ps
+   ```
+2. Start an interactive shell in the container:
+   ```sh
+   docker exec -it redirector sh
+   ```
+3. View the config file:
+   ```sh
+   cat /app/data/redirect.json.config
+   ```
+4. (Optional) Copy the file to your host:
+   ```sh
+   docker cp redirector:/app/data/redirect.json.config ./redirect.json.config
+   ```
+
+This method works on macOS, Windows, and Linux when using Docker named volumes.
+
+---
