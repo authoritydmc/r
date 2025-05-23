@@ -62,9 +62,3 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/redirector:${{ env.DOCKER_TAG }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/redirector:${{ env.DOCKER_TAG }}-${{ env.COMMIT_SHA }}
 
-      # Always echo status at the end
-      - name: Echo workflow status
-        if: always()
-        run: |
-          echo "::notice ::Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
-          echo "::notice ::Job status: ${{ job.status }}"
