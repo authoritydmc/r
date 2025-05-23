@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set image name
+        run: echo "IMAGE_NAME=r" >> $GITHUB_ENV
       # Step to check out the repository
       - uses: actions/checkout@v4
         with:
@@ -34,14 +36,10 @@ jobs:
       - name: Build the Docker image
         id: build
         run: |
-          # Get current timestamp
           TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-          IMAGE_NAME=tgbot
           # Build the Docker image with the timestamp tag
-          docker build . --file Dockerfile --tag ${IMAGE_NAME}:${TIMESTAMP}
-          # Set the image name and timestamp in the environment for reuse
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
-          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+          docker build . --file Dockerfile --tag $IMAGE_NAME:$TIMESTAMP
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
 
       # Step to log in to Docker Hub
       - name: Log in to Docker Hub
@@ -53,13 +51,11 @@ jobs:
       # Step to tag the Docker image
       - name: Tag Docker image
         run: |
-          # Tag the image with 'latest' and the timestamp tag using the full remote path
-          docker tag ${{ env.IMAGE_NAME }}:${{ env.TIMESTAMP }} ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-          docker tag ${{ env.IMAGE_NAME }}:${{ env.TIMESTAMP }} ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.TIMESTAMP }}
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker tag $IMAGE_NAME:$TIMESTAMP ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:$TIMESTAMP
 
       # Step to push Docker images to Docker Hub
       - name: Push Docker images to Docker Hub
         run: |
-          # Push both 'latest' and timestamp-tagged images to Docker Hub
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.TIMESTAMP }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:$TIMESTAMP

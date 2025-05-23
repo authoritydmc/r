@@ -61,16 +61,22 @@ To use this URL shortener across your company or team:
 
 ## Quick Start (Docker)
 
-1. **Build the Docker image:**
+You can use the prebuilt Docker image from Docker Hub: [`rajlabs/r`](https://hub.docker.com/r/rajlabs/r)
+
+1. **Pull and run the image:**
    ```sh
-   docker build -t url-shortener .
-   ```
-2. **Run the container:**
-   ```sh
-   docker run -d -p 5000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener url-shortener
+   docker pull rajlabs/r:latest
+   docker run -d -p 5000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener rajlabs/r:latest
    ```
    - The app will be available at [http://localhost:5000/](http://localhost:5000/)
    - The `redirects.db` file will persist on your host for data durability.
+
+2. **(Optional) Build your own image:**
+   If you want to build from source (for custom changes):
+   ```sh
+   docker build -t rajlabs/r .
+   docker run -d -p 5000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener rajlabs/r
+   ```
 
 **For company-wide or local DNS:**
 - Point your DNS or hosts file to the server running the Docker container, as described above.
