@@ -32,8 +32,6 @@ jobs:
             echo "DOCKER_TAG=dev" >> $GITHUB_ENV
           elif [[ "$BRANCH" == "main" ]]; then
             echo "DOCKER_TAG=latest" >> $GITHUB_ENV
-          else
-            echo "DOCKER_TAG=custom-$BRANCH" >> $GITHUB_ENV
           fi
 
       # Set up Python
