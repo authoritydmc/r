@@ -71,6 +71,11 @@ You can use the prebuilt Docker image from Docker Hub: [`rajlabs/redirect`](http
    - The app will be available at [http://localhost:80/](http://localhost:80/)
    - The `redirects.db` file will persist on your host for data durability.
 
+> **Where is my data?**
+> - If you use `-v ./data:/app/data`, your data will be in the `data` folder next to your `docker run` command.
+> - If you use a named Docker volume (e.g., `-v redirect_data:/app/data`), you can find it with `docker volume inspect redirect_data`.
+> - **Windows users:** The path after `-v` is relative to your current directory. For example, `-v ${PWD}/data:/app/data` in PowerShell, or `-v %cd%\data:/app/data` in CMD.
+
 2. **(Optional) Build your own image:**
    If you want to build from source (for custom changes):
    ```sh
