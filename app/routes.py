@@ -95,11 +95,11 @@ def edit_redirect(subpath):
         if exists:
             db.execute('UPDATE redirects SET type=?, target=?, updated_at=?, updated_ip=? WHERE pattern=?', (type_, target, now, ip, subpath))
             db.commit()
-            return f'Redirect for <b>{subpath}</b> updated! <a href="/{subpath}">Test it</a>'
+            return render_template_string(SUCCESS_CREATE_TEMPLATE, pattern=subpath, target=target)
         else:
             db.execute('INSERT INTO redirects (type, pattern, target, created_at, updated_at, created_ip, updated_ip) VALUES (?, ?, ?, ?, ?, ?, ?)', (type_, subpath, target, now, now, ip, ip))
             db.commit()
-            return f'Redirect for <b>{subpath}</b> created! <a href="/{subpath}">Test it</a>'
+            return render_template_string(SUCCESS_CREATE_TEMPLATE, pattern=subpath, target=target)
     else:
         cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
         row = cursor.fetchone()
@@ -316,3 +316,32 @@ def tutorial():
 </body>
 </html>
 ''')
+SUCCESS_CREATE_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shortcut Created</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+    <div class="flex flex-col items-center mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-green-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <h2 class="text-2xl font-bold text-green-700">Shortcut Created!</h2>
+    </div>
+    <div class="mb-4">
+      <div class="text-gray-700 text-lg">Your shortcut <span class="font-mono bg-gray-100 px-2 py-1 rounded text-blue-700">/{{ pattern }}</span> has been created.</div>
+      <div class="mt-2 text-gray-500">Target URL:</div>
+      <div class="font-mono text-sm break-all bg-gray-50 rounded p-2 border border-gray-200 mt-1">{{ target }}</div>
+    </div>
+    <div class="flex flex-col gap-2 mt-6">
+      <a href="/{{ pattern }}" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition">Test Shortcut</a>
+      <a href="/edit/{{ pattern }}" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-2 px-4 rounded transition">Edit Shortcut</a>
+      <a href="/" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition">Back to Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>
+'''

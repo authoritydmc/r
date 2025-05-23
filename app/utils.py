@@ -7,6 +7,43 @@ from flask import g
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 DATABASE = os.path.join(DATA_DIR, 'redirects.db')
+CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.json.config')
+
+# --- JSON config helpers ---
+def _load_config():
+    if not os.path.exists(CONFIG_FILE):
+        import secrets
+        import string
+        random_pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        default = {
+            "port": 80,
+            "auto_redirect_delay": 0,
+            "admin_password": random_pwd,
+            "delete_requires_password": True
+        }
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(default, f, indent=2)
+        return default
+    with open(CONFIG_FILE, 'r') as f:
+        return json.load(f)
+
+def _save_config(cfg):
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(cfg, f, indent=2)
+
+def get_config(key, default=None):
+    cfg = _load_config()
+    if key in cfg:
+        return cfg[key]
+    # Set and return default if not present
+    cfg[key] = default
+    _save_config(cfg)
+    return default
+
+def set_config(key, value):
+    cfg = _load_config()
+    cfg[key] = value
+    _save_config(cfg)
 
 # --- Add access_count to schema if missing ---
 def ensure_access_count_column(db):
@@ -174,24 +211,6 @@ def get_db():
         ensure_access_count_column(db)
         ensure_audit_columns(db)
     return db
-
-def get_config(key, default=None):
-    db = get_db()
-    db.execute("""CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL)
-    """)
-    db.commit()
-    cursor = db.execute('SELECT value FROM config WHERE key=?', (key,))
-    row = cursor.fetchone()
-    if row:
-        return json.loads(row[0])
-    # If not found, set default
-    set_config(key, default)
-    return default
-
-def set_config(key, value):
-    db = get_db()
-    db.execute('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', (key, json.dumps(value)))
-    db.commit()
 
 def get_admin_password():
     pwd = get_config('admin_password')
