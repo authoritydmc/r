@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Upstream Config - URL Shortener/Redirector{% endblock %}
 {% block content %}
+{% if not session.admin_logged_in %}
+  <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
+    <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-200">Admin Login Required</h2>
+    <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-4 py-2 rounded mb-4">
+      You must be logged in as an admin to view or edit upstream configuration.
+    </div>
+    <a href="/admin-login?next=/admin/upstreams" class="bg-blue-600 text-white px-4 py-2 rounded">Login as Admin</a>
+  </div>
+{% else %}
 <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
   <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-200">Manage Upstreams</h2>
   {% if error %}
@@ -51,4 +60,5 @@ function addUpstreamRow() {
   tbody.appendChild(row);
 }
 </script>
+{% endif %}
 {% endblock %}
