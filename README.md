@@ -66,21 +66,21 @@ You can use the prebuilt Docker image from Docker Hub: [`rajlabs/redirect`](http
 1. **Pull and run the image:**
    ```sh
    docker pull rajlabs/redirect:latest
-   docker run -d -p 5000:5000 -v ./redirects.db:/app/redirects.db --name url-shortener rajlabs/redirect:latest
+   docker run -d -p 80:80 -v ./data/:/app/data/ --name url-shortner rajlabs/redirect:latest
    ```
-   - The app will be available at [http://localhost:5000/](http://localhost:5000/)
+   - The app will be available at [http://localhost:80/](http://localhost:80/)
    - The `redirects.db` file will persist on your host for data durability.
 
 2. **(Optional) Build your own image:**
    If you want to build from source (for custom changes):
    ```sh
    docker build -t rajlabs/redirect .
-   docker run -d -p 5000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener rajlabs/redirect
+   docker run -d -p 5000:80 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortner rajlabs/redirect
    ```
 
 **For company-wide or local DNS:**
 - Point your DNS or hosts file to the server running the Docker container, as described above.
-- Use the server's IP or DNS name in the browser (e.g., `http://r.local:5000/shortcut`).
+- Use the server's IP or DNS name in the browser (e.g., `http://r.local:80/shortcut`).
 
 ---
 
@@ -93,9 +93,9 @@ By default, Docker containers expose the app on a specific port (e.g., 5000). To
 You can map any host port to the container's port 5000. For example, to use port 3000:
 
 ```sh
-# Map host port 3000 to container port 5000
+# Map host port 3000 to container port 80 (default)
 # (You can change 3000 to any available port)
-docker run -d -p 3000:5000 -v ./redirects.db:/app/redirects.db --name url-shortener url-shortener
+docker run -d -p 3000:80 -v ./data:/app/data --name url-shortener url-shortener
 ```
 
 The app will be available at `http://localhost:3000/`.
