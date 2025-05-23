@@ -6,9 +6,14 @@ from datetime import datetime
 import json
 import os
 import requests
-from flask import jsonify
+from flask import jsonify, Response
+import time
 
 bp = Blueprint('main', __name__)
+
+@bp.context_processor
+def inject_now():
+    return {'now': datetime.now}
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.json.config')
 
@@ -75,23 +80,6 @@ def dashboard():
     ]
     return render_template('dashboard.html', shortcuts=shortcuts, now=datetime.utcnow)
 
-# # POST: Create new shortcut. Triggered when user submits the create shortcut form.
-# @bp.route('/create', methods=['POST'])
-# def dashboard_create():
-#     db = get_db()
-#     pattern = request.form['pattern']
-#     type_ = request.form['type']
-#     target = request.form['target']
-#     # --- Upstream check before creation ---
-#     all_failed, logs = check_upstreams_for_shortcut(pattern)
-#     for log in logs:
-#         print(log)
-#     if not all_failed:
-#         return render_template('create_shortcut.html', pattern=pattern, now=datetime.utcnow, logs=logs, error='Shortcut exists in upstream!')
-#     db.execute('INSERT INTO redirects (type, pattern, target) VALUES (?, ?, ?)', (type_, pattern, target))
-#     db.commit()
-#     # On success, do not show logs
-#     return render_template('success_create.html', pattern=pattern, target=target, now=datetime.utcnow)
 
 # GET/POST: Delete shortcut. Triggered when user visits /delete/<subpath> or submits delete confirmation.
 @bp.route('/delete/<path:subpath>', methods=['GET', 'POST'])
@@ -118,21 +106,9 @@ def dashboard_delete(subpath):
 @bp.route('/edit/<path:subpath>', methods=['GET', 'POST'])
 def edit_redirect(subpath):
     db = get_db()
-
     # --- Upstream check done during GET ---
     if request.method == 'GET':
-        # Check upstreams before even allowing user to create
-        all_failed, logs = check_upstreams_for_shortcut(subpath)
-        if not all_failed:
-            # Redirect to the first upstream match
-            for log in logs:
-                if "found existing shortcut at" in log:
-                    match = re.search(r"redirected to (http[s]?://\S+)", log)
-                    if match:
-                        redirect_url = match.group(1)
-                        return redirect(redirect_url, code=302)
-
-        # Check if exists locally, if not prepare for creation
+        #  allow creation or edit
         cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
         row = cursor.fetchone()
         if not row:
@@ -226,7 +202,7 @@ def handle_redirect(subpath):
             if get_auto_redirect_delay() > 0:
                 return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow)
             return redirect(dest_url, code=302)
-    return redirect(url_for('main.edit_redirect', subpath=subpath), code=302)
+    return redirect(url_for('main.check_upstreams_ui', pattern=subpath), code=302)
 
 # GET: Tutorial/help page. Triggered when user visits /tutorial.
 @bp.route('/tutorial', methods=['GET'])
@@ -235,7 +211,6 @@ def tutorial():
 
 # --- Upstreams Config API ---
 @bp.route('/admin/upstreams', methods=['GET', 'POST'])
-@login_required
 def admin_upstreams():
     error = None
     upstreams = get_upstreams()
@@ -279,6 +254,7 @@ def admin_upstreams():
 def check_upstreams_for_shortcut(shortcut):
     logs = []
     all_failed = True
+    print(f"Checking upstreams for shortcut: {shortcut}")
     for up in get_upstreams():
         check_url = up['base_url'].rstrip('/') + '/' + shortcut
         fail_url = up['fail_url']
@@ -286,6 +262,7 @@ def check_upstreams_for_shortcut(shortcut):
         try:
             resp = requests.get(check_url, allow_redirects=True, timeout=3)
             logs.append(f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})")
+            print(f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})")
             # If the final URL is not the fail_url, or status code is not the fail_status_code, shortcut exists
             fail_url_match = resp.url.rstrip('/') == fail_url.rstrip('/')
             fail_status_match = str(resp.status_code) == str(fail_status_code) if fail_status_code is not None else False
@@ -296,33 +273,43 @@ def check_upstreams_for_shortcut(shortcut):
                 logs.append(f"{up['name']} did not find shortcut (landed on fail_url/status)")
         except Exception as e:
             logs.append(f"{up['name']} check failed: {str(e)}")
+            print(f"{up['name']} check failed: {str(e)}")
     return all_failed, logs
 
-@bp.route('/check-upstreams/<pattern>', methods=['GET'])
-def check_upstreams_page(pattern):
-    return render_template('check_upstreams.html', pattern=pattern)
 
-@bp.route('/api/check-upstreams/<pattern>', methods=['GET'])
-def api_check_upstreams(pattern):
-    logs = []
-    found = False
-    redirect_url = None
-    for up in get_upstreams():
-        check_url = up['base_url'].rstrip('/') + '/' + pattern
-        fail_url = up['fail_url']
-        fail_status_code = up.get('fail_status_code')
-        try:
-            resp = requests.get(check_url, allow_redirects=True, timeout=3)
-            logs.append(f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})")
-            fail_url_match = resp.url.rstrip('/') == fail_url.rstrip('/')
-            fail_status_match = str(resp.status_code) == str(fail_status_code) if fail_status_code is not None else False
-            if not fail_url_match or (fail_status_code is not None and not fail_status_match):
-                found = True
-                redirect_url = resp.url
-                logs.append(f"{up['name']} found existing shortcut at {check_url} (redirected to {resp.url}, status {resp.status_code})")
-                break
-            else:
-                logs.append(f"{up['name']} did not find shortcut (landed on fail_url/status)")
-        except Exception as e:
-            logs.append(f"{up['name']} check failed: {str(e)}")
-    return jsonify({'found': found, 'logs': logs, 'redirect_url': redirect_url})
+@bp.route('/stream/check-upstreams/<pattern>')
+def stream_check_upstreams(pattern):
+    def event_stream():
+        found = False
+        redirect_url = None
+        for up in get_upstreams():
+            check_url = up['base_url'].rstrip('/') + '/' + pattern
+            fail_url = up['fail_url']
+            fail_status_code = up.get('fail_status_code')
+            try:
+                resp = requests.get(check_url, allow_redirects=True, timeout=3)
+                msg = f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})"
+                yield f"data: {json.dumps({'log': msg})}\n\n"
+                fail_url_match = resp.url.rstrip('/') == fail_url.rstrip('/')
+                fail_status_match = str(resp.status_code) == str(fail_status_code) if fail_status_code is not None else False
+                if not fail_url_match or (fail_status_code is not None and not fail_status_match):
+                    found = True
+                    redirect_url = resp.url
+                    msg2 = f"{up['name']} found existing shortcut at {check_url} (redirected to {resp.url}, status {resp.status_code})"
+                    yield f"data: {json.dumps({'log': msg2, 'found': True, 'redirect_url': redirect_url})}\n\n"
+                    break
+                else:
+                    msg2 = f"{up['name']} did not find shortcut (landed on fail_url/status)"
+                    yield f"data: {json.dumps({'log': msg2})}\n\n"
+            except Exception as e:
+                msg = f"{up['name']} check failed: {str(e)}"
+                yield f"data: {json.dumps({'log': msg})}\n\n"
+            time.sleep(0.5)
+        if not found:
+            yield f"data: {json.dumps({'done': True})}\n\n"
+    return Response(event_stream(), mimetype='text/event-stream')
+
+@bp.route('/check-upstreams-ui/<pattern>')
+def check_upstreams_ui(pattern):
+    return render_template('check_upstreams_stream.html', pattern=pattern)
+
