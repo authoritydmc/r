@@ -278,14 +278,15 @@ def stream_check_upstreams(pattern):
             yield from send_log(f"Fail criteria → URL: {fail_url}, Status: {fail_status_code or 'Not specified'}")
 
             try:
-                resp = requests.get(check_url, allow_redirects=True, timeout=3)
+                verify_ssl = up.get('verify_ssl',False)
+                resp = requests.get(check_url, allow_redirects=True, timeout=3,verify_ssl=verify_ssl)
                 actual_url = resp.url.rstrip('/')
                 status_code = str(resp.status_code)
 
                 yield from send_log(f"➡️ Response received from {check_url} → {actual_url} (status {status_code})")
 
                 # Check if we landed on the "fail" URL/status
-                fail_url_match = actual_url == fail_url
+                fail_url_match = actual_url.startswith(fail_url) if fail_url else False
                 fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
 
                 if not fail_url_match or (fail_status_code and not fail_status_match):
