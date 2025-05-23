@@ -2,9 +2,11 @@ import sqlite3
 from flask import Flask, redirect, abort, g, request, render_template_string
 import re
 import os
+import json
 
 app = Flask(__name__)
 DATABASE = os.path.join(os.path.dirname(__file__), 'redirects.db')
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'redirect.config.json')
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -64,6 +66,14 @@ EDIT_FORM = '''
 </body></html>
 '''
 
+def load_config():
+    if not os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump({"auto_redirect_delay": 0}, f)
+    with open(CONFIG_PATH, 'r') as f:
+        return json.load(f)
+config = load_config()
+
 @app.route('/r/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
     db = get_db()
@@ -71,6 +81,8 @@ def handle_redirect(subpath):
     cursor = db.execute('SELECT target FROM redirects WHERE type = ? AND pattern = ?', ('static', subpath))
     row = cursor.fetchone()
     if row:
+        if config.get('auto_redirect_delay', 0) > 0:
+            return render_template_string('''<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>''', url=row[0], delay=config['auto_redirect_delay'])
         return redirect(row[0], code=302)
     # Check dynamic
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
@@ -78,6 +90,8 @@ def handle_redirect(subpath):
         if subpath.startswith(pattern + "/"):
             variable = subpath[len(pattern)+1:]
             dest_url = re.sub(r"\{\w+\}", variable, target)
+            if config.get('auto_redirect_delay', 0) > 0:
+                return render_template_string('''<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>''', url=dest_url, delay=config['auto_redirect_delay'])
             return redirect(dest_url, code=302)
     # Not found: show create form
     return render_template_string(CREATE_FORM, pattern=subpath)
