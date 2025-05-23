@@ -86,7 +86,12 @@ DASHBOARD_TEMPLATE = '''
 </head>
 <body class="bg-gray-100 min-h-screen">
   <div class="max-w-3xl mx-auto py-8">
-    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">URL Shortener/Redirector Dashboard</h1>
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">
+      <a href="/" class="hover:underline flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-8 h-8 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m4 4h1a2 2 0 002-2V7a2 2 0 00-2-2h-6a2 2 0 00-2 2v7a2 2 0 002 2h1" /></svg>
+        URL Shortener/Redirector Dashboard
+      </a>
+    </h1>
     <div class="flex flex-wrap justify-center gap-4 mb-8">
       <a href="/version" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">Version</a>
       <a href="/tutorial" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">Dynamic URL Tutorial</a>
@@ -100,28 +105,59 @@ DASHBOARD_TEMPLATE = '''
             <th class="px-4 py-2">Shortcut</th>
             <th class="px-4 py-2">Type</th>
             <th class="px-4 py-2">Target</th>
-            <th class="px-4 py-2">Accesses</th>
             <th class="px-4 py-2">Actions</th>
           </tr>
         </thead>
         <tbody>
         {% for shortcut in shortcuts %}
-          <tr class="border-t">
-            <td class="px-4 py-2 font-mono">{{ shortcut['pattern'] }}</td>
-            <td class="px-4 py-2">{{ shortcut['type'] }}</td>
-            <td class="px-4 py-2 break-all"><a class="text-blue-600 underline" href="{{ shortcut['target'] }}" target="_blank">{{ shortcut['target'] }}</a></td>
-            <td class="px-4 py-2 text-center">{{ shortcut['access_count'] }}</td>
-            <td class="px-4 py-2">
-              <a class="text-green-600 hover:underline mr-2" href="/{{ shortcut['pattern'] }}" target="_blank">Go</a>
-              <a class="text-yellow-600 hover:underline mr-2" href="/edit/{{ shortcut['pattern'] }}">Edit</a>
-              <a class="text-red-600 hover:underline" href="/delete/{{ shortcut['pattern'] }}" onclick="return confirm('Delete this shortcut?');">Delete</a>
+          <tr class="border-t align-top">
+            <td class="px-4 py-2 font-mono align-top">
+              <div class="flex items-center gap-2">
+                {% if shortcut['type'] == 'static' %}
+                  <span title="Static shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 14.828a4 4 0 010-5.656m1.415 1.414a2 2 0 010 2.828m-2.829-2.828a6 6 0 018.485 8.485l-3.536 3.535a6 6 0 01-8.485-8.485l3.535-3.535a2 2 0 112.828 2.828l-3.535 3.535a2 2 0 102.828 2.828l3.535-3.535" /></svg></span>
+                {% else %}
+                  <span title="Dynamic shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg></span>
+                {% endif %}
+                {{ shortcut['pattern'] }}
+              </div>
+              <div class="text-xs text-gray-400 mt-1 flex items-center gap-4">
+                <span title="Accesses" class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>{{ shortcut['access_count'] }}</span>
+                <span title="Created" class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>{{ shortcut['created_at'] if shortcut['created_at'] else 'N/A' }}</span>
+                <span title="Last updated" class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ shortcut['updated_at'] if shortcut['updated_at'] else 'N/A' }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-2 align-top">
+              {% if shortcut['type'] == 'static' %}
+                <span title="Static shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 14.828a4 4 0 010-5.656m1.415 1.414a2 2 0 010 2.828m-2.829-2.828a6 6 0 018.485 8.485l-3.536 3.535a6 6 0 01-8.485-8.485l3.535-3.535a2 2 0 112.828 2.828l-3.535 3.535a2 2 0 102.828 2.828l3.535-3.535" /></svg></span>
+              {% else %}
+                <span title="Dynamic shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg></span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 break-all align-top"><a class="text-blue-600 underline" href="{{ shortcut['target'] }}" target="_blank">{{ shortcut['target'] }}</a></td>
+            <td class="px-4 py-2 align-top">
+              <a class="text-green-600 hover:underline mr-2" href="/{{ shortcut['pattern'] }}" target="_blank" title="Go"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
+              <a class="text-yellow-600 hover:underline mr-2" href="/edit/{{ shortcut['pattern'] }}" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 21h6a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg></a>
+              <a class="text-red-600 hover:underline" href="/delete/{{ shortcut['pattern'] }}" onclick="return confirm('Delete this shortcut?');" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></a>
             </td>
           </tr>
         {% else %}
-          <tr><td colspan="5" class="px-4 py-2 text-center text-gray-500">No shortcuts found.</td></tr>
+          <tr><td colspan="4" class="px-4 py-2 text-center text-gray-500">No shortcuts found.</td></tr>
         {% endfor %}
         </tbody>
       </table>
+      <div class="mt-6 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
+        <div class="font-semibold mb-1">Legend:</div>
+        <div class="flex flex-wrap gap-6 items-center">
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 14.828a4 4 0 010-5.656m1.415 1.414a2 2 0 010 2.828m-2.829-2.828a6 6 0 018.485 8.485l-3.536 3.535a6 6 0 01-8.485-8.485l3.535-3.535a2 2 0 112.828 2.828l-3.535 3.535a2 2 0 102.828 2.828l3.535-3.535" /></svg>Static</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>Dynamic</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>Accesses</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>Created</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Last updated</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>Go</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-1 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 21h6a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>Edit</span>
+          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>Delete</span>
+        </div>
+      </div>
     </div>
   </div>
 </body>

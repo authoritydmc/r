@@ -38,8 +38,17 @@ def admin_logout():
 @bp.route('/', methods=['GET'])
 def dashboard():
     db = get_db()
-    cursor = db.execute('SELECT pattern, type, target, access_count FROM redirects ORDER BY pattern ASC')
-    shortcuts = [dict(pattern=row[0], type=row[1], target=row[2], access_count=row[3] if row[3] is not None else 0) for row in cursor.fetchall()]
+    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY pattern ASC')
+    shortcuts = [
+        dict(
+            pattern=row[0],
+            type=row[1],
+            target=row[2],
+            access_count=row[3] if row[3] is not None else 0,
+            created_at=row[4],
+            updated_at=row[5]
+        ) for row in cursor.fetchall()
+    ]
     return render_template_string(DASHBOARD_TEMPLATE, shortcuts=shortcuts)
 
 @bp.route('/create', methods=['POST'])
@@ -94,8 +103,6 @@ def edit_redirect(subpath):
     else:
         cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
         row = cursor.fetchone()
-        access_count = get_access_count(subpath)
-        created_at, updated_at = get_created_updated(subpath)
         if not row:
             # Enhanced UI for new shortcut creation
             return render_template_string('''<!DOCTYPE html>
@@ -153,7 +160,7 @@ def edit_redirect(subpath):
 </body>
 </html>
 ''', pattern=subpath)
-        # Enhanced UI for editing existing shortcut
+        # Enhanced UI for editing existing shortcut (remove access count, created, updated info)
         return render_template_string('''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -186,9 +193,6 @@ def edit_redirect(subpath):
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-4 text-blue-700">Edit shortcut: <span class="font-mono">{{ pattern }}</span></h2>
-    <div class="mb-2 text-gray-600">Access count: <span class="font-mono">{{ access_count }}</span></div>
-    <div class="mb-2 text-gray-600">Created: <span class="font-mono">{{ created_at if created_at else 'N/A' }}</span></div>
-    <div class="mb-2 text-gray-600">Last updated: <span class="font-mono">{{ updated_at if updated_at else 'N/A' }}</span></div>
     <form method="post" class="space-y-4" oninput="suggestTypeAndUrl()">
       <div id="suggestion"></div>
       <div>
@@ -212,7 +216,7 @@ def edit_redirect(subpath):
   <script>suggestTypeAndUrl();</script>
 </body>
 </html>
-''', pattern=subpath, type=row[0], target=row[1], access_count=access_count, created_at=created_at, updated_at=updated_at)
+''', pattern=subpath, type=row[0], target=row[1])
 
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):

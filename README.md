@@ -20,10 +20,10 @@ To use this URL shortener across your company or team:
        ```
      Replace `192.168.1.100` with your server's IP address.
    - For larger organizations, set up an internal DNS record for `r.local` or your chosen hostname.
-4. **Share the base URL** (e.g., `http://r.local/`) with your team. Users can now access shortcuts like `http://r.local/google` from any device on the network.
+4. **Share the base URL** (e.g., `http://r.local:5000/`) with your team. Users can now access shortcuts like `http://r.local:5000/google` from any device on the network.
 5. **Manage shortcuts centrally:**
    - Use the dashboard to add, edit, or remove shortcuts for everyone.
-   - Optionally, set a password for deletion to prevent accidental removals.
+   - Deletion can be protected by a password if configured.
 6. **(Optional) Enable HTTPS:**
    - For extra security, consider running the app behind a reverse proxy (like Nginx) with HTTPS enabled.
 
@@ -42,7 +42,7 @@ To use this URL shortener across your company or team:
 
 ---
 
-## Quick Start
+## Quick Start (Native)
 
 1. **Install Python 3** (if not already installed).
 2. **Clone the repository** and install dependencies:
@@ -55,20 +55,39 @@ To use this URL shortener across your company or team:
    ```pwsh
    python app.py
    ```
-   The server will be available at [http://localhost/](http://localhost/) (or your configured port).
+   The server will be available at [http://localhost:5000/](http://localhost:5000/) (or your configured port).
+
+---
+
+## Quick Start (Docker)
+
+1. **Build the Docker image:**
+   ```sh
+   docker build -t url-shortener .
+   ```
+2. **Run the container:**
+   ```sh
+   docker run -d -p 5000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener url-shortener
+   ```
+   - The app will be available at [http://localhost:5000/](http://localhost:5000/)
+   - The `redirects.db` file will persist on your host for data durability.
+
+**For company-wide or local DNS:**
+- Point your DNS or hosts file to the server running the Docker container, as described above.
+- Use the server's IP or DNS name in the browser (e.g., `http://r.local:5000/shortcut`).
 
 ---
 
 ## Configuration & Settings
 
-All configuration is now managed via the web UI and stored in the app's database (not in a JSON file).
+All configuration is managed via the database and environment variables. There is no admin UI.
 
-- **Port**: The port is set on first run and can be changed by editing the database or using the admin interface (if available).
-- **Redirect Delay**: The auto-redirect delay (in seconds) can be set via the admin UI or by updating the `auto_redirect_delay` config in the database.
-- **Admin Password**: The admin password is generated on first run and can be changed from the admin/login page.
-- **Delete Requires Password**: You can toggle whether deleting a shortcut requires the admin password from the admin UI.
+- **Port**: Set by the `PORT` environment variable or defaults to 5000.
+- **Redirect Delay**: Set in the database (`auto_redirect_delay` config key).
+- **Admin Password**: Generated on first run and can be changed by updating the database directly.
+- **Delete Requires Password**: Can be toggled by updating the database directly.
 
-> **Tip:** If you need to reset a config, you can clear the relevant value from the database using a SQLite editor, or use the admin interface if available.
+> **Tip:** Use a SQLite editor to update config values if needed.
 
 ---
 
@@ -84,7 +103,7 @@ The dashboard lists all your shortcuts, with options to edit, delete, or test ea
 
 - **To create or edit:** Go to `/edit/<shortcut>` (e.g., `/edit/meetwith`).
 - The edit page provides real-time feedback:
-  - **Type detection**: Instantly shows if your shortcut is static (green) or dynamic (blue).
+  - **Type detection**: Instantly shows if your shortcut is static or dynamic (icon only).
   - **Auto-prefix**: Adds `https://` if you forget it.
   - **Dynamic variable help**: Shows the variable name if your target uses `{variable}`.
 
@@ -106,8 +125,8 @@ The dashboard lists all your shortcuts, with options to edit, delete, or test ea
 
 - **Editing**: Anyone with access to the web UI can create or edit shortcuts.
 - **Deleting**: If the "Delete Requires Password" option is enabled, deletion requires the admin password.
-- **Configuration**: All settings (port, delay, password) are managed via the web UI and stored in the database. There is no JSON config file.
-- **Admin Password**: The password is generated on first run and can be changed from the admin/login page.
+- **Configuration**: All settings (port, delay, password) are managed via the database or environment variables. There is no admin UI.
+- **Admin Password**: The password is generated on first run and can be changed by updating the database directly.
 
 ---
 
@@ -152,20 +171,20 @@ To use a friendly shortcut like `r.local`:
   127.0.0.1   r.local
   ```
 - **macOS/Linux**: Edit `/etc/hosts` and add the same line.
-- Access via `http://r.local/google` (not `/r/google`)
+- Access via `http://r.local:5000/google`
 
 ---
 
 ## Troubleshooting
 
 ### Port Already in Use
-If you see an error like `OSError: [Errno 98] Address already in use`, change the port using the admin UI or update the value in the database, then restart the app.
+If you see an error like `OSError: [Errno 98] Address already in use`, change the port using the `PORT` environment variable or update the value in the database, then restart the app.
 
 ### Permissions
 - Ports below 1024 may require admin privileges. For development, use a higher port (e.g., 5000).
 
 ### Resetting Configuration
-If you need to reset the admin password or other settings, you can do so via the admin UI or by editing the database directly with a SQLite editor.
+If you need to reset the admin password or other settings, you can do so by editing the database directly with a SQLite editor.
 
 ---
 
