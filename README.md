@@ -312,3 +312,35 @@ To make `r/` shortcuts available to your entire team or company:
    - Tell your team to use `http://r/shortcut` for all shared links.
 
 This setup allows everyone in your organization to use simple, memorable shortcuts like `r/google` or `r/docs` from any device on the network.
+
+---
+
+## Project Structure
+
+Your Flask app expects static files (images, CSS, JS, etc.) to be in the `app/static/` directory. For example:
+
+```
+project-root/
+├── app/
+│   ├── __init__.py
+│   ├── routes.py
+│   ├── utils.py
+│   ├── version.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── dashboard.html
+│   │   └── ...
+│   └── static/
+│       └── assets/
+│           ├── logo.png
+│           └── ...
+├── requirements.txt
+├── Dockerfile
+└── ...
+```
+
+- Reference static assets in templates using:
+  ```html
+  <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo">
+  ```
+- Place all images and static files in `app/static/assets/` for Flask to serve them correctly.

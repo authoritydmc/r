@@ -1,31 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Shortcut</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    function suggestTypeAndUrl() {
-      const targetInput = document.getElementById('target');
-      const typeSelect = document.getElementById('type');
-      let val = targetInput.value.trim();
-      if (val && !/^https?:\/\//i.test(val)) {
-        targetInput.value = 'https://' + val;
-        val = targetInput.value;
-      }
-      const suggestion = document.getElementById('suggestion');
-      if (val.includes('{')) {
-        typeSelect.value = 'dynamic';
-        suggestion.innerHTML = '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-2">This is a <b>Dynamic</b> shortcut. Use curly braces for variables, e.g. <span class="font-mono">{name}</span>.</div>';
-      } else {
-        typeSelect.value = 'static';
-        suggestion.innerHTML = '<div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-2">This is a <b>Static</b> shortcut. The URL will always redirect to the same address.</div>';
-      }
-    }
-  </script>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+{% extends "base.html" %}
+{% block title %}Edit Shortcut - URL Shortener/Redirector{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
   <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
     <h2 class="text-2xl font-bold mb-4 text-blue-700">Edit shortcut: <span class="font-mono">{{ pattern }}</span></h2>
     <form method="post" class="space-y-4" oninput="suggestTypeAndUrl()">
@@ -48,6 +24,25 @@
       </div>
     </form>
   </div>
-  <script>suggestTypeAndUrl();</script>
-</body>
-</html>
+</div>
+<script>
+  function suggestTypeAndUrl() {
+    const targetInput = document.getElementById('target');
+    const typeSelect = document.getElementById('type');
+    let val = targetInput.value.trim();
+    if (val && !/^https?:\/\//i.test(val)) {
+      targetInput.value = 'https://' + val;
+      val = targetInput.value;
+    }
+    const suggestion = document.getElementById('suggestion');
+    if (val.includes('{')) {
+      typeSelect.value = 'dynamic';
+      suggestion.innerHTML = '<div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-2">This is a <b>Dynamic</b> shortcut. Use curly braces for variables, e.g. <span class="font-mono">{name}</span>.</div>';
+    } else {
+      typeSelect.value = 'static';
+      suggestion.innerHTML = '<div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-2">This is a <b>Static</b> shortcut. The URL will always redirect to the same address.</div>';
+    }
+  }
+  suggestTypeAndUrl();
+</script>
+{% endblock %}
