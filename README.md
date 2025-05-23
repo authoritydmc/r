@@ -250,6 +250,30 @@ You can also run the scripts in `scripts/` directly to only add the host entry.
 
 ---
 
+## Add `r` Hostname Only (Shortcut Setup)
+
+If you only want to add the `r` hostname for local shortcuts (without running the full autostart setup), use the provided script for your OS:
+
+- **Windows:**
+  - Run in PowerShell as Administrator:
+    ```powershell
+    ./scripts/add-r-host-windows.ps1
+    ```
+- **macOS:**
+  - Run in Terminal:
+    ```sh
+    bash scripts/add-r-host-macos.sh
+    ```
+- **Linux:**
+  - Run in Terminal:
+    ```sh
+    bash scripts/add-r-host-linux.sh
+    ```
+
+Each script will attempt to add `127.0.0.1   r` to your hosts file if you have the necessary privileges, or print instructions if not.
+
+---
+
 ## Company-Wide Installation & Team Usage
 
 To make `r/` shortcuts available to your entire team or company:
