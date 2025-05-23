@@ -1,4 +1,4 @@
-# URL Shortener/Redirector [![Docker Image CI-PROD](https://github.com/authoritydmc/r/actions/workflows/docker-image-prod.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/docker-image-prod.yml) [![Python package](https://github.com/authoritydmc/r/actions/workflows/python-package.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/python-package.yml)[![Docker Image CI-DEV](https://github.com/authoritydmc/r/actions/workflows/docker-image-dev.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/docker-image-dev.yml)
+# URL Shortener/Redirector [![Docker Image CI](https://github.com/authoritydmc/r/actions/workflows/deploy.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/deploy.yml) [![Validate](https://github.com/authoritydmc/r/actions/workflows/validate.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/validate.yml)
 
 A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker support, and secure config management. Easily create, manage, and share custom short URLs for your team or company.
 
@@ -11,7 +11,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 - **Modern UI**: Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.
 - **Config as JSON**: All settings stored in `data/redirect.json.config` (auto-created with secure defaults).
 - **Secure by Default**: Random admin password generated on first run.
-- **Docker-Ready**: Official image [`rajlabs/redirect`](https://hub.docker.com/r/rajlabs/redirect) with persistent data and easy volume/bind mount support.
+- **Docker-Ready**: Official image [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector) with persistent data and easy volume/bind mount support.
 - **Reverse Proxy Friendly**: Works behind Nginx, Traefik, etc. (see below).
 - **Robust Testing**: Pytest-based tests for config and DB logic.
 - **Audit & Stats**: Tracks access count, creation/update times, and IPs for each shortcut.
@@ -27,16 +27,16 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 #### Using a named volume (managed by Docker)
 
 ```sh
-docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect
+docker run -d --restart unless-stopped -p 80:80 -v redirector_data:/app/data --name redirector rajlabs/redirector
 ```
 - Data is stored in the Docker-managed volume:
-  - **Linux/macOS:** `/var/lib/docker/volumes/redirect_data/_data`
-  - **Windows (Docker Desktop):** `\\wsl$\docker-desktop-data\data\docker\volumes\redirect_data\_data` (access via WSL or Docker Desktop's file explorer)
+  - **Linux/macOS:** `/var/lib/docker/volumes/redirector_data/_data`
+  - **Windows (Docker Desktop):** `\\wsl$\docker-desktop-data\data\docker\volumes\redirector_data\_data` (access via WSL or Docker Desktop's file explorer)
 
 #### Using your current folder (bind mount, recommended for easy access)
 
 ```sh
-docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect
+docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirector rajlabs/redirector
 ```
 - This will create (or use) a `data` folder in your current directory for persistent config and DB files.
 - Works in PowerShell (Windows) and most modern shells. On Linux/macOS, you can use `$(pwd)/data:/app/data` instead.
@@ -50,10 +50,10 @@ docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --nam
 Just pull the latest image and restart:
 
 ```sh
-docker pull rajlabs/redirect
-docker stop redirect && docker rm redirect
-# (then re-run the above docker run command)
+docker pull rajlabs/redirector
+docker stop redirector && docker rm redirect
 ```
+> (then re-run the above docker run command)
 
 ### 2. Manual (Python)
 
