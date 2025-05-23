@@ -1,5 +1,5 @@
 from flask import Flask
-from .utils import get_db, config
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE
 
 def create_app():
     app = Flask(__name__)
@@ -8,7 +8,8 @@ def create_app():
     app.register_blueprint(bp)
     app.register_blueprint(bp_version)
 
-    app.config['port'] = config.get('port', 80)
+    with app.app_context():
+        app.config['port'] = get_port()
 
     @app.teardown_appcontext
     def close_connection(exception):

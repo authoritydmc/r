@@ -4,7 +4,6 @@ import json
 from flask import g
 
 DATABASE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'redirects.db')
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'redirect.config.json')
 
 CREATE_FORM = '''
 <!DOCTYPE html>
@@ -81,8 +80,8 @@ DASHBOARD_TEMPLATE = '''
             <td class="px-4 py-2">{{ shortcut['type'] }}</td>
             <td class="px-4 py-2 break-all"><a class="text-blue-600 underline" href="{{ shortcut['target'] }}" target="_blank">{{ shortcut['target'] }}</a></td>
             <td class="px-4 py-2">
-              <a class="text-green-600 hover:underline mr-2" href="/r/{{ shortcut['pattern'] }}" target="_blank">Go</a>
-              <a class="text-yellow-600 hover:underline mr-2" href="/r/edit/{{ shortcut['pattern'] }}">Edit</a>
+              <a class="text-green-600 hover:underline mr-2" href="/{{ shortcut['pattern'] }}" target="_blank">Go</a>
+              <a class="text-yellow-600 hover:underline mr-2" href="/edit/{{ shortcut['pattern'] }}">Edit</a>
               <a class="text-red-600 hover:underline" href="/delete/{{ shortcut['pattern'] }}" onclick="return confirm('Delete this shortcut?');">Delete</a>
             </td>
           </tr>
@@ -103,10 +102,44 @@ def get_db():
         db = g._database = sqlite3.connect(DATABASE)
     return db
 
-def load_config():
-    if not os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, 'w') as f:
-            json.dump({"auto_redirect_delay": 0, "port": 80}, f)
-    with open(CONFIG_PATH, 'r') as f:
-        return json.load(f)
-config = load_config()
+def get_config(key, default=None):
+    db = get_db()
+    db.execute("""CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL)
+    """)
+    db.commit()
+    cursor = db.execute('SELECT value FROM config WHERE key=?', (key,))
+    row = cursor.fetchone()
+    if row:
+        return json.loads(row[0])
+    # If not found, set default
+    set_config(key, default)
+    return default
+
+def set_config(key, value):
+    db = get_db()
+    db.execute('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', (key, json.dumps(value)))
+    db.commit()
+
+def get_admin_password():
+    pwd = get_config('admin_password')
+    if pwd:
+        return pwd
+    import secrets
+    import string
+    pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+    set_config('admin_password', pwd)
+    return pwd
+
+def get_port():
+    port = get_config('port')
+    if port:
+        return port
+    set_config('port', 80)
+    return 80
+
+def get_auto_redirect_delay():
+    delay = get_config('auto_redirect_delay')
+    if delay is not None:
+        return delay
+    set_config('auto_redirect_delay', 0)
+    return 0

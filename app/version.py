@@ -1,6 +1,8 @@
+from flask import Blueprint, render_template_string, request, session, redirect, url_for
 import subprocess
 import socket
-from flask import Blueprint, render_template_string
+from app.utils import get_config, get_port
+from functools import wraps
 
 bp_version = Blueprint('version', __name__)
 
@@ -74,8 +76,6 @@ def version_page():
         version = f"v1.{commit_count}.{commit_hash}"
     except Exception:
         commit_count = commit_hash = commit_date = version = 'unknown'
-    # Get port from config or default
-    from app.utils import config
-    port = config.get('port', 80)
+    port = get_port()
     urls = get_accessible_urls(port)
     return render_template_string(VERSION_TEMPLATE, version=version, commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls)
