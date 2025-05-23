@@ -26,7 +26,7 @@ jobs:
       - name: Set Docker tag using commit SHA
         id: tag
         run: |
-          BRANCH=${{ github.event.workflow_run.head_branch }}
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
           COMMIT_SHA=$(git rev-parse --short HEAD)
           echo "Branch is: $BRANCH"
           echo "Short SHA is: $COMMIT_SHA"
@@ -40,6 +40,7 @@ jobs:
           fi
 
           echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+
 
       # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
