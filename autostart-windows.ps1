@@ -1,8 +1,8 @@
 # PowerShell script to auto-setup and run the URL Shortener/Redirector on Windows
 # Run as Administrator
 
-$repo = "authoritydmc/r"
-$workdir = "$env:USERPROFILE\url-shortener"
+$repo = "authoritydmc/redirect"
+$workdir = "$env:USERPROFILE\redirect"
 $py = "python"
 
 # Check for Python
