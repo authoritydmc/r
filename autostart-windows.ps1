@@ -31,3 +31,4 @@ $trigger = New-ScheduledTaskTrigger -AtLogOn
 Register-ScheduledTask -TaskName "URLShortenerAutoStart" -Action $action -Trigger $trigger -Force
 
 Write-Host "Setup complete. The app will run at every logon."
+# (No changes needed for autostart scripts unless you want to change the default port or add environment variable support. If you want to add that, let me know!)

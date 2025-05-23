@@ -50,3 +50,4 @@ systemctl --user daemon-reload
 systemctl --user enable --now urlshortener.service
 
 echo "Setup complete. The app will run at every login."
+# (No changes needed for autostart scripts unless you want to change the default port or add environment variable support. If you want to add that, let me know!)
