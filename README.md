@@ -207,9 +207,13 @@ MIT
 
 ## Screenshots
 
-| Dashboard | Version Page | Edit Shortcut | Dynamic Shortcut (No Arg) |
-|-----------|-------------|--------------|---------------------------|
-| ![Dashboard](assets/dashboard.png) | ![Version](assets/version.png) | ![Edit](assets/edit.png) | ![Dynamic No Arg](assets/dynamic-no-arg-provided.png) |
+Below are screenshots of the main features and UI, as found in `app/static/assets/`:
+
+| Dashboard | Version Page | Edit Shortcut | Create Shortcut | Dynamic Shortcut Usage | Redirect Page | Success Page |
+|-----------|-------------|--------------|----------------|-----------------------|--------------|--------------|
+| ![Dashboard](app/static/assets/dashboard.png) | ![Version](app/static/assets/version.png) | ![Edit](app/static/assets/edit.png) | ![Create](app/static/assets/create.png) | ![Dynamic Usage](app/static/assets/dynamic-shortcut-usage.png) | ![Redirect](app/static/assets/redirect.png) | ![Success](app/static/assets/success.png) |
+
+Each screenshot demonstrates the modern, dark-mode friendly UI and the main flows of the app.
 
 ---
 
