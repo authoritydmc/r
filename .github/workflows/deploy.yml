@@ -35,26 +35,15 @@ jobs:
             echo "DOCKER_TAG=dev" >> $GITHUB_ENV
           elif [[ "$BRANCH" == "main" ]]; then
             echo "DOCKER_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "DOCKER_TAG=$BRANCH" >> $GITHUB_ENV
           fi
 
           echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
 
-      # Set up Python environment (optional - if needed by build)
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-
-      # Install Python dependencies (optional)
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      # Build Docker image using commit SHA as tag
-      - name: Build Docker image
-        run: |
-          docker build . -f Dockerfile -t $IMAGE_NAME:$COMMIT_SHA
+      # Set up Docker Buildx for multi-platform builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       # Log in to Docker Hub
       - name: Login to Docker Hub
@@ -63,14 +52,21 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      # Tag Docker images
-      - name: Tag Docker images
-        run: |
-          docker tag $IMAGE_NAME:$COMMIT_SHA ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:$DOCKER_TAG
-          docker tag $IMAGE_NAME:$COMMIT_SHA ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:$DOCKER_TAG-$COMMIT_SHA
+      # Build and push multi-platform image
+      - name: Build and push Docker image (multi-arch)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/redirector:${{ env.DOCKER_TAG }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/redirector:${{ env.DOCKER_TAG }}-${{ env.COMMIT_SHA }}
 
-      # Push Docker images
-      - name: Push Docker images
+      # Always echo status at the end
+      - name: Echo workflow status
+        if: always()
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:$DOCKER_TAG
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:$DOCKER_TAG-$COMMIT_SHA
+          echo "::notice ::Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "::notice ::Job status: ${{ job.status }}"
