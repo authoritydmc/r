@@ -243,60 +243,6 @@ def admin_upstreams():
             upstreams = new_upstreams
     return render_template('admin_upstreams.html', upstreams=upstreams, error=error)
 
-    logs = []
-    all_failed = True
-    print(f"Checking upstreams for shortcut: {shortcut}")
-    for up in get_upstreams():
-        check_url = up['base_url'].rstrip('/') + '/' + shortcut
-        fail_url = up['fail_url']
-        fail_status_code = up.get('fail_status_code')
-        try:
-            resp = requests.get(check_url, allow_redirects=True, timeout=3)
-            logs.append(f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})")
-            print(f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})")
-            # If the final URL is not the fail_url, or status code is not the fail_status_code, shortcut exists
-            fail_url_match = resp.url.rstrip('/') == fail_url.rstrip('/')
-            fail_status_match = str(resp.status_code) == str(fail_status_code) if fail_status_code is not None else False
-            if not fail_url_match or (fail_status_code is not None and not fail_status_match):
-                all_failed = False
-                logs.append(f"{up['name']} found existing shortcut at {check_url} (redirected to {resp.url}, status {resp.status_code})")
-            else:
-                logs.append(f"{up['name']} did not find shortcut (landed on fail_url/status)")
-        except Exception as e:
-            logs.append(f"{up['name']} check failed: {str(e)}")
-            print(f"{up['name']} check failed: {str(e)}")
-    return all_failed, logs
-
-
-    def event_stream():
-        found = False
-        redirect_url = None
-        for up in get_upstreams():
-            check_url = up['base_url'].rstrip('/') + '/' + pattern
-            fail_url = up['fail_url']
-            fail_status_code = up.get('fail_status_code')
-            try:
-                resp = requests.get(check_url, allow_redirects=True, timeout=3)
-                msg = f"Checking {up['name']}: {check_url} → {resp.url} (status {resp.status_code})"
-                yield f"data: {json.dumps({'log': msg})}\n\n"
-                fail_url_match = resp.url.rstrip('/') == fail_url.rstrip('/')
-                fail_status_match = str(resp.status_code) == str(fail_status_code) if fail_status_code is not None else False
-                if not fail_url_match or (fail_status_code is not None and not fail_status_match):
-                    found = True
-                    redirect_url = resp.url
-                    msg2 = f"{up['name']} found existing shortcut at {check_url} (redirected to {resp.url}, status {resp.status_code})"
-                    yield f"data: {json.dumps({'log': msg2, 'found': True, 'redirect_url': redirect_url})}\n\n"
-                    break
-                else:
-                    msg2 = f"{up['name']} did not find shortcut (landed on fail_url/status)"
-                    yield f"data: {json.dumps({'log': msg2})}\n\n"
-            except Exception as e:
-                msg = f"{up['name']} check failed: {str(e)}"
-                yield f"data: {json.dumps({'log': msg})}\n\n"
-            time.sleep(0.5)
-        if not found:
-            yield f"data: {json.dumps({'done': True})}\n\n"
-    return Response(event_stream(), mimetype='text/event-stream')
 
 @bp.route('/check-upstreams-ui/<pattern>')
 def check_upstreams_ui(pattern):
