@@ -277,8 +277,6 @@ def check_upstreams_for_shortcut(shortcut):
     return all_failed, logs
 
 
-@bp.route('/stream/check-upstreams/<pattern>')
-def stream_check_upstreams(pattern):
     def event_stream():
         found = False
         redirect_url = None
@@ -313,3 +311,63 @@ def stream_check_upstreams(pattern):
 def check_upstreams_ui(pattern):
     return render_template('check_upstreams_stream.html', pattern=pattern)
 
+@bp.route('/stream/check-upstreams/<pattern>')
+def stream_check_upstreams(pattern):
+    def event_stream():
+        found = False
+        redirect_url = None
+
+        # Helper to send log messages with timestamp
+        def send_log(message, extra_data=None):
+            timestamp = datetime.utcnow().strftime("%H:%M:%S")
+            data = {'log': f"[{timestamp}] {message}"}
+            if extra_data:
+                data.update(extra_data)
+            yield f"data: {json.dumps(data)}\n\n"
+
+        yield from send_log(f"🔍 Starting upstream check for pattern: `{pattern}`")
+
+        for up in get_upstreams():
+            up_name = up['name']
+            base_url = up['base_url'].rstrip('/')
+            fail_url = up['fail_url'].rstrip('/')
+            fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
+
+            check_url = f"{base_url}/{pattern}"
+            yield from send_log(f"🌐 Checking upstream: {up_name}")
+            yield from send_log(f"Constructed URL: {check_url}")
+            yield from send_log(f"Fail criteria → URL: {fail_url}, Status: {fail_status_code or 'Not specified'}")
+
+            try:
+                resp = requests.get(check_url, allow_redirects=True, timeout=3)
+                actual_url = resp.url.rstrip('/')
+                status_code = str(resp.status_code)
+
+                yield from send_log(f"➡️ Response received from {check_url} → {actual_url} (status {status_code})")
+
+                # Check if we landed on the "fail" URL/status
+                fail_url_match = actual_url == fail_url
+                fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
+
+                if not fail_url_match or (fail_status_code and not fail_status_match):
+                    found = True
+                    redirect_url = actual_url
+                    yield from send_log(
+                        f"✅ Shortcut found in {up_name} (redirected to {actual_url}, status {status_code})",
+                        {'found': True, 'redirect_url': redirect_url}
+                    )
+                    break
+                else:
+                    yield from send_log(f"❌ Shortcut not found in {up_name} — matched fail criteria.")
+
+            except Exception as e:
+                yield from send_log(f"⚠️ Error checking {up_name}: {str(e)}")
+
+            yield from send_log(f"--- Finished check for {up_name} ---")
+            time.sleep(0.5)
+
+        if not found:
+            yield from send_log("🔚 No upstream found containing the shortcut.")
+            yield f"data: {json.dumps({'done': True})}\n\n"
+
+    return Response(event_stream(), mimetype='text/event-stream')

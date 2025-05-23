@@ -8,13 +8,18 @@
     <ul id="loglist" class="list-disc pl-6 mt-2"></ul>
   </div>
   <div id="resultbox" class="hidden"></div>
+  <div class="mt-4 text-center">
+    <a id="editBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 hidden" href="/edit/{{ pattern }}">Go to Create/Edit Shortcut Now</a>
+  </div>
 </div>
 <script>
 var pattern = {{ pattern|tojson}};
 const loglist = document.getElementById('loglist');
 const resultbox = document.getElementById('resultbox');
+const editBtn = document.getElementById('editBtn');
 let found = false;
 let redirected = false;
+let countdownInterval = null;
 function addLog(msg) {
   let li = document.createElement('li');
   li.textContent = msg;
@@ -28,6 +33,20 @@ function showResult(msg, isError) {
   resultbox.innerHTML = msg;
   resultbox.classList.remove('hidden');
 }
+function startCountdown(seconds, redirectUrl) {
+  let remaining = seconds;
+  showResult(`<b>No upstream found.</b> Redirecting to create/edit page in <span id='countdown'>${remaining}</span> seconds...`, false);
+  editBtn.classList.remove('hidden');
+  countdownInterval = setInterval(() => {
+    remaining--;
+    const cd = document.getElementById('countdown');
+    if (cd) cd.textContent = remaining;
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      window.location.href = redirectUrl;
+    }
+  }, 1000);
+}
 const evtSource = new EventSource(`/stream/check-upstreams/${encodeURIComponent(pattern)}`);
 evtSource.onmessage = function(event) {
   const data = JSON.parse(event.data);
@@ -35,14 +54,18 @@ evtSource.onmessage = function(event) {
   if (data.found && data.redirect_url && !redirected) {
     showResult('<b>Shortcut exists in upstream!</b> Redirecting...', true);
     redirected = true;
+    editBtn.classList.add('hidden');
     setTimeout(() => { window.location.href = data.redirect_url; }, 1800);
     evtSource.close();
   }
   if (data.done && !found) {
-    showResult('<b>No upstream found. Redirecting to create/edit page...</b>', false);
-    setTimeout(() => { window.location.href = `/edit/${encodeURIComponent(pattern)}`; }, 50000);
+    // Show countdown and button
+    startCountdown(7, `/edit/${encodeURIComponent(pattern)}`);
     evtSource.close();
   }
+};
+editBtn.onclick = function() {
+  if (countdownInterval) clearInterval(countdownInterval);
 };
 </script>
 {% endblock %}
