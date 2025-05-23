@@ -149,13 +149,6 @@ def edit_redirect(subpath):
         target = request.form['target']
         now = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
         ip = request.remote_addr or ''
-        # --- Upstream check before edit/creation ---
-        all_failed, logs = check_upstreams_for_shortcut(subpath)
-        for log in logs:
-            print(log)
-        if not all_failed:
-            # Show error and logs if shortcut exists in upstream
-            return render_template('edit_shortcut.html', pattern=subpath, type=type_, target=target, now=datetime.utcnow, logs=logs, error='Shortcut exists in upstream!')
         cursor = db.execute('SELECT 1 FROM redirects WHERE pattern=?', (subpath,))
         exists = cursor.fetchone()
         if exists:
@@ -250,8 +243,6 @@ def admin_upstreams():
             upstreams = new_upstreams
     return render_template('admin_upstreams.html', upstreams=upstreams, error=error)
 
-# --- Upstream Shortcut Existence Check ---
-def check_upstreams_for_shortcut(shortcut):
     logs = []
     all_failed = True
     print(f"Checking upstreams for shortcut: {shortcut}")
@@ -309,7 +300,9 @@ def check_upstreams_for_shortcut(shortcut):
 
 @bp.route('/check-upstreams-ui/<pattern>')
 def check_upstreams_ui(pattern):
-    return render_template('check_upstreams_stream.html', pattern=pattern)
+    from .utils import get_auto_redirect_delay
+    delay = get_auto_redirect_delay()
+    return render_template('check_upstreams_stream.html', pattern=pattern, delay=delay)
 
 @bp.route('/stream/check-upstreams/<pattern>')
 def stream_check_upstreams(pattern):

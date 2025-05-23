@@ -35,7 +35,7 @@ function showResult(msg, isError) {
 }
 function startCountdown(seconds, redirectUrl) {
   let remaining = seconds;
-  showResult(`<b>No upstream found.</b> Redirecting to create/edit page in <span id='countdown'>${remaining}</span> seconds...`, false);
+  showResult(`<b>No upstream found.</b> Redirecting to create/edit page in <span id='countdown'>${remaining}</span> seconds...`, true);
   editBtn.classList.remove('hidden');
   countdownInterval = setInterval(() => {
     remaining--;
@@ -52,15 +52,15 @@ evtSource.onmessage = function(event) {
   const data = JSON.parse(event.data);
   if (data.log) addLog(data.log);
   if (data.found && data.redirect_url && !redirected) {
-    showResult('<b>Shortcut exists in upstream!</b> Redirecting...', true);
+    showResult('<b>Shortcut exists in upstream!</b> Redirecting...', false);
     redirected = true;
     editBtn.classList.add('hidden');
-    setTimeout(() => { window.location.href = data.redirect_url; }, 1800);
+    setTimeout(() => { window.location.href = data.redirect_url; }, {{delay}});
     evtSource.close();
   }
   if (data.done && !found) {
     // Show countdown and button
-    startCountdown(7, `/edit/${encodeURIComponent(pattern)}`);
+    startCountdown({{delay}}, `/edit/${encodeURIComponent(pattern)}`);
     evtSource.close();
   }
 };
