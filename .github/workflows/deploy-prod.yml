@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Set image name
-        run: echo "IMAGE_NAME=redirect" >> $GITHUB_ENV
+        run: echo "IMAGE_NAME=redirector" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4
