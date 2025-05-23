@@ -2,9 +2,8 @@ name: Docker Image CI
 
 on:
   workflow_run:
-    workflows: ["Python Tests"]
-    types:
-      - completed
+    workflows: ["Validate"]
+    types: [completed]
 
 jobs:
   build:
