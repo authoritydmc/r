@@ -33,4 +33,9 @@ Register-ScheduledTask -TaskName "URLShortenerAutoStart" -Action $action -Trigge
 Write-Host "Setup complete. The app will run at every logon."
 
 # Add 'r' to hosts file (shortcut setup)
-& "$PSScriptRoot\scripts\add-r-host-windows.ps1"
+$hostScript = Join-Path $PSScriptRoot 'scripts' 'add-r-host-windows.ps1'
+if (Test-Path $hostScript) {
+    & $hostScript
+} else {
+    Write-Host "Could not find add-r-host-windows.ps1 in scripts/. Please check your setup."
+}

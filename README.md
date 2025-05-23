@@ -174,6 +174,24 @@ flake8 app/
 
 ---
 
+## Running Tests
+
+To run all tests for this app, use the following command from the project root:
+
+```
+python -m pytest tests --maxfail=2 --disable-warnings -v
+```
+
+If you see an error like `No module named pytest`, install pytest first:
+
+```
+pip install pytest
+```
+
+This will run all unit and integration tests, including those for the version endpoint and utility functions. Ensure you have all dependencies installed (see requirements.txt) and that you are in the project root directory.
+
+---
+
 ## Version & Credits
 
 - See `/version` in the app for live version, commit info, and accessible URLs.
@@ -247,6 +265,30 @@ To automatically add the `r` hostname for local shortcuts, use the provided scri
     This will set up the app and call `scripts/add-r-host-linux.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
 
 You can also run the scripts in `scripts/` directly to only add the host entry.
+
+---
+
+## Add `r` Hostname Only (Shortcut Setup)
+
+If you only want to add the `r` hostname for local shortcuts (without running the full autostart setup), use the provided script for your OS:
+
+- **Windows:**
+  - Run in PowerShell as Administrator:
+    ```powershell
+    ./scripts/add-r-host-windows.ps1
+    ```
+- **macOS:**
+  - Run in Terminal:
+    ```sh
+    bash scripts/add-r-host-macos.sh
+    ```
+- **Linux:**
+  - Run in Terminal:
+    ```sh
+    bash scripts/add-r-host-linux.sh
+    ```
+
+Each script will attempt to add `127.0.0.1   r` to your hosts file if you have the necessary privileges, or print instructions if not.
 
 ---
 
