@@ -1,47 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Tutorial - URL Shortener/Redirector{% endblock %}
+
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic URL Tutorial</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div class="bg-white rounded-lg shadow p-8 w-full max-w-2xl">
-    <h2 class="text-2xl font-bold mb-4 text-blue-700">How to Create Dynamic Shortcuts</h2>
-    <div class="mb-4">
-      <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded mb-2">
-        <b>New: URL creation is now only available from the <span class="font-mono">Edit</span> page.</b><br>
-        To create a shortcut, simply visit <span class="font-mono">/edit/&lt;shortcut&gt;</span> (e.g. <span class="font-mono">/edit/meetwith</span>) and use the form there.
+<!-- Container to center the card -->
+<div class="flex items-center justify-center min-h-[calc(100vh-160px)] px-4">
+  <!-- Tutorial Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-2xl text-gray-800 dark:text-gray-200">
+    <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300">How to Create Dynamic Shortcuts</h2>
+
+    <div class="mb-4 space-y-3">
+      <div class="bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-200 px-4 py-2 rounded">
+        <b>New:</b> URL creation is now only available from the <span class="font-mono">Edit</span> page.<br>
+        To create a shortcut, visit <span class="font-mono">/edit/&lt;shortcut&gt;</span> (e.g. <span class="font-mono">/edit/meetwith</span>).
       </div>
-      <div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-2">
-        <b>Real-time suggestions:</b> The edit page will automatically detect if your shortcut is <b>Static</b> or <b>Dynamic</b> and show a colored message. It will also add <span class="font-mono">https://</span> to your target URL if you forget it.
+      <div class="bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 px-4 py-2 rounded">
+        <b>Real-time suggestions:</b> The edit page detects if your shortcut is <b>Static</b> or <b>Dynamic</b> and provides helpful hints. It will auto-prefix <span class="font-mono">https://</span> if missing.
       </div>
     </div>
-    <ol class="list-decimal list-inside mb-4 space-y-2">
-      <li>
-        <b>Go to the edit page</b> for your shortcut (e.g. <span class="font-mono">/edit/meetwith</span>).
-      </li>
-      <li>
-        <b>Type your target URL</b>. If you use curly braces (e.g. <span class="font-mono">{name}</span>), it will be a <b>Dynamic</b> shortcut. Otherwise, it will be <b>Static</b>.
-      </li>
-      <li>
-        <b>Let the form help you:</b> The page will show a green or blue box to indicate the type, and will add <span class="font-mono">https://</span> if missing.
-      </li>
-      <li>
-        <b>Save the shortcut</b>. Now, visiting <span class="font-mono">/meetwith/raj</span> will redirect to <span class="font-mono">https://g.co/meet/raj</span> if you used <span class="font-mono">https://g.co/meet/{name}</span> as the target.
-      </li>
+
+    <ol class="list-decimal list-inside space-y-2 mb-4">
+      <li><b>Go to the edit page</b> for your shortcut (e.g. <span class="font-mono">/edit/meetwith</span>).</li>
+      <li><b>Type your target URL</b>. Use curly braces (e.g. <span class="font-mono">{name}</span>) for a <b>Dynamic</b> shortcut; otherwise, it's <b>Static</b>.</li>
+      <li><b>Let the form help you</b>: It shows a green/blue box and auto-adds <span class="font-mono">https://</span> if needed.</li>
+      <li><b>Save the shortcut</b>: Visiting <span class="font-mono">/meetwith/raj</span> will redirect to <span class="font-mono">https://g.co/meet/raj</span> if the target is <span class="font-mono">https://g.co/meet/{name}</span>.</li>
     </ol>
+
     <div class="mb-4">
-      <b>Tip:</b> You can use any variable name inside curly braces (e.g. <span class="font-mono">{user}</span>, <span class="font-mono">{id}</span>). The part after the shortcut in the URL will be substituted in place of the variable.
+      <b>Tip:</b> You can use any variable name in curly braces (e.g. <span class="font-mono">{user}</span>, <span class="font-mono">{id}</span>). It substitutes the path segment after the shortcut.
     </div>
-    <div class="mt-6 text-center">
-      <a href="/" class="text-blue-600 hover:underline">Back to Dashboard</a>
+
+    <div class="text-center mt-6">
+      <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">← Back to Dashboard</a>
     </div>
   </div>
-</body>
-</html>
+</div>
 {% endblock %}

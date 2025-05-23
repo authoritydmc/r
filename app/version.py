@@ -37,6 +37,7 @@ def get_accessible_urls(port):
 
 @bp_version.route('/version')
 def version_page():
+    from datetime import datetime
     try:
         commit_count = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], encoding='utf-8').strip()
         commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], encoding='utf-8').strip()
@@ -46,4 +47,4 @@ def version_page():
         commit_count = commit_hash = commit_date = version = 'unknown'
     port = get_port()
     urls = get_accessible_urls(port)
-    return render_template('version.html', version=version, commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls)
+    return render_template('version.html', version=version, commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls, now=datetime.utcnow)
