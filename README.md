@@ -223,6 +223,33 @@ To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1`
 
 ---
 
+## Automated Hostname Setup (r/ shortcut)
+
+To automatically add the `r` hostname for local shortcuts, use the provided script for your OS:
+
+- **Windows:**
+  - Run in PowerShell as Administrator:
+    ```powershell
+    ./autostart-windows.ps1
+    ```
+    This will set up the app and call `scripts/add-r-host-windows.ps1` to add `127.0.0.1   r` to your hosts file (if you have admin rights), or print instructions if not.
+- **macOS:**
+  - Run in Terminal:
+    ```sh
+    bash autostart-macos.sh
+    ```
+    This will set up the app and call `scripts/add-r-host-macos.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
+- **Linux:**
+  - Run in Terminal:
+    ```sh
+    bash autostart-linux.sh
+    ```
+    This will set up the app and call `scripts/add-r-host-linux.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
+
+You can also run the scripts in `scripts/` directly to only add the host entry.
+
+---
+
 ## Company-Wide Installation & Team Usage
 
 To make `r/` shortcuts available to your entire team or company:
