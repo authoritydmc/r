@@ -279,7 +279,7 @@ def stream_check_upstreams(pattern):
 
             try:
                 verify_ssl = up.get('verify_ssl',False)
-                resp = requests.get(check_url, allow_redirects=True, timeout=3,verify_ssl=verify_ssl)
+                resp = requests.get(check_url, allow_redirects=True, timeout=3,verify=verify_ssl)
                 actual_url = resp.url.rstrip('/')
                 status_code = str(resp.status_code)
 
