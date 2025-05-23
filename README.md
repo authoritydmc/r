@@ -78,6 +78,52 @@ To use this URL shortener across your company or team:
 
 ---
 
+## Docker on Custom Port & Reverse Proxy Setup
+
+By default, Docker containers expose the app on a specific port (e.g., 5000). To make your shortcuts accessible at a friendly address like `http://r/google` (without a port number), use a reverse proxy such as Nginx or Caddy on your host machine.
+
+### 1. Run Docker on a Custom Port
+
+You can map any host port to the container's port 5000. For example, to use port 3000:
+
+```sh
+# Map host port 3000 to container port 5000
+# (You can change 3000 to any available port)
+docker run -d -p 3000:5000 -v $(pwd)/redirects.db:/app/redirects.db --name url-shortener url-shortener
+```
+
+The app will be available at `http://localhost:3000/`.
+
+### 2. Set Up a Reverse Proxy (Nginx Example)
+
+To allow users to access the app at `http://r/shortcut` (no port), set up a reverse proxy on your server:
+
+#### Example Nginx config:
+
+```
+server {
+    listen 80;
+    server_name r.local;  # Or your chosen DNS/hostname
+
+    location / {
+        proxy_pass http://localhost:3000;  # Or whatever port you mapped
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+- Reload Nginx after saving the config: `sudo systemctl reload nginx`
+- Make sure your DNS or hosts file points `r.local` to your server's IP.
+- Now users can access shortcuts like `http://r/google` from any device on the network (no port needed).
+
+#### (Optional) HTTPS
+For security, you can add a free SSL certificate (e.g., with [Let's Encrypt](https://letsencrypt.org/)) to your Nginx config.
+
+---
+
 ## Configuration & Settings
 
 All configuration is managed via the database and environment variables. There is no admin UI.
