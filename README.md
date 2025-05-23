@@ -27,7 +27,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 #### Using a named volume (managed by Docker)
 
 ```sh
-docker run -d -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect
+docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect
 ```
 - Data is stored in the Docker-managed volume:
   - **Linux/macOS:** `/var/lib/docker/volumes/redirect_data/_data`
@@ -36,7 +36,7 @@ docker run -d -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redire
 #### Using your current folder (bind mount, recommended for easy access)
 
 ```sh
-docker run -d -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect
+docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect
 ```
 - This will create (or use) a `data` folder in your current directory for persistent config and DB files.
 - Works in PowerShell (Windows) and most modern shells. On Linux/macOS, you can use `$(pwd)/data:/app/data` instead.
