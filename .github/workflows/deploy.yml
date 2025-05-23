@@ -35,8 +35,6 @@ jobs:
             echo "DOCKER_TAG=dev" >> $GITHUB_ENV
           elif [[ "$BRANCH" == "main" ]]; then
             echo "DOCKER_TAG=latest" >> $GITHUB_ENV
-          else
-            echo "DOCKER_TAG=$BRANCH" >> $GITHUB_ENV
           fi
 
           echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
