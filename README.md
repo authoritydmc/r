@@ -55,6 +55,22 @@ docker stop redirector && docker rm redirector
 ```
 > (then re-run the above docker run command)
 
+#### Running with Host Network Access (Advanced)
+
+> **Note:** The `--network=host` option allows the container to use the host's network stack. This is useful if the app needs to access services running on the host (e.g., databases, APIs) or for advanced networking scenarios.
+>
+> - On **Linux**, this works as expected.
+> - On **Windows/macOS**, `--network=host` is not fully supported; use port mappings instead.
+
+**Linux Example:**
+```sh
+# Run with host network (Linux only)
+docker run -d --restart unless-stopped --network=host -v redirector_data:/app/data --name redirector rajlabs/redirector
+```
+
+**Windows/macOS:**
+- Use the standard port mapping (`-p 80:80`) as shown above.
+
 ### 2. Manual (Python)
 
 - Requires Python 3.8+
