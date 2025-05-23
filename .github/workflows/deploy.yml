@@ -12,6 +12,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check branch (only allow develop/main)
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          echo "Running on branch: $BRANCH"
+          if [[ "$BRANCH" != "develop" && "$BRANCH" != "main" ]]; then
+            echo "Not on develop or main, exiting successfully."
+            exit 0
+          fi
+
       # Set IMAGE_NAME environment variable
       - name: Set image name
         run: echo "IMAGE_NAME=redirector" >> $GITHUB_ENV
