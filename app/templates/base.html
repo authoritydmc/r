@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}URL Shortener/Redirector{% endblock %}</title>
+  <meta name="description" content="A modern, self-hostable URL shortener and redirector with Docker, beautiful UI, and secure config management.">
+  <link rel="icon"  href="{{ url_for('static', filename='favicon.ico') }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {},
+      },
+    }
+    // Force dark mode by default
+    if (!document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.add('dark');
+    }
+
+    
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-blue-200 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white dark:bg-gray-900 shadow sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" class="w-8 h-8 rounded shadow">
+        <span class="text-xl font-bold text-blue-700 dark:text-blue-300">URL Shortener/Redirector</span>
+      </div>
+      <nav class="flex gap-4 font-semibold">
+        <a href="/" class="hover:underline text-blue-700 dark:text-blue-300">Dashboard</a>
+        <a href="/version" class="hover:underline text-blue-700 dark:text-blue-300">Version</a>
+        <a href="/tutorial" class="hover:underline text-blue-700 dark:text-blue-300">Dynamic URL Tutorial</a>
+        <a href="https://github.com/authoritydmc/redirector" target="_blank" class="hover:underline flex items-center gap-1 text-blue-700 dark:text-blue-300">
+          <i class="fab fa-github"></i> GitHub
+        </a>
+      </nav>
+      <button id="toggle-dark" class="ml-4 px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 text-xs flex items-center gap-1" title="Toggle dark/light mode">
+        <span id="toggle-icon"><i class="fa-solid fa-moon"></i></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main wrapper to push footer down -->
+  <div class="flex flex-col flex-grow max-w-5xl mx-auto w-full px-4 py-8 min-h-[calc(100vh-64px-72px)] bg-white dark:bg-gray-900 rounded-lg shadow">
+    <!-- Main content block -->
+    <main class="flex-grow">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white dark:bg-gray-900 border-t py-6 mt-auto w-full">
+    <div class="max-w-5xl mx-auto px-4 text-center text-gray-500 dark:text-gray-400">
+      &copy; {{ now().year }} URL Shortener/Redirector &mdash;
+      <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a>
+    </div>
+  </footer>
+<script>
+  // Check localStorage for stored theme preference
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.classList.remove('dark');
+  } else {
+    // Default to dark mode
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  }
+
+  function updateToggleIcon() {
+    const icon = document.getElementById('toggle-icon');
+    if (document.documentElement.classList.contains('dark')) {
+      icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    } else {
+      icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    }
+  }
+
+  document.getElementById('toggle-dark').onclick = function() {
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+    updateToggleIcon();
+  };
+
+  updateToggleIcon();
+</script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

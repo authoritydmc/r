@@ -207,9 +207,13 @@ MIT
 
 ## Screenshots
 
-| Dashboard | Version Page | Edit Shortcut | Dynamic Shortcut (No Arg) |
-|-----------|-------------|--------------|---------------------------|
-| ![Dashboard](assets/dashboard.png) | ![Version](assets/version.png) | ![Edit](assets/edit.png) | ![Dynamic No Arg](assets/dynamic-no-arg-provided.png) |
+Below are screenshots of the main features and UI, as found in `app/static/assets/`:
+
+| Dashboard | Version Page | Edit Shortcut | Create Shortcut | Dynamic Shortcut Usage | Redirect Page | Success Page |
+|-----------|-------------|--------------|----------------|-----------------------|--------------|--------------|
+| ![Dashboard](app/static/assets/dashboard.png) | ![Version](app/static/assets/version.png) | ![Edit](app/static/assets/edit-shortcut.png) | ![Create](app/static/assets/create-shortcut.png) | ![Dynamic Usage](app/static/assets/tutorial.png) | ![Redirect](app/static/assets/redirect-page.png) | ![Success](app/static/assets/success.png) |
+
+Each screenshot demonstrates the modern, dark-mode friendly UI and the main flows of the app.
 
 ---
 
@@ -312,3 +316,35 @@ To make `r/` shortcuts available to your entire team or company:
    - Tell your team to use `http://r/shortcut` for all shared links.
 
 This setup allows everyone in your organization to use simple, memorable shortcuts like `r/google` or `r/docs` from any device on the network.
+
+---
+
+## Project Structure
+
+Your Flask app expects static files (images, CSS, JS, etc.) to be in the `app/static/` directory. For example:
+
+```
+project-root/
+├── app/
+│   ├── __init__.py
+│   ├── routes.py
+│   ├── utils.py
+│   ├── version.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── dashboard.html
+│   │   └── ...
+│   └── static/
+│       └── assets/
+│           ├── logo.png
+│           └── ...
+├── requirements.txt
+├── Dockerfile
+└── ...
+```
+
+- Reference static assets in templates using:
+  ```html
+  <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo">
+  ```
+- Place all images and static files in `app/static/assets/` for Flask to serve them correctly.

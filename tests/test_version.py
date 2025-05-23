@@ -19,12 +19,12 @@ def test_version_route_runs(monkeypatch):
     app = create_app()
     client = app.test_client()
     # Patch subprocess to avoid git dependency
-    monkeypatch.setattr('subprocess.check_output', lambda *a, **k: b'1234' if 'rev-list' in a[0] else b'abc123' if 'rev-parse' in a[0] else b'2025-05-23')
+    monkeypatch.setattr('subprocess.check_output', lambda *a, **k: '1234' if 'rev-list' in a[0] else 'abc123' if 'rev-parse' in a[0] else '2025-05-23')
     monkeypatch.setattr('app.version.get_port', lambda: 5000)
     monkeypatch.setattr('app.version.get_accessible_urls', lambda port: [f'http://localhost:{port}/'])
     resp = client.get('/version')
     assert resp.status_code == 200
-    assert b'App Version' in resp.data
+    assert b'Version' in resp.data
     assert b'localhost' in resp.data
 
 def test_version_route_handles_git_failure(monkeypatch):

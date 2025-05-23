@@ -15,6 +15,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# GET/POST: Admin login page and handler. Triggered when user visits /admin-login or submits login form.
 @bp.route('/admin-login', methods=['GET', 'POST'])
 def admin_login():
     error = None
@@ -26,13 +27,15 @@ def admin_login():
             return redirect(next_url)
         else:
             error = 'Invalid password.'
-    return render_template('admin_login.html', error=error)
+    return render_template('admin_login.html', error=error, now=datetime.utcnow)
 
+# GET: Logout endpoint. Triggered when user visits /logout.
 @bp.route('/logout')
 def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect(url_for('main.dashboard'))
 
+# GET: Dashboard page. Triggered when user visits the root URL '/'.
 @bp.route('/', methods=['GET'])
 def dashboard():
     db = get_db()
@@ -47,8 +50,9 @@ def dashboard():
             updated_at=row[5]
         ) for row in cursor.fetchall()
     ]
-    return render_template('dashboard.html', shortcuts=shortcuts)
+    return render_template('dashboard.html', shortcuts=shortcuts, now=datetime.utcnow)
 
+# POST: Create new shortcut. Triggered when user submits the create shortcut form.
 @bp.route('/create', methods=['POST'])
 def dashboard_create():
     db = get_db()
@@ -59,6 +63,7 @@ def dashboard_create():
     db.commit()
     return redirect(url_for('main.dashboard'))
 
+# GET/POST: Delete shortcut. Triggered when user visits /delete/<subpath> or submits delete confirmation.
 @bp.route('/delete/<path:subpath>', methods=['GET', 'POST'])
 def dashboard_delete(subpath):
     db = get_db()
@@ -71,14 +76,15 @@ def dashboard_delete(subpath):
                 return redirect(url_for('main.dashboard'))
             else:
                 error = 'Invalid password.'
-                return render_template('delete_confirm.html', error=error)
+                return render_template('delete_confirm.html', error=error, now=datetime.utcnow)
         else:
-            return render_template('delete_confirm_noerror.html')
+            return render_template('delete_confirm_noerror.html', now=datetime.utcnow)
     else:
         db.execute('DELETE FROM redirects WHERE pattern=?', (subpath,))
         db.commit()
         return redirect(url_for('main.dashboard'))
 
+# GET/POST: Edit shortcut. Triggered when user visits /edit/<subpath> or submits edit form.
 @bp.route('/edit/<path:subpath>', methods=['GET', 'POST'])
 def edit_redirect(subpath):
     db = get_db()
@@ -93,18 +99,19 @@ def edit_redirect(subpath):
         if exists:
             db.execute('UPDATE redirects SET type=?, target=?, updated_at=?, updated_ip=? WHERE pattern=?', (type_, target, now, ip, subpath))
             db.commit()
-            return render_template('success_create.html', pattern=subpath, target=target)
+            return render_template('success_create.html', pattern=subpath, target=target, now=datetime.utcnow)
         else:
             db.execute('INSERT INTO redirects (type, pattern, target, created_at, updated_at, created_ip, updated_ip) VALUES (?, ?, ?, ?, ?, ?, ?)', (type_, subpath, target, now, now, ip, ip))
             db.commit()
-            return render_template('success_create.html', pattern=subpath, target=target)
+            return render_template('success_create.html', pattern=subpath, target=target, now=datetime.utcnow)
     else:
         cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
         row = cursor.fetchone()
         if not row:
-            return render_template('create_shortcut.html', pattern=subpath)
-        return render_template('edit_shortcut.html', pattern=subpath, type=row[0], target=row[1])
+            return render_template('create_shortcut.html', pattern=subpath, now=datetime.utcnow)
+        return render_template('edit_shortcut.html', pattern=subpath, type=row[0], target=row[1], now=datetime.utcnow)
 
+# GET: Handle redirect for static and dynamic shortcuts. Triggered for any /<subpath> not matching other routes.
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
     db = get_db()
@@ -113,7 +120,7 @@ def handle_redirect(subpath):
     if row:
         increment_access_count(subpath)
         if get_auto_redirect_delay() > 0:
-            return render_template('redirect.html', target=row[0], delay=get_auto_redirect_delay())
+            return render_template('redirect.html', target=row[0], delay=get_auto_redirect_delay(), now=datetime.utcnow)
         return redirect(row[0], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
@@ -125,16 +132,17 @@ def handle_redirect(subpath):
             example_var = 'yourvalue'
             example_url = f'/{pattern}/' + example_var
             example_target = target.replace(f'{{{var_name}}}', example_var)
-            return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=var_name, example_target=example_target)
+            return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=var_name, example_target=example_target, now=datetime.utcnow)
         if subpath.startswith(pattern + "/"):
             variable = subpath[len(pattern)+1:]
             dest_url = _re.sub(r"\{\w+\}", variable, target)
             increment_access_count(pattern)
             if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay())
+                return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow)
             return redirect(dest_url, code=302)
     return redirect(url_for('main.edit_redirect', subpath=subpath), code=302)
 
+# GET: Tutorial/help page. Triggered when user visits /tutorial.
 @bp.route('/tutorial', methods=['GET'])
 def tutorial():
-    return render_template('tutorial.html')
+    return render_template('tutorial.html', now=datetime.utcnow)

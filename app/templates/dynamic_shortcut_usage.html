@@ -1,21 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic Shortcut Usage</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-blue-50 min-h-screen flex items-center justify-center">
-  <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
-    <div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-4">
+{% extends "base.html" %}
+{% block title %}Dynamic Shortcut Usage - URL Shortener/Redirector{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-lg flex flex-col items-center justify-center">
+    <div class="bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-4 py-2 rounded mb-4 text-center">
       <b>This is a dynamic shortcut:</b> <span class="font-mono">/{{ pattern }}/&#123;{{ var_name }}&#125;</span><br>
-      To use it, add a value after <span class="font-mono">/{{ pattern }}/</span>.<br>
-      <div class="mt-2">Example: <span class="font-mono">/{{ pattern }}/yourvalue</span> will redirect to <span class="font-mono">{{ example_target }}</span> (where <span class="font-mono">&#123;{{ var_name }}&#125;</span> is replaced by <span class="font-mono">yourvalue</span>).</div>
+      <span class="text-gray-700 dark:text-gray-200">To use it, add a value after <span class="font-mono">/{{ pattern }}/</span>.</span><br>
+      <div class="mt-2 text-gray-700 dark:text-gray-200">
+        Example: <span class="font-mono">/{{ pattern }}/yourvalue</span> will redirect to
+        <span class="font-mono">{{ example_target }}</span> (where
+        <span class="font-mono">&#123;{{ var_name }}&#125;</span> is replaced by
+        <span class="font-mono">yourvalue</span>).
+      </div>
     </div>
     <div class="mt-6 text-center">
-      <a href="/" class="text-blue-600 hover:underline">Back to Dashboard</a>
+      <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">Back to Dashboard</a>
     </div>
   </div>
-</body>
-</html>
+</div>
+{% endblock %}
