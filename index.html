@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener/Redirector - Features & Use Cases</title>
+  <meta name="description" content="A modern, self-hostable URL shortener and redirector with Docker, beautiful UI, and secure config management. See all features and use cases.">
+  <link rel="icon" href="assets/version.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen">
+  <header class="bg-white shadow sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="assets/version.png" alt="Logo" class="w-10 h-10 rounded shadow">
+        <span class="text-2xl font-bold text-blue-700">URL Shortener/Redirector</span>
+      </div>
+      <a href="https://github.com/authoritydmc/r" target="_blank" class="text-blue-600 hover:underline flex items-center gap-2"><i class="fab fa-github"></i> GitHub</a>
+    </div>
+  </header>
+  <main class="max-w-5xl mx-auto px-4 py-10">
+    <section class="mb-12">
+      <h1 class="text-4xl font-extrabold text-blue-800 mb-4">Modern, Secure, and Team-Ready</h1>
+      <p class="text-lg text-gray-700 mb-6">A beautiful, self-hostable URL shortener and redirector for teams, companies, and power users. Easily create, manage, and share custom short URLs with a modern dashboard, Docker support, and robust security.</p>
+      <div class="flex flex-wrap gap-6">
+        <img src="assets/dashboard.png" alt="Dashboard Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+        <img src="assets/version.png" alt="Version Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+        <img src="assets/edit.png" alt="Edit Shortcut Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+      </div>
+    </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">Key Features</h2>
+      <ul class="grid md:grid-cols-2 gap-6 text-lg">
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-palette text-2xl text-blue-500"></i> <span><b>Modern UI:</b> Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-database text-2xl text-green-500"></i> <span><b>Config as JSON:</b> All settings stored in <code>data/redirect.json.config</code> (auto-created with secure defaults).</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-lock text-2xl text-purple-500"></i> <span><b>Secure by Default:</b> Random admin password generated on first run.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-brands fa-docker text-2xl text-blue-400"></i> <span><b>Docker-Ready:</b> Official image with persistent data and easy volume/bind mount support.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-network-wired text-2xl text-gray-600"></i> <span><b>Reverse Proxy Friendly:</b> Works behind Nginx, Traefik, etc.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-vial text-2xl text-pink-500"></i> <span><b>Robust Testing:</b> Pytest-based tests for config and DB logic.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-chart-line text-2xl text-orange-500"></i> <span><b>Audit & Stats:</b> Tracks access count, creation/update times, and IPs for each shortcut.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-code-branch text-2xl text-blue-700"></i> <span><b>Dynamic Shortcuts:</b> Supports static and dynamic (parameterized) redirects.</span></li>
+        <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-info-circle text-2xl text-blue-600"></i> <span><b>Version Info:</b> <code>/version</code> page shows live version, commit info, and all accessible URLs (with copy/open buttons).</span></li>
+      </ul>
+    </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">Use Cases</h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-users mr-2"></i> Team/Company Shortcuts</h3>
+          <ul class="list-disc list-inside text-gray-700">
+            <li>Share memorable links like <span class="font-mono">r/zoom</span> or <span class="font-mono">r/docs</span> across your team.</li>
+            <li>Centralize all internal URLs for onboarding, meetings, and resources.</li>
+            <li>Deploy on a server and use DNS or hosts file for <span class="font-mono">r/</span> shortcuts.</li>
+          </ul>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-user-shield mr-2"></i> Personal Productivity</h3>
+          <ul class="list-disc list-inside text-gray-700">
+            <li>Quickly create short links for your most-used sites.</li>
+            <li>Use dynamic shortcuts for parameterized redirects (e.g., <span class="font-mono">r/meetwith/raj</span>).</li>
+            <li>Run locally with Docker or Python, with secure admin access.</li>
+          </ul>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-globe mr-2"></i> Company-Wide DNS/Hosts</h3>
+          <ul class="list-disc list-inside text-gray-700">
+            <li>Make <span class="font-mono">r/</span> shortcuts available to your whole company via DNS or hosts file.</li>
+            <li>Automate setup with provided scripts for Windows, macOS, and Linux.</li>
+            <li>Restrict admin access and audit all changes.</li>
+          </ul>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-server mr-2"></i> Self-Hosted & Cloud</h3>
+          <ul class="list-disc list-inside text-gray-700">
+            <li>Deploy on-premises, in the cloud, or on your own device.</li>
+            <li>Persistent data with Docker volumes or bind mounts.</li>
+            <li>Production-ready with Gunicorn, Waitress, or Flask.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">Quick Start</h2>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-brands fa-docker mr-2"></i> Docker (Recommended)</h3>
+        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
+        <p class="text-gray-700 mt-2">Or use a bind mount for easy access to data:</p>
+        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-terminal mr-2"></i> Manual (Python)</h3>
+        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>pip install -r requirements.txt
+python app.py</code></pre>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-wrench mr-2"></i> Automated Hostname Setup</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Windows: <code>./autostart-windows.ps1</code></li>
+          <li>macOS: <code>bash autostart-macos.sh</code></li>
+          <li>Linux: <code>bash autostart-linux.sh</code></li>
+        </ul>
+        <p class="text-gray-700">Or run the scripts in <code>scripts/</code> directly to only add the <code>r</code> host entry.</p>
+      </div>
+    </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">Screenshots</h2>
+      <div class="flex flex-wrap gap-6">
+        <img src="assets/dashboard.png" alt="Dashboard Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+        <img src="assets/version.png" alt="Version Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+        <img src="assets/edit.png" alt="Edit Shortcut Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+        <img src="assets/dynamic-no-arg-provided.png" alt="Dynamic Shortcut Screenshot" class="rounded-lg shadow-lg w-80 border border-blue-100">
+      </div>
+    </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">FAQ</h2>
+      <div class="bg-white rounded-lg shadow p-6">
+        <ul class="space-y-4 text-gray-700">
+          <li><b>How do I make <span class="font-mono">r/</span> shortcuts work for everyone?</b><br>Deploy on a server and set up DNS or hosts file for <span class="font-mono">r</span> (see README for details).</li>
+          <li><b>Is it secure?</b><br>Yes! Admin password is random by default, and you can restrict access by IP or VPN.</li>
+          <li><b>Can I use it for personal links?</b><br>Absolutely! Run locally with Docker or Python and use for your own shortcuts.</li>
+          <li><b>How do I update?</b><br>Just pull the latest Docker image and restart, or update your code and restart the app.</li>
+          <li><b>Where is the data stored?</b><br>All config and DB files are in the <code>data/</code> directory (bind mount or volume for Docker).</li>
+        </ul>
+      </div>
+    </section>
+    <section class="mb-12 text-center">
+      <a href="https://github.com/authoritydmc/r" target="_blank" class="inline-block bg-blue-700 text-white px-8 py-4 rounded-lg shadow-lg text-xl font-bold hover:bg-blue-800 transition"><i class="fab fa-github mr-2"></i> View on GitHub</a>
+    </section>
+  </main>
+  <footer class="bg-white border-t py-6 mt-10">
+    <div class="max-w-5xl mx-auto px-4 text-center text-gray-500">
+      &copy; 2025 URL Shortener/Redirector &mdash; <a href="https://github.com/authoritydmc/r" class="text-blue-600 hover:underline">GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>
