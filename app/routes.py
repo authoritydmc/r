@@ -226,7 +226,7 @@ def handle_redirect(subpath):
     if row:
         increment_access_count(subpath)
         if get_auto_redirect_delay() > 0:
-            return render_template_string('<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>', url=row[0], delay=get_auto_redirect_delay())
+            return render_template_string(REDIRECT_TEMPLATE, target=row[0], delay=get_auto_redirect_delay())
         return redirect(row[0], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
@@ -265,7 +265,7 @@ def handle_redirect(subpath):
             dest_url = _re.sub(r"\{\w+\}", variable, target)
             increment_access_count(pattern)
             if get_auto_redirect_delay() > 0:
-                return render_template_string('<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>', url=dest_url, delay=get_auto_redirect_delay())
+                return render_template_string(REDIRECT_TEMPLATE, target=dest_url, delay=get_auto_redirect_delay())
             return redirect(dest_url, code=302)
     # Not found: redirect to edit page for creation
     return redirect(url_for('main.edit_redirect', subpath=subpath), code=302)
@@ -342,6 +342,42 @@ SUCCESS_CREATE_TEMPLATE = '''
       <a href="/" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition">Back to Dashboard</a>
     </div>
   </div>
+</body>
+</html>
+'''
+REDIRECT_TEMPLATE = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta http-equiv="refresh" content="{{ delay }};url={{ target }}">
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-blue-300 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+    <div class="flex flex-col items-center gap-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+      <h2 class="text-2xl font-bold text-blue-700">Redirecting...</h2>
+      <p class="text-lg text-gray-700">You are being redirected to:</p>
+      <a href="{{ target }}" class="text-blue-600 underline break-all text-lg font-mono hover:text-blue-800" target="_blank">{{ target }}</a>
+      <p class="mt-4 text-gray-500">Redirecting in <span id="countdown" class="font-semibold">{{ delay }}</span> second{{ 's' if delay != 1 else '' }}...</p>
+      <button onclick="window.location.href='{{ target }}'" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Go Now</button>
+    </div>
+  </div>
+  <script>
+    let seconds = {{ delay }};
+    const countdown = document.getElementById('countdown');
+    const interval = setInterval(() => {
+      seconds--;
+      if (seconds <= 0) {
+        clearInterval(interval);
+      } else {
+        countdown.textContent = seconds;
+      }
+    }, 1000);
+  </script>
 </body>
 </html>
 '''
