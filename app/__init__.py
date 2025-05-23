@@ -1,8 +1,12 @@
 from flask import Flask
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password
+import secrets
 
 def create_app():
     app = Flask(__name__)
+    # Set secret key for session management
+    app.secret_key = secrets.token_urlsafe(32)
+
     from .routes import bp
     from .version import bp_version
     app.register_blueprint(bp)
