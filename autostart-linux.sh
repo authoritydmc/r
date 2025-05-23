@@ -1,8 +1,8 @@
 #!/bin/bash
 # Bash script to auto-setup and run the URL Shortener/Redirector on Linux (systemd user service)
 set -e
-REPO="authoritydmc/redirect"
-WORKDIR="$HOME/redirect"
+REPO="authoritydmc/redirector"
+WORKDIR="$HOME/redirector"
 
 # Check for python3
 if ! command -v python3 >/dev/null 2>&1; then

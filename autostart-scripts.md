@@ -12,8 +12,8 @@ Replace `<YOUR_GITHUB_USERNAME>` with your actual GitHub username if you have fo
 2. Run this script to create a scheduled task that runs the app on every logon:
 
 ```powershell
-$repo = "authoritydmc/r"
-$workdir = "$env:USERPROFILE\url-shortener"
+$repo = "authoritydmc/redirector"
+$workdir = "$env:USERPROFILE\redirector"
 $py = "python"
 
 if (-not (Test-Path $workdir)) { git clone https://github.com/$repo.git $workdir }
