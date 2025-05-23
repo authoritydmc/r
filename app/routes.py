@@ -214,11 +214,42 @@ def handle_redirect(subpath):
         if get_auto_redirect_delay() > 0:
             return render_template_string('<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>', url=row[0], delay=get_auto_redirect_delay())
         return redirect(row[0], code=302)
+    # Check if subpath matches a dynamic pattern but is missing the variable
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
     for pattern, target in cursor.fetchall():
+        # Find the variable name in curly braces
+        import re as _re
+        match = _re.search(r'\{(\w+)\}', target)
+        var_name = match.group(1) if match else 'name'
+        if subpath == pattern:
+            # User accessed /meetwith instead of /meetwith/raj
+            example_var = 'yourvalue'
+            example_url = f'/{pattern}/' + example_var
+            example_target = target.replace(f'{{{var_name}}}', example_var)
+            return render_template_string('''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Shortcut Usage</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow p-8 w-full max-w-lg">
+    <div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded mb-4">
+      <b>This is a dynamic shortcut:</b> <span class="font-mono">/{{ pattern }}/&#123;{{ var_name }}&#125;</span><br>
+      To use it, add a value after <span class="font-mono">/{{ pattern }}/</span>.<br>
+      <div class="mt-2">Example: <span class="font-mono">/{{ pattern }}/yourvalue</span> will redirect to <span class="font-mono">{{ example_target }}</span> (where <span class="font-mono">&#123;{{ var_name }}&#125;</span> is replaced by <span class="font-mono">yourvalue</span>).</div>
+    </div>
+    <div class="mt-6 text-center">
+      <a href="/" class="text-blue-600 hover:underline">Back to Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>''', pattern=pattern, var_name=var_name, example_target=example_target)
         if subpath.startswith(pattern + "/"):
             variable = subpath[len(pattern)+1:]
-            dest_url = re.sub(r"\{\w+\}", variable, target)
+            dest_url = _re.sub(r"\{\w+\}", variable, target)
             if get_auto_redirect_delay() > 0:
                 return render_template_string('<html><head><meta http-equiv="refresh" content="{{ delay }};url={{ url }}"></head><body>Redirecting to <a href="{{ url }}">{{ url }}</a> in {{ delay }} seconds...</body></html>', url=dest_url, delay=get_auto_redirect_delay())
             return redirect(dest_url, code=302)
