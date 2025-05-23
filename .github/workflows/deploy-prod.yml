@@ -50,7 +50,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:stable
-            ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod
-            ${{ secrets.DOCKER_HUB_USERNAME }}/$IMAGE_NAME:prod.${{ env.COMMIT_SHA }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:stable
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:prod
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:prod.${{ env.COMMIT_SHA }}
