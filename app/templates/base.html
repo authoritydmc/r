@@ -10,7 +10,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   {% block head %}{% endblock %}
 </head>
+
+<!-- Full height + column layout -->
 <body class="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen flex flex-col">
+
+  <!-- Header -->
   <header class="bg-white shadow sticky top-0 z-10">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -21,18 +25,29 @@
         <a href="/" class="hover:underline">Dashboard</a>
         <a href="/version" class="hover:underline">Version</a>
         <a href="/tutorial" class="hover:underline">Dynamic URL Tutorial</a>
-        <a href="https://github.com/authoritydmc/r" target="_blank" class="hover:underline flex items-center gap-1"><i class="fab fa-github"></i> GitHub</a>
+        <a href="https://github.com/authoritydmc/redirector" target="_blank" class="hover:underline flex items-center gap-1">
+          <i class="fab fa-github"></i> GitHub
+        </a>
       </nav>
     </div>
   </header>
-  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-    {% block content %}{% endblock %}
-  </main>
-  <footer class="bg-white border-t py-6 mt-10">
+
+  <!-- Main wrapper to push footer down -->
+  <div class="flex flex-col flex-grow max-w-5xl mx-auto w-full px-4 py-8 min-h-[calc(100vh-64px-72px)]">
+    <!-- Main content block -->
+    <main class="flex-grow">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t py-6 w-full">
     <div class="max-w-5xl mx-auto px-4 text-center text-gray-500">
-      &copy; {{ now().year }} URL Shortener/Redirector &mdash; <a href="https://github.com/authoritydmc/r" class="text-blue-600 hover:underline">GitHub</a>
+      &copy; {{ now().year }} URL Shortener/Redirector &mdash;
+      <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 hover:underline">GitHub</a>
     </div>
   </footer>
+
   {% block scripts %}{% endblock %}
 </body>
 </html>
