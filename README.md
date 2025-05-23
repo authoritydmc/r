@@ -25,12 +25,19 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 ### 1. Docker (Recommended)
 
 ```sh
-docker run -d -p 80:80 -v ./data:/app/data --name redirect rajlabs/redirect
+docker run -d -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect
 ```
 
 - Visit: [http://localhost:80](http://localhost:80)
-- Data (config, DB) is stored in `./data` on your host.
-- Admin password is auto-generated on first run (see container logs).
+- Data (config, DB) is stored in the Docker volume or bind mount you specify with `-v`.
+- With `-v redirect_data:/app/data`, Docker manages the volume named `redirect_data`:
+  - On Linux/macOS: `/var/lib/docker/volumes/redirect_data/_data`
+  - On Windows (Docker Desktop): `C:\ProgramData\Docker\volumes\redirect_data\_data`
+- You can also use a host folder instead of a named volume:
+  - Example: `-v $(pwd)/data:/app/data` (Linux/macOS)
+  - Example: `-v ${PWD}/data:/app/data` (PowerShell/Windows)
+- The app's data directory inside the container is always `/app/data`.
+- Admin password is auto-generated on first run (see container logs or the config file in the data folder).
 
 #### Updating
 
