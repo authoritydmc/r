@@ -45,7 +45,7 @@ function startCountdown(seconds, redirectUrl) {
       clearInterval(countdownInterval);
       window.location.href = redirectUrl;
     }
-  }, 1000);
+  }, 100);
 }
 const evtSource = new EventSource(`/stream/check-upstreams/${encodeURIComponent(pattern)}`);
 evtSource.onmessage = function(event) {

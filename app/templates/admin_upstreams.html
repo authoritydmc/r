@@ -4,29 +4,29 @@
 <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
   <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-200">Manage Upstreams</h2>
   {% if error %}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">{{ error }}</div>
+    <div class="bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-600 dark:text-red-200 px-4 py-2 rounded mb-4">{{ error }}</div>
   {% endif %}
   <form method="post">
     <input type="hidden" name="form_action" value="save">
     <table class="w-full mb-4">
       <thead>
         <tr class="text-left border-b">
-          <th class="py-2">Name</th>
-          <th class="py-2">Base URL</th>
-          <th class="py-2">Fail URL</th>
-          <th class="py-2">Fail Status</th>
-          <th class="py-2">Actions</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Name</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Base URL</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Fail URL</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Fail Status</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Actions</th>
         </tr>
       </thead>
       <tbody id="upstream-table-body">
         {% for up in upstreams %}
         <tr>
-          <td><input type="text" name="name_{{ loop.index0 }}" value="{{ up.name }}" class="border rounded px-2 py-1 w-28"></td>
-          <td><input type="text" name="base_url_{{ loop.index0 }}" value="{{ up.base_url }}" class="border rounded px-2 py-1 w-40"></td>
-          <td><input type="text" name="fail_url_{{ loop.index0 }}" value="{{ up.fail_url }}" class="border rounded px-2 py-1 w-40"></td>
-          <td><input type="number" name="fail_status_code_{{ loop.index0 }}" value="{{ up.fail_status_code }}" class="border rounded px-2 py-1 w-20"></td>
+          <td><input type="text" name="name_{{ loop.index0 }}" value="{{ up.name }}" class="border rounded px-2 py-1 w-28 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
+          <td><input type="text" name="base_url_{{ loop.index0 }}" value="{{ up.base_url }}" class="border rounded px-2 py-1 w-40 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
+          <td><input type="text" name="fail_url_{{ loop.index0 }}" value="{{ up.fail_url }}" class="border rounded px-2 py-1 w-40 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
+          <td><input type="number" name="fail_status_code_{{ loop.index0 }}" value="{{ up.fail_status_code }}" class="border rounded px-2 py-1 w-20 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
           <td>
-            <button type="submit" name="delete" value="{{ loop.index0 }}" class="text-red-600 hover:underline">Delete</button>
+            <button type="submit" name="delete" value="{{ loop.index0 }}" class="text-red-600 dark:text-red-400 hover:underline">Delete</button>
           </td>
         </tr>
         {% endfor %}
@@ -42,10 +42,10 @@ function addUpstreamRow() {
   const idx = tbody.children.length;
   const row = document.createElement('tr');
   row.innerHTML = `
-    <td><input type="text" name="name_${idx}" class="border rounded px-2 py-1 w-28"></td>
-    <td><input type="text" name="base_url_${idx}" class="border rounded px-2 py-1 w-40"></td>
-    <td><input type="text" name="fail_url_${idx}" class="border rounded px-2 py-1 w-40"></td>
-    <td><input type="number" name="fail_status_code_${idx}" class="border rounded px-2 py-1 w-20"></td>
+    <td><input type="text" name="name_${idx}" class="border rounded px-2 py-1 w-28 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
+    <td><input type="text" name="base_url_${idx}" class="border rounded px-2 py-1 w-40 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
+    <td><input type="text" name="fail_url_${idx}" class="border rounded px-2 py-1 w-40 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
+    <td><input type="number" name="fail_status_code_${idx}" class="border rounded px-2 py-1 w-20 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"></td>
     <td></td>
   `;
   tbody.appendChild(row);
