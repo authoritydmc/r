@@ -348,3 +348,54 @@ project-root/
   <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo">
   ```
 - Place all images and static files in `app/static/assets/` for Flask to serve them correctly.
+
+---
+
+## Upstream Shortcut Existence Checking & Upstream Config
+
+This app supports checking for existing shortcuts in external upstreams (like Bitly, go/, etc.) before allowing creation or editing of a shortcut. This helps prevent conflicts and ensures you don't create a shortcut that already exists in your organization's or a public shortener's namespace.
+
+### How Upstream Checking Works
+- When you attempt to create or edit a shortcut, the app checks all configured upstreams to see if the shortcut already exists.
+- If any upstream returns a result (i.e., the shortcut exists), you are shown a log of the check and are not allowed to create or edit the shortcut.
+- If all upstreams fail (i.e., the shortcut does not exist in any upstream), you are allowed to proceed.
+- The check is performed in real time, and a log of each upstream's response (including status code and verdict) is shown in the UI.
+- If a shortcut is found in an upstream, you are automatically redirected to that upstream's URL after a short delay.
+
+### Upstream Configuration
+- Upstreams are configured in the `data/redirect.json.config` file under the `upstreams` key.
+- Each upstream requires:
+  - `name`: A label for the upstream (e.g., "bitly", "go")
+  - `base_url`: The base URL to check (e.g., `https://bit.ly/`)
+  - `fail_url`: The URL that is returned when a shortcut does not exist (used to detect non-existence)
+  - `fail_status_code`: The HTTP status code that indicates a failed lookup (e.g., `404`)
+- Example config:
+
+```json
+"upstreams": [
+  {
+    "name": "bitly",
+    "base_url": "https://bit.ly/",
+    "fail_url": "https://bitly.com/404",
+    "fail_status_code": 404
+  },
+  {
+    "name": "go",
+    "base_url": "http://go/",
+    "fail_url": "http://go/404",
+    "fail_status_code": 404
+  }
+]
+```
+
+### Managing Upstreams in the UI
+- Go to **Upstream Config** in the navigation bar (or visit `/admin/upstreams` after logging in as admin).
+- You can add, edit, or delete upstreams using a simple table form.
+- Changes are saved to the config file and take effect immediately.
+
+### Real-Time Upstream Check UI
+- When you try to create or edit a shortcut, you are first shown a real-time log of upstream checks.
+- Each upstream is checked in sequence, and the log updates as results come in.
+- If a shortcut is found in any upstream, you are redirected to that URL; otherwise, you are allowed to proceed with creation.
+
+---

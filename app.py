@@ -10,6 +10,7 @@ except Exception as e:
     traceback.print_exc()
     raise
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
