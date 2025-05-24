@@ -1,6 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
-import sqlite3, re
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated, init_upstream_check_log, log_upstream_check, get_upstream_logs
+from flask import Blueprint, render_template, request, redirect, stream_with_context, url_for, session
+from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, init_upstream_check_log, log_upstream_check, get_upstream_logs
 from functools import wraps
 from datetime import datetime
 import json
@@ -8,7 +7,7 @@ import os
 import requests
 from flask import Response
 import time
-from flask import send_file, make_response
+from flask import send_file
 import io
 from flask import session as flask_session
 
