@@ -21,7 +21,6 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 - [Project Structure](#project-structure)
 - [Upstream Shortcut Checking](#upstream-shortcut-existence-checking--upstream-config)
 - [Company-Wide Installation & Team Usage](#company-wide-installation--team-usage)
-- [Screenshots](#screenshots)
 - [Version & Credits](#version--credits)
 - [License](#license)
 
@@ -387,21 +386,6 @@ To make `r/` shortcuts available to your entire team or company:
    - Tell your team to use `http://r/shortcut` for all shared links.
 
 This setup allows everyone in your organization to use simple, memorable shortcuts like `r/google` or `r/docs` from any device on the network.
-
----
-
-## Screenshots
-
-Below are screenshots of the main features and UI, as found in `app/static/assets/`:
-
-| Dashboard | Version Page | Edit Shortcut | Create Shortcut | Dynamic Shortcut Usage | Redirect Page | Success Page |
-|-----------|-------------|--------------|----------------|-----------------------|--------------|--------------|
-| ![Dashboard](app/static/assets/dashboard.png) | ![Version](app/static/assets/version.png) | ![Edit](app/static/assets/edit-shortcut.png) | ![Create](app/static/assets/create-shortcut.png) | ![Dynamic Usage](app/static/assets/tutorial.png) | ![Redirect](app/static/assets/redirect-page.png) | ![Success](app/static/assets/success.png) |
-| ![Dynamic Shortcut Example](app/static/assets/dynamic-shortcut-tutorial.png) |
-|:--:|
-| *Dynamic shortcut example: Use variables in your URLs, e.g. `/jsonpost/10` → `https://jsonplaceholder.typicode.com/posts/10`* |
-
-Each screenshot demonstrates the modern, dark-mode friendly UI and the main flows of the app.
 
 ---
 
