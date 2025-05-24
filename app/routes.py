@@ -206,7 +206,8 @@ def handle_redirect(subpath):
             if get_auto_redirect_delay() > 0:
                 return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow)
             return redirect(dest_url, code=302)
-    return redirect(url_for('main.check_upstreams_ui', pattern=subpath), code=302)
+    first_segment = subpath.split('/')[0]
+    return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
 
 # GET: Tutorial/help page. Triggered when user visits /tutorial.
 @bp.route('/tutorial', methods=['GET'])
@@ -259,6 +260,7 @@ def admin_upstreams():
 def check_upstreams_ui(pattern):
     from .utils import get_auto_redirect_delay
     delay = get_auto_redirect_delay()
+    print(f"Check upstreams UI for pattern: {pattern}, delay: {delay}")
     return render_template('check_upstreams_stream.html', pattern=pattern, delay=delay)
 
 @bp.route('/stream/check-upstreams/<pattern>')
