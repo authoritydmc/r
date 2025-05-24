@@ -1,42 +1,71 @@
 {% extends "base.html" %}
 {% block title %}Upstream Logs - URL Shortener/Redirector{% endblock %}
 {% block content %}
-<div class="max-w-3xl mx-auto my-10 bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-  <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300 flex items-center gap-2">
+<div class="max-w-5xl mx-auto my-10 bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+  <h2 class="text-2xl font-bold mb-6 text-blue-700 dark:text-blue-300 flex items-center gap-2">
     <i class="fa-solid fa-list-alt"></i> Upstream Logs
   </h2>
   {% if logs and logs|length > 0 %}
     {% if logs[0] is mapping %}
-      <div class="mb-4 flex items-center gap-2">
-        <input type="text" id="log-search" placeholder="Search logs..." class="border border-gray-300 dark:border-gray-700 rounded px-3 py-2 w-full bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-        <i class="fa fa-search text-gray-400 dark:text-gray-300"></i>
+      <div class="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input type="text" id="log-search" placeholder="Search logs..." class="border border-gray-300 dark:border-gray-700 rounded px-3 py-2 w-full sm:w-64 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <i class="fa fa-search text-gray-400 dark:text-gray-300"></i>
+        </div>
+        <form method="post" action="/admin/clear-upstream-logs" onsubmit="return confirm('Are you sure you want to clear all upstream logs?');">
+          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center gap-2"><i class="fa fa-trash"></i> Clear All Logs</button>
+        </form>
       </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
+      <div class="overflow-x-auto w-full">
+        <table class="min-w-full w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
           <thead>
             <tr class="bg-blue-50 dark:bg-gray-800">
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Time</th>
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Shortcut</th>
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Upstream</th>
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Result</th>
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Status Code</th>
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Actual URL</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Time</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Shortcut</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Upstream</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Result</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Status</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Actual URL</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Details</th>
             </tr>
           </thead>
           <tbody id="logs-table-body">
             {% for log in logs %}
             {% set is_success = (log.result or '').lower() == 'success' %}
-            {% set is_fail = (log.result or '').lower() in ['fail', 'exception'] %}
+            {% set is_fail = (log.result or '').lower() == 'fail' %}
+            {% set is_exception = (log.result or '').lower() == 'exception' %}
             {% set details = log.details or '' %}
             {% set status_code = details.split('status_code=')[1].split(',')[0].strip() if 'status_code=' in details else '-' %}
             {% set actual_url = details.split('actual_url=')[1].split(',')[0].strip() if 'actual_url=' in details else '-' %}
-            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 {% if is_success %}bg-green-50 dark:bg-green-900/40{% elif is_fail %}bg-red-50 dark:bg-red-900/40{% endif %}">
-              <td class="px-3 py-2 font-mono text-xs text-gray-800 dark:text-gray-100">{{ log.time or log.timestamp or '-' }}</td>
-              <td class="px-3 py-2 font-mono text-gray-800 dark:text-gray-100">{{ log.shortcut or '-' }}</td>
-              <td class="px-3 py-2 text-gray-800 dark:text-gray-100">{{ log.upstream or '-' }}</td>
-              <td class="px-3 py-2 text-gray-800 dark:text-gray-100">{{ log.result or '-' }}</td>
-              <td class="px-3 py-2 text-gray-800 dark:text-gray-100">{{ status_code }}</td>
-              <td class="px-3 py-2 text-xs break-all text-blue-700 dark:text-blue-300 underline"><a href="{{ actual_url }}" target="_blank">{{ actual_url }}</a></td>
+            {% set exception_msg = details if is_exception else '' %}
+            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800">
+              <td class="px-4 py-2 font-mono text-xs text-gray-800 dark:text-gray-100">{{ log.time or log.timestamp or '-' }}</td>
+              <td class="px-4 py-2 font-mono text-gray-800 dark:text-gray-100">{{ log.shortcut or '-' }}</td>
+              <td class="px-4 py-2 text-gray-800 dark:text-gray-100">{{ log.upstream or '-' }}</td>
+              <td class="px-4 py-2">
+                {% if is_success %}
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold" title="Success"><i class="fa-solid fa-circle-check"></i> Success</span>
+                {% elif is_fail %}
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs font-semibold" title="Fail"><i class="fa-solid fa-circle-xmark"></i> Fail</span>
+                {% elif is_exception %}
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs font-semibold" title="Exception"><i class="fa-solid fa-triangle-exclamation"></i> Exception</span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-semibold"><i class="fa-solid fa-question"></i> Unknown</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-2 text-xs text-gray-800 dark:text-gray-100">{{ status_code }}</td>
+              <td class="px-4 py-2 text-xs break-all text-blue-700 dark:text-blue-300 underline">
+                {% if actual_url and actual_url != '-' %}
+                  <a href="{{ actual_url }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> {{ actual_url }}</a>
+                {% else %}-{% endif %}
+              </td>
+              <td class="px-4 py-2 text-xs break-all text-gray-800 dark:text-gray-100">
+                {% if is_exception %}
+                  <span class="inline-flex items-center gap-1 text-red-700 dark:text-red-300 font-mono"><i class="fa-solid fa-bug"></i> {{ exception_msg }}</span>
+                {% else %}
+                  {{ details }}
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
