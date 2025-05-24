@@ -72,11 +72,21 @@
   <!-- Footer -->
   <footer class="bg-white dark:bg-gray-900 border-t py-6 mt-auto w-full">
     <div class="max-w-5xl mx-auto px-4 flex flex-row items-center justify-between text-gray-500 dark:text-gray-400">
-      <div>
-        &copy; {{ now().year }} URL Shortener/Redirector &mdash;
-        <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a>
+      <!-- Left: Logo + Made with love by rajlabs.in -->
+      <div class="flex items-center gap-2">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" class="w-6 h-6 rounded shadow-sm">
+        <span>Made with</span>
+        <span class="animate-pulse text-red-500">&#10084;&#65039;</span>
+        <span>by</span>
+        <a href="https://rajlabs.in" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">rajlabs.in</a>
       </div>
-      <div class="text-xs text-right">
+      <!-- Center: Copyright + GitHub -->
+      <div class="text-center flex flex-col items-center">
+        <span>&copy; {{ now().year }} URL Shortener/Redirector</span>
+  
+      </div>
+      <!-- Right: Version -->
+      <div class="text-xs text-right font-mono text-gray-400 dark:text-gray-500">
         Version: {{ version if version is defined else 'unknown' }}
       </div>
     </div>
