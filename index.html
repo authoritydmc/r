@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen">
-  <header class="bg-white shadow sticky top-0 z-10">
+  <header class="bg-white shadow sticky top-0 z-10 backdrop-blur-md bg-opacity-70 border-b border-blue-100" style="backdrop-filter: blur(12px);">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <img src="app/static/assets/logo.png" alt="Logo" class="w-10 h-10 rounded shadow">
@@ -84,14 +84,23 @@
       <h2 class="text-3xl font-bold text-blue-700 mb-4">Quick Start</h2>
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-brands fa-docker mr-2"></i> Docker (Recommended)</h3>
-        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
+        <div class="relative group mb-2">
+          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="docker-cmd-1">docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
+          <button onclick="copyCmd('docker-cmd-1')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
         <p class="text-gray-700 mt-2">Or use a bind mount for easy access to data:</p>
-        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
+        <div class="relative group">
+          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="docker-cmd-2">docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
+          <button onclick="copyCmd('docker-cmd-2')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
       </div>
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-terminal mr-2"></i> Manual (Python)</h3>
-        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>pip install -r requirements.txt
+        <div class="relative group">
+          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="python-cmd">pip install -r requirements.txt
 python app.py</code></pre>
+          <button onclick="copyCmd('python-cmd')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
       </div>
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-wrench mr-2"></i> Automated Hostname Setup</h3>
@@ -124,14 +133,77 @@ python app.py</code></pre>
         </ul>
       </div>
     </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">Upstream Shortcut Checking & Integration</h2>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-arrow-up-right-dots mr-2"></i> Prevent Shortcut Conflicts with Upstream Checks</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Before creating or editing a shortcut, the app checks all configured <b>upstreams</b> (e.g., Bitly, go/, your legacy shortener) to see if the shortcut already exists elsewhere.</li>
+          <li>If a shortcut is found in any upstream, you see a real-time log and are prevented from creating a conflicting shortcut.</li>
+          <li>If no upstreams have the shortcut, you can safely create it.</li>
+          <li>All checks and results are shown in a live UI log for transparency.</li>
+        </ul>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-plug mr-2"></i> Integrate with Existing Redirect Solutions</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Add any existing redirector (Bitly, go/, custom, etc.) as an <b>upstream</b> in the config or UI.</li>
+          <li>Specify the <code>base_url</code>, <code>fail_url</code> (the URL returned for non-existent shortcuts), and <code>fail_status_code</code> (e.g., 404).</li>
+          <li>Example config for an upstream:</li>
+        </ul>
+        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>{
+  "name": "bitly",
+  "base_url": "https://bit.ly/",
+  "fail_url": "https://bitly.com/404",
+  "fail_status_code": 404
+}</code></pre>
+        <p class="text-gray-700 mt-2">You can manage upstreams in the UI at <b>Upstream Config</b> or by editing <code>data/redirect.json.config</code> directly.</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-link mr-2"></i> How Existing Redirectors Can Integrate</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Any redirector that returns a unique URL or status code for non-existent shortcuts can be used as an upstream.</li>
+          <li>Supports both public and private/internal shorteners.</li>
+          <li>Allows seamless migration and coexistence with legacy solutions.</li>
+        </ul>
+      </div>
+    </section>
     <section class="mb-12 text-center">
       <a href="https://github.com/authoritydmc/r" target="_blank" class="inline-block bg-blue-700 text-white px-8 py-4 rounded-lg shadow-lg text-xl font-bold hover:bg-blue-800 transition"><i class="fab fa-github mr-2"></i> View on GitHub</a>
     </section>
   </main>
   <footer class="bg-white border-t py-6 mt-10">
-    <div class="max-w-5xl mx-auto px-4 text-center text-gray-500">
-      &copy; 2025 URL Shortener/Redirector &mdash; <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 hover:underline">GitHub</a>
+    <div class="max-w-5xl mx-auto px-4 flex flex-row items-center justify-between text-gray-500">
+      <div class="flex items-center gap-2">
+        <img src="app/static/assets/logo.png" alt="Logo" class="w-6 h-6 rounded shadow-sm">
+        <span>Made with</span>
+        <span class="animate-pulse text-red-500">&#10084;&#65039;</span>
+        <span>by</span>
+        <a href="https://rajlabs.in" target="_blank" class="text-blue-600 hover:underline font-semibold">rajlabs.in</a>
+      </div>
+      <div class="text-center flex flex-col items-center">
+        <span>&copy; 2025 URL Shortener/Redirector</span>
+        <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 hover:underline flex items-center gap-1 mt-1" target="_blank">
+          <i class="fab fa-github"></i> GitHub
+        </a>
+      </div>
+      <div class="text-xs text-right font-mono text-gray-400">
+        <!-- Version info can be added here if needed -->
+      </div>
     </div>
   </footer>
+  <script>
+    function copyCmd(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const text = el.innerText || el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target.closest('button');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      });
+    }
+  </script>
 </body>
 </html>
