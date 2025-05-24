@@ -93,6 +93,7 @@
       const btn = event.target.closest('button');
       const orig = btn.innerHTML;
       btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+      // This timeout is for UI feedback only, not related to redirect delay config
       setTimeout(() => { btn.innerHTML = orig; }, 1200);
     });
   }

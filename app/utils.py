@@ -304,15 +304,22 @@ def log_upstream_check(pattern, upstream_name, check_url, result, detail, tried_
     db.commit()
 
 def get_upstream_logs():
-    # Example: logs stored in data/upstream_logs.jsonl (one JSON per line)
-    import os, json
-    log_path = os.path.join(os.path.dirname(__file__), '../data/upstream_logs.jsonl')
+    db = get_db()
+    cursor = db.execute('''
+        SELECT pattern, upstream_name, check_url, result, detail, tried_at, count
+        FROM upstream_check_log
+        ORDER BY tried_at DESC, id DESC
+        LIMIT 200
+    ''')
     logs = []
-    if os.path.exists(log_path):
-        with open(log_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                try:
-                    logs.append(json.loads(line.strip()))
-                except Exception:
-                    continue
-    return logs[::-1]  # Most recent first
+    for row in cursor.fetchall():
+        logs.append({
+            'shortcut': row[0],
+            'upstream': row[1],
+            'check_url': row[2],
+            'result': row[3],
+            'details': row[4],
+            'time': row[5],
+            'count': row[6],
+        })
+    return logs

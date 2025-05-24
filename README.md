@@ -4,7 +4,28 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ---
 
+## Table of Contents
+- [Features](#features)
+- [Quick Start](#quick-start)
+  - [Docker (Recommended)](#docker-recommended)
+  - [Manual (Python)](#manual-python)
+- [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
+  - [Quick Hostname Setup (Recommended)](#quick-hostname-setup-recommended)
+  - [Manual Hostname Setup](#manual-hostname-setup)
+- [Configuration](#configuration)
+- [Data Persistence](#data-persistence)
+- [Reverse Proxy Example](#reverse-proxy-example-nginx)
+- [Troubleshooting](#troubleshooting)
+- [Production Deployment](#production-deployment)
+- [Development & Testing](#development--testing)
+- [Project Structure](#project-structure)
+- [Upstream Shortcut Checking](#upstream-shortcut-existence-checking--upstream-config)
+- [Company-Wide Installation & Team Usage](#company-wide-installation--team-usage)
+- [Screenshots](#screenshots)
+- [Version & Credits](#version--credits)
+- [License](#license)
 
+---
 
 ## Features
 
@@ -92,12 +113,62 @@ python app.py
 
 ---
 
+## Hostname Setup for r/ Shortcuts
+
+### Quick Hostname Setup (Recommended)
+To use URLs like `http://r/google` on your local machine, add `r` to your hosts file. Use the provided script for your OS (no need for full autostart or Docker restart):
+
+- **Windows:**
+  - Run in PowerShell as Administrator:
+    ```powershell
+    ./scripts/add-r-host-windows.ps1
+    ```
+- **macOS:**
+  - Run in Terminal:
+    ```sh
+    bash scripts/add-r-host-macos.sh
+    ```
+- **Linux:**
+  - Run in Terminal:
+    ```sh
+    bash scripts/add-r-host-linux.sh
+    ```
+
+Each script will attempt to add `127.0.0.1   r` to your hosts file if you have the necessary privileges, or print instructions if not.
+
+### Manual Hostname Setup
+If you prefer to edit your hosts file manually:
+
+- **Windows:**
+  1. Open Notepad as Administrator.
+  2. Open the file: `C:\Windows\System32\drivers\etc\hosts`
+  3. Add this line at the end:
+     ```
+     127.0.0.1   r
+     ```
+  4. Save the file. Now you can use `http://r/shortcut` in your browser.
+
+- **Linux/macOS:**
+  1. Edit `/etc/hosts` with sudo:
+     ```sh
+     sudo nano /etc/hosts
+     ```
+  2. Add this line at the end:
+     ```
+     127.0.0.1   r
+     ```
+  3. Save and close. Now you can use `http://r/shortcut` in your browser.
+
+> **Note:** On first run, if you have just set up the `r` hostname (via hosts file or DNS), make sure to access `http://r/` (not just `r/`) in your browser at least once. This ensures your browser recognizes `r` as a valid domain and flushes any old cache or search behavior.
+
+---
+
 ## Configuration
 
 - All config is in `data/redirect.json.config` (auto-created if missing):
   - `port`: Port to run the app (default: 80)
   - `admin_password`: Admin password (random on first run)
-  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
+  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0). **All redirect delays and countdowns in the app (including UI and backend logic) use this value for consistency.**
   - `delete_requires_password`: Require password to delete shortcuts (default: true)
 
 - Change config by editing the file or using the UI (where available).
@@ -215,133 +286,6 @@ This will run all unit and integration tests, including those for the version en
 
 ---
 
-## Version & Credits
-
-- See `/version` in the app for live version, commit info, and accessible URLs.
-- Created by [@authoritydmc](https://github.com/authoritydmc) and contributors.
-
----
-
-## License
-
-MIT
-
----
-
-## Screenshots
-
-Below are screenshots of the main features and UI, as found in `app/static/assets/`:
-
-| Dashboard | Version Page | Edit Shortcut | Create Shortcut | Dynamic Shortcut Usage | Redirect Page | Success Page |
-|-----------|-------------|--------------|----------------|-----------------------|--------------|--------------|
-| ![Dashboard](app/static/assets/dashboard.png) | ![Version](app/static/assets/version.png) | ![Edit](app/static/assets/edit-shortcut.png) | ![Create](app/static/assets/create-shortcut.png) | ![Dynamic Usage](app/static/assets/tutorial.png) | ![Redirect](app/static/assets/redirect-page.png) | ![Success](app/static/assets/success.png) |
-
-Each screenshot demonstrates the modern, dark-mode friendly UI and the main flows of the app.
-
----
-
-## Custom Hostname Setup (Local `r/` Shortcuts)
-
-To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1` in your hosts file:
-
-**Windows:**
-1. Open Notepad as Administrator.
-2. Open the file: `C:\Windows\System32\drivers\etc\hosts`
-3. Add this line at the end:
-   ```
-   127.0.0.1   r
-   ```
-4. Save the file. Now you can use `http://r/shortcut` in your browser.
-
-**Linux/macOS:**
-1. Edit `/etc/hosts` with sudo:
-   ```sh
-   sudo nano /etc/hosts
-   ```
-2. Add this line at the end:
-   ```
-   127.0.0.1   r
-   ```
-3. Save and close. Now you can use `http://r/shortcut` in your browser.
-
-> **Note:** On first run, if you have just set up the `r` hostname (via hosts file or DNS), make sure to access `http://r/` (not just `r/`) in your browser at least once. This ensures your browser recognizes `r` as a valid domain and flushes any old cache or search behavior. This step is only needed if you are using the custom `r/` shortcut setup described above.
-
----
-
-## Automated Hostname Setup (r/ shortcut)
-
-To automatically add the `r` hostname for local shortcuts, use the provided script for your OS:
-
-- **Windows:**
-  - Run in PowerShell as Administrator:
-    ```powershell
-    ./autostart-windows.ps1
-    ```
-    This will set up the app and call `scripts/add-r-host-windows.ps1` to add `127.0.0.1   r` to your hosts file (if you have admin rights), or print instructions if not.
-- **macOS:**
-  - Run in Terminal:
-    ```sh
-    bash autostart-macos.sh
-    ```
-    This will set up the app and call `scripts/add-r-host-macos.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
-- **Linux:**
-  - Run in Terminal:
-    ```sh
-    bash autostart-linux.sh
-    ```
-    This will set up the app and call `scripts/add-r-host-linux.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
-
-You can also run the scripts in `scripts/` directly to only add the host entry.
-
----
-
-## Add `r` Hostname Only (Shortcut Setup)
-
-If you only want to add the `r` hostname for local shortcuts (without running the full autostart setup), use the provided script for your OS:
-
-- **Windows:**
-  - Run in PowerShell as Administrator:
-    ```powershell
-    ./scripts/add-r-host-windows.ps1
-    ```
-- **macOS:**
-  - Run in Terminal:
-    ```sh
-    bash scripts/add-r-host-macos.sh
-    ```
-- **Linux:**
-  - Run in Terminal:
-    ```sh
-    bash scripts/add-r-host-linux.sh
-    ```
-
-Each script will attempt to add `127.0.0.1   r` to your hosts file if you have the necessary privileges, or print instructions if not.
-
----
-
-## Company-Wide Installation & Team Usage
-
-To make `r/` shortcuts available to your entire team or company:
-
-1. **Deploy the app on a central server** (on-prem or cloud VM/container).
-   - Use a static IP or DNS name (e.g., `r.company.com`).
-   - Run behind a reverse proxy (see Nginx example above) for clean URLs.
-2. **Configure DNS:**
-   - Set up an internal DNS record so `r` (or `r.company.com`) points to the server's IP.
-   - Your IT team can add a DNS A record for `r` in your internal DNS system.
-   - All users on the network will be able to use `http://r/shortcut` or `http://r.company.com/shortcut`.
-3. **(Optional) Use hosts file for small teams:**
-   - Each user can add the server's IP and `r` to their hosts file as above.
-4. **Secure the admin interface:**
-   - Use a strong admin password (auto-generated by default).
-   - Optionally, restrict admin access by IP or VPN.
-5. **Share the base URL:**
-   - Tell your team to use `http://r/shortcut` for all shared links.
-
-This setup allows everyone in your organization to use simple, memorable shortcuts like `r/google` or `r/docs` from any device on the network.
-
----
-
 ## Project Structure
 
 Your Flask app expects static files (images, CSS, JS, etc.) to be in the `app/static/` directory. For example:
@@ -423,7 +367,110 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 
 ---
 
-#### Accessing Config Data in a Docker Named Volume (macOS, Windows, Linux)
+## Company-Wide Installation & Team Usage
+
+To make `r/` shortcuts available to your entire team or company:
+
+1. **Deploy the app on a central server** (on-prem or cloud VM/container).
+   - Use a static IP or DNS name (e.g., `r.company.com`).
+   - Run behind a reverse proxy (see Nginx example above) for clean URLs.
+2. **Configure DNS:**
+   - Set up an internal DNS record so `r` (or `r.company.com`) points to the server's IP.
+   - Your IT team can add a DNS A record for `r` in your internal DNS system.
+   - All users on the network will be able to use `http://r/shortcut` or `http://r.company.com/shortcut`.
+3. **(Optional) Use hosts file for small teams:**
+   - Each user can add the server's IP and `r` to their hosts file as above.
+4. **Secure the admin interface:**
+   - Use a strong admin password (auto-generated by default).
+   - Optionally, restrict admin access by IP or VPN.
+5. **Share the base URL:**
+   - Tell your team to use `http://r/shortcut` for all shared links.
+
+This setup allows everyone in your organization to use simple, memorable shortcuts like `r/google` or `r/docs` from any device on the network.
+
+---
+
+## Screenshots
+
+Below are screenshots of the main features and UI, as found in `app/static/assets/`:
+
+| Dashboard | Version Page | Edit Shortcut | Create Shortcut | Dynamic Shortcut Usage | Redirect Page | Success Page |
+|-----------|-------------|--------------|----------------|-----------------------|--------------|--------------|
+| ![Dashboard](app/static/assets/dashboard.png) | ![Version](app/static/assets/version.png) | ![Edit](app/static/assets/edit-shortcut.png) | ![Create](app/static/assets/create-shortcut.png) | ![Dynamic Usage](app/static/assets/tutorial.png) | ![Redirect](app/static/assets/redirect-page.png) | ![Success](app/static/assets/success.png) |
+
+Each screenshot demonstrates the modern, dark-mode friendly UI and the main flows of the app.
+
+---
+
+## Version & Credits
+
+- See `/version` in the app for live version, commit info, and accessible URLs.
+- Created by [@authoritydmc](https://github.com/authoritydmc) and contributors.
+
+---
+
+## License
+
+MIT
+
+---
+
+## Automated Hostname Setup (r/ shortcut)
+
+To automatically add the `r` hostname for local shortcuts, use the provided script for your OS:
+
+- **Windows:**
+  - Run in PowerShell as Administrator:
+    ```powershell
+    ./autostart-windows.ps1
+    ```
+    This will set up the app and call `scripts/add-r-host-windows.ps1` to add `127.0.0.1   r` to your hosts file (if you have admin rights), or print instructions if not.
+- **macOS:**
+  - Run in Terminal:
+    ```sh
+    bash autostart-macos.sh
+    ```
+    This will set up the app and call `scripts/add-r-host-macos.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
+- **Linux:**
+  - Run in Terminal:
+    ```sh
+    bash autostart-linux.sh
+    ```
+    This will set up the app and call `scripts/add-r-host-linux.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
+
+You can also run the scripts in `scripts/` directly to only add the host entry.
+
+---
+
+## Custom Hostname Setup (Local `r/` Shortcuts)
+
+To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1` in your hosts file:
+
+**Windows:**
+1. Open Notepad as Administrator.
+2. Open the file: `C:\Windows\System32\drivers\etc\hosts`
+3. Add this line at the end:
+   ```
+   127.0.0.1   r
+   ```
+4. Save the file. Now you can use `http://r/shortcut` in your browser.
+
+**Linux/macOS:**
+1. Edit `/etc/hosts` with sudo:
+   ```sh
+   sudo nano /etc/hosts
+   ```
+2. Add this line at the end:
+   ```
+   127.0.0.1   r
+   ```
+3. Save and close. Now you can use `http://r/shortcut` in your browser.
+
+> **Note:** On first run, if you have just set up the `r` hostname (via hosts file or DNS), make sure to access `http://r/` (not just `r/`) in your browser at least once. This ensures your browser recognizes `r` as a valid domain and flushes any old cache or search behavior. This step is only needed if you are using the custom `r/` shortcut setup described above.
+
+---
+
+## Accessing Config Data in a Docker Named Volume (macOS, Windows, Linux)
 
 > **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.json.config`), you need to use an interactive terminal inside the running container.
 
