@@ -397,6 +397,9 @@ Below are screenshots of the main features and UI, as found in `app/static/asset
 | Dashboard | Version Page | Edit Shortcut | Create Shortcut | Dynamic Shortcut Usage | Redirect Page | Success Page |
 |-----------|-------------|--------------|----------------|-----------------------|--------------|--------------|
 | ![Dashboard](app/static/assets/dashboard.png) | ![Version](app/static/assets/version.png) | ![Edit](app/static/assets/edit-shortcut.png) | ![Create](app/static/assets/create-shortcut.png) | ![Dynamic Usage](app/static/assets/tutorial.png) | ![Redirect](app/static/assets/redirect-page.png) | ![Success](app/static/assets/success.png) |
+| ![Dynamic Shortcut Example](app/static/assets/dynamic-shortcut-tutorial.png) |
+|:--:|
+| *Dynamic shortcut example: Use variables in your URLs, e.g. `/jsonpost/10` → `https://jsonplaceholder.typicode.com/posts/10`* |
 
 Each screenshot demonstrates the modern, dark-mode friendly UI and the main flows of the app.
 
