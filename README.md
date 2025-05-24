@@ -449,3 +449,21 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 This method works on macOS, Windows, and Linux when using Docker named volumes.
 
 ---
+
+#### Updating Config in a Running Docker Container
+
+If you want to update the config file inside your running Docker container with a new or edited version from your local machine, you can use the `docker cp` command:
+
+1. Edit your local config file (e.g., `data/redirect.json.config`).
+2. Copy it into the running container (replace `redirector` with your container name if different):
+   ```sh
+   docker cp data/redirect.json.config redirector:/app/data/redirect.json.config
+   ```
+3. (Optional) Restart the container to ensure the app reloads the new config:
+   ```sh
+   docker restart redirector
+   ```
+
+This will overwrite the config file inside the container with your local version.
+
+---
