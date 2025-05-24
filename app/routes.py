@@ -424,3 +424,8 @@ def edit_redirect_blank():
         return render_template('success_create.html', pattern=pattern, target=target, now=datetime.utcnow)
     # GET: show blank create page
     return render_template('create_shortcut.html', pattern='', now=datetime.utcnow)
+
+# GET: Instructions page for enabling r/ shortcuts
+@bp.route('/enable-r-instructions', methods=['GET'])
+def enable_r_instructions():
+    return render_template('enable_r_instructions.html', now=datetime.utcnow)
