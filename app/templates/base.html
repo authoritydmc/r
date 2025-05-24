@@ -33,13 +33,26 @@
         <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" class="w-8 h-8 rounded shadow">
         <span class="text-xl font-bold text-blue-700 dark:text-blue-300">URL Shortener/Redirector</span>
       </div>
-      <nav class="flex gap-4 font-semibold">
-        <a href="/" class="hover:underline text-blue-700 dark:text-blue-300">Dashboard</a>
-        <a href="/version" class="hover:underline text-blue-700 dark:text-blue-300">Version</a>
-        <a href="/tutorial" class="hover:underline text-blue-700 dark:text-blue-300">Dynamic URL Tutorial</a>
-        <a href="/admin/upstreams" class="hover:underline text-blue-700 dark:text-blue-300">Upstream Config</a>
-        <a href="https://github.com/authoritydmc/redirector" target="_blank" class="hover:underline flex items-center gap-1 text-blue-700 dark:text-blue-300">
-          <i class="fab fa-github"></i> GitHub
+      <nav class="flex gap-6 font-semibold">
+        <a href="/" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Dashboard">
+          <i class="fa-solid fa-gauge fa-lg"></i>
+          <span class="text-xs mt-1 group-hover:underline hidden sm:block">Dashboard</span>
+        </a>
+        <a href="/version" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Version Info">
+          <i class="fa-solid fa-code-branch fa-lg"></i>
+          <span class="text-xs mt-1 group-hover:underline hidden sm:block">Version</span>
+        </a>
+        <a href="/tutorial" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Dynamic URL Tutorial">
+          <i class="fa-solid fa-graduation-cap fa-lg"></i>
+          <span class="text-xs mt-1 group-hover:underline hidden sm:block">Tutorial</span>
+        </a>
+        <a href="/admin/upstreams" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Upstream Config">
+          <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
+          <span class="text-xs mt-1 group-hover:underline hidden sm:block">Upstreams</span>
+        </a>
+        <a href="https://github.com/authoritydmc/redirector" target="_blank" class="flex flex-col items-center text-blue-700 dark:text-blue-300 group" title="GitHub">
+          <i class="fab fa-github fa-lg"></i>
+          <span class="text-xs mt-1 group-hover:underline hidden sm:block">GitHub</span>
         </a>
       </nav>
       <button id="toggle-dark" class="ml-4 px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 text-xs flex items-center gap-1" title="Toggle dark/light mode">
@@ -58,9 +71,14 @@
 
   <!-- Footer -->
   <footer class="bg-white dark:bg-gray-900 border-t py-6 mt-auto w-full">
-    <div class="max-w-5xl mx-auto px-4 text-center text-gray-500 dark:text-gray-400">
-      &copy; {{ now().year }} URL Shortener/Redirector &mdash;
-      <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a>
+    <div class="max-w-5xl mx-auto px-4 flex flex-row items-center justify-between text-gray-500 dark:text-gray-400">
+      <div>
+        &copy; {{ now().year }} URL Shortener/Redirector &mdash;
+        <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a>
+      </div>
+      <div class="text-xs text-right">
+        Version: {{ version if version is defined else 'unknown' }}
+      </div>
     </div>
   </footer>
 <script>

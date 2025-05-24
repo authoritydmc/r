@@ -13,7 +13,16 @@ bp = Blueprint('main', __name__)
 
 @bp.context_processor
 def inject_now():
-    return {'now': datetime.now}
+    from datetime import datetime
+    # Try to get version string (same logic as version page)
+    try:
+        import subprocess
+        commit_count = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], encoding='utf-8').strip()
+        commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], encoding='utf-8').strip()
+        version = f"v1.{commit_count}.{commit_hash}"
+    except Exception:
+        version = 'unknown'
+    return {'now': datetime.now, 'version': version}
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.json.config')
 
