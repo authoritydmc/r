@@ -7,113 +7,114 @@
     <i class="fa-solid fa-circle-info text-blue-500 dark:text-blue-300"></i>
     How to Enable <span class="font-mono">r/</span> Shortcuts
   </h1>
-  <p class="mb-6 text-lg text-gray-700 dark:text-blue-100">To use <span class="font-mono">r/</span> shortcuts on your device, you need to add an entry to your <span class="font-mono">hosts</span> file. You can do this automatically using the provided scripts, or manually by editing the file yourself. Choose your platform below:</p>
+  <p class="mb-6 text-lg text-gray-700 dark:text-blue-100">
+    To use <span class="font-mono">r/</span> shortcuts on your device, you need to add an entry to your <span class="font-mono">hosts</span> file. 
+    You can do this automatically using the provided scripts or manually by editing the file yourself. Choose your platform below:
+  </p>
+
   <div class="space-y-8">
-    <!-- Windows -->
+    {% set platforms = [
+      {"name": "Windows", "icon": "fa-brands fa-windows", "script": "add-r-host-windows.ps1", "manual_path": "C:\\Windows\\System32\\drivers\\etc\\hosts"},
+      {"name": "macOS", "icon": "fa-brands fa-apple", "script": "add-r-host-macos.sh", "manual_path": "/etc/hosts", "flush": "dscacheutil -flushcache && sudo killall -HUP mDNSResponder"},
+      {"name": "Linux", "icon": "fa-brands fa-linux", "script": "add-r-host-linux.sh", "manual_path": "/etc/hosts"}
+    ] %}
+
+    {% for platform in platforms %}
     <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-      <h2 class="text-2xl font-semibold text-blue-600 dark:text-blue-300 mb-2 flex items-center gap-2"><i class="fa-brands fa-windows"></i> Windows</h2>
+      <h2 class="text-2xl font-semibold text-blue-600 dark:text-blue-300 mb-2 flex items-center gap-2">
+        <i class="{{ platform.icon }}"></i> {{ platform.name }}
+      </h2>
       <ol class="list-decimal list-inside text-gray-700 dark:text-blue-100 space-y-2">
-        <li>Open <b>PowerShell as Administrator</b>.</li>
+        <li>Open <b>{{ "PowerShell" if platform.name == "Windows" else "Terminal" }}</b>.</li>
         <li>Run the following command:
           <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="win-cmd">./scripts/add-r-host-windows.ps1</code></pre>
-            <button onclick="copyCmd('win-cmd', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto">
+              <code id="{{ platform.name|lower }}-cmd">bash scripts/{{ platform.script }}</code>
+            </pre>
+            <button onclick="copyCmd('{{ platform.name|lower }}-cmd', this)" 
+                    class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+            <div class="copy-feedback text-green-600 dark:text-green-400 text-xs mt-1" style="display:none; opacity:0;">Copied!</div>
           </div>
         </li>
-        <li>Or, manually edit <span class="font-mono">C:\Windows\System32\drivers\etc\hosts</span> and add this line:
+        <li>Or, manually edit <span class="font-mono">{{ platform.manual_path }}</span> (requires sudo for macOS/Linux):
           <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="win-host">127.0.0.1   r</code></pre>
-            <button onclick="copyCmd('win-host', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto">
+              <code id="{{ platform.name|lower }}-host">127.0.0.1   r</code>
+            </pre>
+            <button onclick="copyCmd('{{ platform.name|lower }}-host', this)" 
+                    class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+            <div class="copy-feedback text-green-600 dark:text-green-400 text-xs mt-1" style="display:none; opacity:0;">Copied!</div>
           </div>
         </li>
+        {% if platform.flush %}
+        <li><b>Then run:</b>
+          <div class="relative group mt-2">
+            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto">
+              <code id="{{ platform.name|lower }}-flush">{{ platform.flush }}</code>
+            </pre>
+            <button onclick="copyCmd('{{ platform.name|lower }}-flush', this)" 
+                    class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+            <div class="copy-feedback text-green-600 dark:text-green-400 text-xs mt-1" style="display:none; opacity:0;">Copied!</div>
+          </div>
+        </li>
+        {% endif %}
       </ol>
     </div>
-    <!-- macOS -->
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-      <h2 class="text-2xl font-semibold text-blue-600 dark:text-blue-300 mb-2 flex items-center gap-2"><i class="fa-brands fa-apple"></i> macOS</h2>
-      <ol class="list-decimal list-inside text-gray-700 dark:text-blue-100 space-y-2">
-        <li>Open <b>Terminal</b>.</li>
-        <li>Run the following command:
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="mac-cmd">bash scripts/add-r-host-macos.sh</code></pre>
-            <button onclick="copyCmd('mac-cmd', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-        </li>
-        <li>Or, manually edit <span class="font-mono">/etc/hosts</span> (requires sudo):
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="mac-host">sudo nano /etc/hosts</code></pre>
-            <button onclick="copyCmd('mac-host', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-          Add this line:
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="mac-host2">127.0.0.1   r</code></pre>
-            <button onclick="copyCmd('mac-host2', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-          <b>Then run:</b>
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="mac-flush">dscacheutil -flushcache && sudo killall -HUP mDNSResponder</code></pre>
-            <button onclick="copyCmd('mac-flush', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-          to apply changes.
-        </li>
-      </ol>
-    </div>
-    <!-- Linux -->
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-      <h2 class="text-2xl font-semibold text-blue-600 dark:text-blue-300 mb-2 flex items-center gap-2"><i class="fa-brands fa-linux"></i> Linux</h2>
-      <ol class="list-decimal list-inside text-gray-700 dark:text-blue-100 space-y-2">
-        <li>Open <b>Terminal</b>.</li>
-        <li>Run the following command:
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="linux-cmd">bash scripts/add-r-host-linux.sh</code></pre>
-            <button onclick="copyCmd('linux-cmd', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-        </li>
-        <li>Or, manually edit <span class="font-mono">/etc/hosts</span> (requires sudo):
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="linux-host">sudo nano /etc/hosts</code></pre>
-            <button onclick="copyCmd('linux-host', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-          Add this line:
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="linux-host2">127.0.0.1   r</code></pre>
-            <button onclick="copyCmd('linux-host2', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-        </li>
-      </ol>
-    </div>
-    <!-- Other OS -->
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-      <h2 class="text-2xl font-semibold text-blue-600 dark:text-blue-300 mb-2 flex items-center gap-2"><i class="fa-solid fa-laptop-code"></i> Other OS</h2>
-      <ol class="list-decimal list-inside text-gray-700 dark:text-blue-100 space-y-2">
-        <li>Open your system's <span class="font-mono">hosts</span> file (location varies by OS).</li>
-        <li>Add this line:
-          <div class="relative group mt-2">
-            <pre class="bg-gray-100 dark:bg-[#181824] rounded p-2 text-sm overflow-x-auto"><code id="other-host">127.0.0.1   r</code></pre>
-            <button onclick="copyCmd('other-host', this)" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
-          </div>
-        </li>
-      </ol>
-    </div>
+    {% endfor %}
   </div>
+
   <div class="mt-10 text-center">
-    <a href="/dashboard" class="inline-block bg-blue-700 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-800 transition"><i class="fa-solid fa-arrow-left mr-2"></i>Back to Dashboard</a>
+    <a href="/" class="inline-block bg-blue-700 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-800 transition">
+      <i class="fa-solid fa-arrow-left mr-2"></i>Back to Dashboard
+    </a>
   </div>
 </div>
+
+<!-- Updated script with DOMContentLoaded wrapper -->
 <script>
-function copyCmd(id, btn) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const text = el.innerText || el.textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-    btn.classList.add('bg-green-600');
-    setTimeout(() => {
-      btn.innerHTML = orig;
-      btn.classList.remove('bg-green-600');
-    }, 1200);
-  });
-}
+document.addEventListener('DOMContentLoaded', function () {
+  window.copyCmd = function(id, btn) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const text = el.textContent.trim();
+
+    navigator.clipboard.writeText(text).then(() => {
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+      btn.classList.add('bg-green-600');
+
+      let feedback = btn.parentElement.querySelector('.copy-feedback');
+      if (feedback) {
+        feedback.style.display = "block";
+        feedback.style.opacity = "1";
+
+        setTimeout(() => {
+          btn.innerHTML = originalHTML;
+          btn.classList.remove('bg-green-600');
+
+          feedback.style.opacity = "0";
+          setTimeout(() => {
+            feedback.style.display = "none";
+          }, 500);
+        }, 2000);
+      }
+    }).catch(() => {
+      alert("Failed to copy. Please try manually.");
+    });
+  };
+});
 </script>
+
+<style>
+.copy-feedback {
+  transition: opacity 0.5s ease;
+}
+</style>
 {% endblock %}
