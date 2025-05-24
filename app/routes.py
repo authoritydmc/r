@@ -1,12 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, g, session, abort, current_app, stream_with_context
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 import sqlite3, re
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated, init_upstream_check_log, log_upstream_check
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated, init_upstream_check_log, log_upstream_check, get_upstream_logs
 from functools import wraps
 from datetime import datetime
 import json
 import os
 import requests
-from flask import jsonify, Response
+from flask import Response
 import time
 
 bp = Blueprint('main', __name__)
@@ -334,3 +334,14 @@ def stream_check_upstreams(pattern):
             yield f"data: {json.dumps({'done': True})}\n\n"
 
     return Response(event_stream(), mimetype='text/event-stream')
+
+@bp.route('/admin/upstream-logs')
+def admin_upstream_logs():
+    if not session.get('admin_logged_in'):
+        # Try both possible endpoint names for admin_login
+        try:
+            return redirect(url_for('admin_login', next=request.path))
+        except Exception:
+            return redirect(url_for('main.admin_login', next=request.path))
+    logs = get_upstream_logs()
+    return render_template('admin_upstream_logs.html', logs=logs)

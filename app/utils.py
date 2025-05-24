@@ -302,3 +302,17 @@ def log_upstream_check(pattern, upstream_name, check_url, result, detail, tried_
             count=upstream_check_log.count+1
     ''', (pattern, upstream_name, check_url, result, detail, tried_at))
     db.commit()
+
+def get_upstream_logs():
+    # Example: logs stored in data/upstream_logs.jsonl (one JSON per line)
+    import os, json
+    log_path = os.path.join(os.path.dirname(__file__), '../data/upstream_logs.jsonl')
+    logs = []
+    if os.path.exists(log_path):
+        with open(log_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                try:
+                    logs.append(json.loads(line.strip()))
+                except Exception:
+                    continue
+    return logs[::-1]  # Most recent first
