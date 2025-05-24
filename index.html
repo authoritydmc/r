@@ -8,8 +8,11 @@
   <link rel="icon" href="app/static/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen">
+  <!-- 3D Background Canvas -->
+  <canvas id="bg3d" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
   <header class="bg-white shadow sticky top-0 z-10 backdrop-blur-md bg-opacity-70 border-b border-blue-100" style="backdrop-filter: blur(12px);">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -192,6 +195,63 @@ python app.py</code></pre>
       </div>
     </div>
   </footer>
+  <!-- Animated Butterfly Background -->
+  <div id="butterfly-bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;overflow:hidden;">
+    <svg id="butterfly" width="64" height="64" viewBox="0 0 64 64" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(0deg);transition:filter 0.3s;filter:drop-shadow(0 2px 8px #a5b4fc88);">
+      <g>
+        <ellipse cx="20" cy="32" rx="18" ry="10" fill="#fbbf24" fill-opacity="0.7" stroke="#f59e42" stroke-width="2"/>
+        <ellipse cx="44" cy="32" rx="18" ry="10" fill="#818cf8" fill-opacity="0.7" stroke="#6366f1" stroke-width="2"/>
+        <ellipse cx="32" cy="32" rx="7" ry="18" fill="#f9fafb" fill-opacity="0.8" stroke="#6366f1" stroke-width="1.5"/>
+        <ellipse cx="32" cy="32" rx="3.5" ry="10" fill="#f59e42" fill-opacity="0.7" stroke="#f59e42" stroke-width="1"/>
+        <circle cx="32" cy="32" r="3" fill="#1e293b"/>
+        <ellipse cx="32" cy="22" rx="2" ry="4" fill="#6366f1" fill-opacity="0.7"/>
+        <ellipse cx="32" cy="42" rx="2" ry="4" fill="#6366f1" fill-opacity="0.7"/>
+        <path d="M32 14 Q30 8 28 14" stroke="#6366f1" stroke-width="1.5" fill="none"/>
+        <path d="M32 14 Q34 8 36 14" stroke="#6366f1" stroke-width="1.5" fill="none"/>
+      </g>
+    </svg>
+  </div>
+  <script>
+    // Butterfly flight animation
+    const butterfly = document.getElementById('butterfly');
+    const bg = document.getElementById('butterfly-bg');
+    let w = window.innerWidth, h = window.innerHeight;
+    let x = w/2, y = h/2, angle = 0, t = 0;
+    function randomTarget() {
+      // Stay within 10vw/10vh of edges
+      return [
+        64 + Math.random() * (w - 128),
+        64 + Math.random() * (h - 128),
+        (Math.random() - 0.5) * 60 // random angle delta
+      ];
+    }
+    let [tx, ty, ta] = randomTarget();
+    function fly() {
+      t += 0.008 + Math.random()*0.002;
+      // Move a fraction toward target
+      x += (tx - x) * 0.012;
+      y += (ty - y) * 0.012;
+      angle += (ta - angle) * 0.02;
+      // Flap effect
+      const flap = Math.sin(t*8) * 12;
+      butterfly.style.left = x + 'px';
+      butterfly.style.top = y + 'px';
+      butterfly.style.transform = `translate(-50%,-50%) rotate(${angle+flap}deg)`;
+      // If close to target, pick a new one
+      if (Math.abs(x-tx)<16 && Math.abs(y-ty)<16) {
+        [tx, ty, ta] = randomTarget();
+      }
+      requestAnimationFrame(fly);
+    }
+    function resizeButterfly() {
+      w = window.innerWidth; h = window.innerHeight;
+      // Clamp butterfly to viewport if resized
+      x = Math.max(64, Math.min(x, w-64));
+      y = Math.max(64, Math.min(y, h-64));
+    }
+    window.addEventListener('resize', resizeButterfly);
+    fly();
+  </script>
   <script>
     function copyCmd(id) {
       const el = document.getElementById(id);
