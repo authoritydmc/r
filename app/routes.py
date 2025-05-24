@@ -8,6 +8,9 @@ import os
 import requests
 from flask import Response
 import time
+from flask import send_file, make_response
+import io
+from flask import session as flask_session
 
 bp = Blueprint('main', __name__)
 
@@ -345,3 +348,43 @@ def admin_upstream_logs():
             return redirect(url_for('main.admin_login', next=request.path))
     logs = get_upstream_logs()
     return render_template('admin_upstream_logs.html', logs=logs)
+
+@bp.route('/admin/export-redirects')
+@login_required
+def admin_export_redirects():
+    db = get_db()
+    cursor = db.execute('PRAGMA table_info(redirects)')
+    columns = [row[1] for row in cursor.fetchall()]
+    cursor = db.execute(f'SELECT {", ".join(columns)} FROM redirects')
+    redirects = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    buf = io.BytesIO(json.dumps(redirects, indent=2).encode('utf-8'))
+    buf.seek(0)
+    return send_file(buf, mimetype='application/json', as_attachment=True, download_name='redirects.json')
+
+@bp.route('/admin/import-redirects', methods=['GET', 'POST'])
+@login_required
+def admin_import_redirects():
+    error = None
+    success = None
+    if request.method == 'POST':
+        file = request.files.get('file')
+        if file and file.filename.endswith('.json'):
+            try:
+                data = json.load(file)
+                if not isinstance(data, list):
+                    raise ValueError('JSON must be a list of redirect objects.')
+                db = get_db()
+                cursor = db.execute('PRAGMA table_info(redirects)')
+                columns = [row[1] for row in cursor.fetchall()]
+                db.execute('DELETE FROM redirects')
+                for entry in data:
+                    values = [entry.get(col) for col in columns]
+                    placeholders = ','.join(['?'] * len(columns))
+                    db.execute(f'INSERT INTO redirects ({", ".join(columns)}) VALUES ({placeholders})', values)
+                db.commit()
+                success = 'Redirect data imported successfully.'
+            except Exception as e:
+                error = f'Import failed: {e}'
+        else:
+            error = 'Please upload a valid .json file.'
+    return render_template('admin_import_export.html', error=error, success=success, session=flask_session)
