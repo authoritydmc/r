@@ -10,30 +10,36 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen">
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 dark:from-[#232946] dark:to-[#181824] transition-colors duration-300">
   <!-- 3D Background Canvas -->
   <canvas id="bg3d" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
   <header class="bg-white shadow sticky top-0 z-10 backdrop-blur-md bg-opacity-70 border-b border-blue-100" style="backdrop-filter: blur(12px);">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <img src="app/static/assets/logo.png" alt="Logo" class="w-10 h-10 rounded shadow">
-        <span class="text-2xl font-bold text-blue-700">URL Shortener/Redirector</span>
+        <span class="text-2xl font-bold text-blue-700 dark:text-blue-200">URL Shortener/Redirector</span>
       </div>
-      <a href="https://github.com/authoritydmc/r" target="_blank" class="text-blue-600 hover:underline flex items-center gap-2"><i class="fab fa-github"></i> GitHub</a>
+      <div class="flex items-center gap-4">
+        <button id="theme-toggle" class="relative flex items-center gap-2 px-3 py-1 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-yellow-200 shadow border border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 transition">
+          <i id="theme-icon" class="fa-solid fa-moon"></i>
+          <span class="hidden sm:inline" id="theme-label" style="color:inherit;">Dark Mode</span>
+        </button>
+        <a href="https://github.com/authoritydmc/r" target="_blank" class="text-blue-600 dark:text-blue-300 hover:underline flex items-center gap-2"><i class="fab fa-github"></i> GitHub</a>
+      </div>
     </div>
   </header>
   <main class="max-w-5xl mx-auto px-4 py-10">
     <section class="mb-12">
-      <h1 class="text-4xl font-extrabold text-blue-800 mb-4">Modern, Secure, and Team-Ready</h1>
-      <p class="text-lg text-gray-700 mb-6">A beautiful, self-hostable URL shortener and redirector for teams, companies, and power users. Easily create, manage, and share custom short URLs with a modern dashboard, Docker support, and robust security.</p>
+      <h1 class="text-4xl font-extrabold text-blue-800 dark:text-blue-100 mb-4">Modern, Secure, and Team-Ready</h1>
+      <p class="text-lg text-gray-700 dark:text-blue-200 mb-6">A beautiful, self-hostable URL shortener and redirector for teams, companies, and power users. Easily create, manage, and share custom short URLs with a modern dashboard, Docker support, and robust security.</p>
       <div class="flex justify-center mb-8">
         <img src="app/static/assets/dashboard.png" alt="Dashboard Screenshot" class="rounded-2xl shadow-2xl border-4 border-blue-100 w-full max-w-3xl">
       </div>
     </section>
     <section class="mb-12">
-      <h2 class="text-3xl font-bold text-blue-700 mb-4">Screenshots</h2>
-      <div class="relative w-full max-w-2xl mx-auto">
-        <div id="carousel" class="overflow-hidden rounded-lg shadow-lg border border-blue-100 bg-white">
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">Screenshots</h2>
+      <div class="relative w-full max-w-4xl mx-auto"> <!-- Increased max-w-2xl to max-w-4xl -->
+        <div id="carousel" class="overflow-hidden rounded-lg shadow-lg border border-blue-100 bg-white dark:bg-[#232946]" style="width:100%;">
           <div id="carousel-images" class="flex transition-transform duration-700" style="width: 100%;">
             <div class="w-full flex-shrink-0 flex flex-col items-center">
               <img src="app/static/assets/dashboard.png" alt="Dashboard Screenshot" class="w-full object-contain max-h-96">
@@ -117,7 +123,7 @@
       </script>
     </section>
     <section class="mb-12">
-      <h2 class="text-3xl font-bold text-blue-700 mb-4">Key Features</h2>
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">Key Features</h2>
       <ul class="grid md:grid-cols-2 gap-6 text-lg">
         <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-palette text-2xl text-blue-500"></i> <span><b>Modern UI:</b> Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.</span></li>
         <li class="bg-white rounded-lg shadow p-6 flex gap-4 items-start"><i class="fa-solid fa-database text-2xl text-green-500"></i> <span><b>Config as JSON:</b> All settings stored in <code>data/redirect.json.config</code> (auto-created with secure defaults).</span></li>
@@ -131,35 +137,35 @@
       </ul>
     </section>
     <section class="mb-12">
-      <h2 class="text-3xl font-bold text-blue-700 mb-4">Use Cases</h2>
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">Use Cases</h2>
       <div class="grid md:grid-cols-2 gap-8">
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-users mr-2"></i> Team/Company Shortcuts</h3>
-          <ul class="list-disc list-inside text-gray-700">
+        <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-users mr-2"></i> Team/Company Shortcuts</h3>
+          <ul class="list-disc list-inside text-gray-700 dark:text-blue-100">
             <li>Share memorable links like <span class="font-mono">r/zoom</span> or <span class="font-mono">r/docs</span> across your team.</li>
             <li>Centralize all internal URLs for onboarding, meetings, and resources.</li>
             <li>Deploy on a server and use DNS or hosts file for <span class="font-mono">r/</span> shortcuts.</li>
           </ul>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-user-shield mr-2"></i> Personal Productivity</h3>
-          <ul class="list-disc list-inside text-gray-700">
+        <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-user-shield mr-2"></i> Personal Productivity</h3>
+          <ul class="list-disc list-inside text-gray-700 dark:text-blue-100">
             <li>Quickly create short links for your most-used sites.</li>
             <li>Use dynamic shortcuts for parameterized redirects (e.g., <span class="font-mono">r/meetwith/raj</span>).</li>
             <li>Run locally with Docker or Python, with secure admin access.</li>
           </ul>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-globe mr-2"></i> Company-Wide DNS/Hosts</h3>
-          <ul class="list-disc list-inside text-gray-700">
+        <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-globe mr-2"></i> Company-Wide DNS/Hosts</h3>
+          <ul class="list-disc list-inside text-gray-700 dark:text-blue-100">
             <li>Make <span class="font-mono">r/</span> shortcuts available to your whole company via DNS or hosts file.</li>
             <li>Automate setup with provided scripts for Windows, macOS, and Linux.</li>
             <li>Restrict admin access and audit all changes.</li>
           </ul>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-server mr-2"></i> Self-Hosted & Cloud</h3>
-          <ul class="list-disc list-inside text-gray-700">
+        <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6">
+          <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-server mr-2"></i> Self-Hosted & Cloud</h3>
+          <ul class="list-disc list-inside text-gray-700 dark:text-blue-100">
             <li>Deploy on-premises, in the cloud, or on your own device.</li>
             <li>Persistent data with Docker volumes or bind mounts.</li>
             <li>Production-ready with Gunicorn, Waitress, or Flask.</li>
@@ -168,39 +174,39 @@
       </div>
     </section>
     <section class="mb-12">
-      <h2 class="text-3xl font-bold text-blue-700 mb-4">Quick Start</h2>
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-brands fa-docker mr-2"></i> Docker (Recommended)</h3>
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">Quick Start</h2>
+      <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-brands fa-docker mr-2"></i> Docker (Recommended)</h3>
         <div class="relative group mb-2">
-          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="docker-cmd-1">docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
+          <pre class="bg-gray-100 dark:bg-[#181824] rounded p-4 text-sm overflow-x-auto text-gray-800 dark:text-blue-100 border border-blue-100 dark:border-blue-900"><code id="docker-cmd-1">docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
           <button onclick="copyCmd('docker-cmd-1')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
         </div>
-        <p class="text-gray-700 mt-2">Or use a bind mount for easy access to data:</p>
+        <p class="text-gray-700 dark:text-blue-100 mt-2">Or use a bind mount for easy access to data:</p>
         <div class="relative group">
-          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="docker-cmd-2">docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
+          <pre class="bg-gray-100 dark:bg-[#181824] rounded p-4 text-sm overflow-x-auto text-gray-800 dark:text-blue-100 border border-blue-100 dark:border-blue-900"><code id="docker-cmd-2">docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
           <button onclick="copyCmd('docker-cmd-2')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
         </div>
       </div>
-      <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-terminal mr-2"></i> Manual (Python)</h3>
+      <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-terminal mr-2"></i> Manual (Python)</h3>
         <div class="relative group">
-          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="python-cmd">pip install -r requirements.txt
+          <pre class="bg-gray-100 dark:bg-[#181824] rounded p-4 text-sm overflow-x-auto text-gray-800 dark:text-blue-100 border border-blue-100 dark:border-blue-900"><code id="python-cmd">pip install -r requirements.txt
 python app.py</code></pre>
           <button onclick="copyCmd('python-cmd')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
         </div>
       </div>
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-wrench mr-2"></i> Automated Hostname Setup</h3>
-        <ul class="list-disc list-inside text-gray-700 mb-2">
+      <div class="bg-white dark:bg-[#232946] rounded-lg shadow p-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-wrench mr-2"></i> Automated Hostname Setup</h3>
+        <ul class="list-disc list-inside text-gray-700 dark:text-blue-100 mb-2">
           <li>Windows: <code>./autostart-windows.ps1</code></li>
           <li>macOS: <code>bash autostart-macos.sh</code></li>
           <li>Linux: <code>bash autostart-linux.sh</code></li>
         </ul>
-        <p class="text-gray-700">Or run the scripts in <code>scripts/</code> directly to only add the <code>r</code> host entry.</p>
+        <p class="text-gray-700 dark:text-blue-100">Or run the scripts in <code>scripts/</code> directly to only add the <code>r</code> host entry.</p>
       </div>
     </section>
     <section class="mb-12">
-      <h2 class="text-3xl font-bold text-blue-700 mb-4">FAQ</h2>
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">FAQ</h2>
       <div class="bg-white rounded-lg shadow p-6">
         <ul class="space-y-4 text-gray-700">
           <li><b>How do I make <span class="font-mono">r/</span> shortcuts work for everyone?</b><br>Deploy on a server and set up DNS or hosts file for <span class="font-mono">r</span> (see README for details).</li>
@@ -212,9 +218,9 @@ python app.py</code></pre>
       </div>
     </section>
     <section class="mb-12">
-      <h2 class="text-3xl font-bold text-blue-700 mb-4">Upstream Shortcut Checking & Integration</h2>
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">Upstream Shortcut Checking & Integration</h2>
       <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-arrow-up-right-dots mr-2"></i> Prevent Shortcut Conflicts with Upstream Checks</h3>
+        <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-arrow-up-right-dots mr-2"></i> Prevent Shortcut Conflicts with Upstream Checks</h3>
         <ul class="list-disc list-inside text-gray-700 mb-2">
           <li>Before creating or editing a shortcut, the app checks all configured <b>upstreams</b> (e.g., Bitly, go/, your legacy shortener) to see if the shortcut already exists elsewhere.</li>
           <li>If a shortcut is found in any upstream, you see a real-time log and are prevented from creating a conflicting shortcut.</li>
@@ -223,7 +229,7 @@ python app.py</code></pre>
         </ul>
       </div>
       <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-plug mr-2"></i> Integrate with Existing Redirect Solutions</h3>
+        <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-plug mr-2"></i> Integrate with Existing Redirect Solutions</h3>
         <ul class="list-disc list-inside text-gray-700 mb-2">
           <li>Add any existing redirector (Bitly, go/, custom, etc.) as an <b>upstream</b> in the config or UI.</li>
           <li>Specify the <code>base_url</code>, <code>fail_url</code> (the URL returned for non-existent shortcuts), and <code>fail_status_code</code> (e.g., 404).</li>
@@ -238,7 +244,7 @@ python app.py</code></pre>
         <p class="text-gray-700 mt-2">You can manage upstreams in the UI at <b>Upstream Config</b> or by editing <code>data/redirect.json.config</code> directly.</p>
       </div>
       <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-link mr-2"></i> How Existing Redirectors Can Integrate</h3>
+        <h3 class="text-xl font-semibold mb-2 text-blue-800 dark:text-blue-100"><i class="fa-solid fa-link mr-2"></i> How Existing Redirectors Can Integrate</h3>
         <ul class="list-disc list-inside text-gray-700 mb-2">
           <li>Any redirector that returns a unique URL or status code for non-existent shortcuts can be used as an upstream.</li>
           <li>Supports both public and private/internal shorteners.</li>
@@ -250,19 +256,19 @@ python app.py</code></pre>
       <a href="https://github.com/authoritydmc/r" target="_blank" class="inline-block bg-blue-700 text-white px-8 py-4 rounded-lg shadow-lg text-xl font-bold hover:bg-blue-800 transition"><i class="fab fa-github mr-2"></i> View on GitHub</a>
     </section>
   </main>
-  <footer class="bg-white border-t py-6 mt-10">
-    <div class="max-w-5xl mx-auto px-4 flex flex-row items-center justify-between text-gray-500">
-      <div class="flex items-center gap-2">
+  <footer class="bg-white dark:bg-[#232946] border-t border-blue-100 dark:border-blue-900 py-6 mt-10">
+    <div class="max-w-5xl mx-auto px-4 flex flex-col items-center justify-center gap-2 text-gray-500 dark:text-blue-200">
+      <div class="flex items-center gap-2 mb-2">
         <img src="app/static/assets/logo.png" alt="Logo" class="w-6 h-6 rounded shadow-sm">
         <span>Made with</span>
         <span class="animate-pulse text-red-500">&#10084;&#65039;</span>
         <span>by</span>
-        <a href="https://rajlabs.in" target="_blank" class="text-blue-600 hover:underline font-semibold">rajlabs.in</a>
+        <a href="https://rajlabs.in" target="_blank" class="text-blue-600 dark:text-blue-300 hover:underline font-semibold">rajlabs.in</a>
       </div>
       <div class="text-center flex flex-col items-center">
-        <span>&copy; 2025 URL Shortener/Redirector</span>
+        <span class="text-sm">&copy; 2025 URL Shortener/Redirector</span>
       </div>
-      <div class="text-xs text-right font-mono text-gray-400">
+      <div class="text-xs text-center font-mono text-gray-400 dark:text-blue-400">
         <!-- Version info can be added here if needed -->
       </div>
     </div>
@@ -337,5 +343,65 @@ python app.py</code></pre>
       });
     }
   </script>
+  <script>
+    function setTheme(dark) {
+      if (dark) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark'); // Ensure body gets dark class
+        document.getElementById('theme-icon').className = 'fa-solid fa-sun';
+        document.getElementById('theme-label').textContent = 'Light Mode';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark'); // Remove dark class from body
+        document.getElementById('theme-icon').className = 'fa-solid fa-moon';
+        document.getElementById('theme-label').textContent = 'Dark Mode';
+      }
+    }
+    // Default to dark mode
+    if (!localStorage.getItem('theme')) {
+      localStorage.setItem('theme', 'dark');
+    }
+    setTheme(localStorage.getItem('theme') === 'dark');
+    document.getElementById('theme-toggle').onclick = function() {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(!isDark);
+      localStorage.setItem('theme', !isDark ? 'dark' : 'light');
+    };
+  </script>
+  <style>
+    html.dark, body.dark {
+      background: linear-gradient(135deg, #232946 0%, #181824 100%) !important;
+    }
+    html.dark .bg-white, body.dark .bg-white, .dark .bg-white, .dark .rounded-lg, .dark .rounded-2xl, .dark .bg-blue-100, .dark .bg-gray-100, .dark .bg-gray-200, .dark .bg-gray-300 {
+      background: #232946 !important;
+      color: #e0e7ff !important;
+    }
+    .dark .text-gray-700, .dark .text-gray-800, .dark .text-base, .dark .text-lg {
+      color: #c7d2fe !important;
+    }
+    .dark pre, .dark code, .dark .bg-gray-100, .dark .bg-gray-200, .dark .bg-gray-300 {
+      background: #181824 !important;
+      color: #e0e7ff !important;
+      border-color: #334155 !important;
+    }
+    .dark .border-blue-100, .dark .border {
+      border-color: #334155 !important;
+    }
+    .dark .carousel-dot {
+      background: #6366f1 !important;
+    }
+    .dark .carousel-dot.bg-blue-300 {
+      background: #818cf8 !important;
+    }
+    .dark a {
+      color: #60a5fa !important;
+    }
+    .dark a:hover {
+      color: #fbbf24 !important;
+    }
+    .dark button, .dark .text-white {
+      color: #e0e7ff !important;
+    }
+  </style>
 </body>
 </html>
