@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, g, session, abort
+from flask import Blueprint, render_template, request, redirect, url_for, g, session, abort, current_app, stream_with_context
 import sqlite3, re
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated, init_upstream_check_log, log_upstream_check
 from functools import wraps
 from datetime import datetime
 import json
@@ -67,7 +67,7 @@ def admin_logout():
 @bp.route('/', methods=['GET'])
 def dashboard():
     db = get_db()
-    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY pattern ASC')
+    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY created_at DESC LIMIT 10')
     shortcuts = [
         dict(
             pattern=row[0],
@@ -252,6 +252,8 @@ def check_upstreams_ui(pattern):
 
 @bp.route('/stream/check-upstreams/<pattern>')
 def stream_check_upstreams(pattern):
+    init_upstream_check_log()
+    @stream_with_context
     def event_stream():
         found = False
         redirect_url = None
@@ -277,6 +279,7 @@ def stream_check_upstreams(pattern):
             yield from send_log(f"Constructed URL: {check_url}")
             yield from send_log(f"Fail criteria → URL: {fail_url}, Status: {fail_status_code or 'Not specified'}")
 
+            tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
             try:
                 verify_ssl = up.get('verify_ssl',False)
                 resp = requests.get(check_url, allow_redirects=True, timeout=3,verify=verify_ssl)
@@ -292,15 +295,26 @@ def stream_check_upstreams(pattern):
                 if not fail_url_match or (fail_status_code and not fail_status_match):
                     found = True
                     redirect_url = actual_url
+                    log_upstream_check(
+                        pattern, up_name, check_url, 'success',
+                        f"actual_url={actual_url}, status_code={status_code}", tried_at
+                    )
                     yield from send_log(
                         f"✅ Shortcut found in {up_name} (redirected to {actual_url}, status {status_code})",
                         {'found': True, 'redirect_url': redirect_url}
                     )
                     break
                 else:
+                    log_upstream_check(
+                        pattern, up_name, check_url, 'fail',
+                        f"actual_url={actual_url}, status_code={status_code}", tried_at
+                    )
                     yield from send_log(f"❌ Shortcut not found in {up_name} — matched fail criteria.")
 
             except Exception as e:
+                log_upstream_check(
+                    pattern, up_name, check_url, 'exception', str(e), tried_at
+                )
                 yield from send_log(f"⚠️ Error checking {up_name}: {str(e)}")
 
             yield from send_log(f"--- Finished check for {up_name} ---")
