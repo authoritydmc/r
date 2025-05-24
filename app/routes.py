@@ -1,19 +1,30 @@
-from flask import Blueprint, render_template, request, redirect, url_for, g, session, abort
-import sqlite3, re
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, increment_access_count, get_access_count, get_created_updated
+from flask import Blueprint, render_template, request, redirect, stream_with_context, url_for, session
+from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, init_upstream_check_log, log_upstream_check, get_upstream_logs
 from functools import wraps
 from datetime import datetime
 import json
 import os
 import requests
-from flask import jsonify, Response
+from flask import Response
 import time
+from flask import send_file
+import io
+from flask import session as flask_session
 
 bp = Blueprint('main', __name__)
 
 @bp.context_processor
 def inject_now():
-    return {'now': datetime.now}
+    from datetime import datetime
+    # Try to get version string (same logic as version page)
+    try:
+        import subprocess
+        commit_count = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], encoding='utf-8').strip()
+        commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], encoding='utf-8').strip()
+        version = f"v1.{commit_count}.{commit_hash}"
+    except Exception:
+        version = 'unknown'
+    return {'now': datetime.now, 'version': version}
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.json.config')
 
@@ -67,7 +78,7 @@ def admin_logout():
 @bp.route('/', methods=['GET'])
 def dashboard():
     db = get_db()
-    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY pattern ASC')
+    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY updated_at DESC LIMIT 5')
     shortcuts = [
         dict(
             pattern=row[0],
@@ -252,6 +263,8 @@ def check_upstreams_ui(pattern):
 
 @bp.route('/stream/check-upstreams/<pattern>')
 def stream_check_upstreams(pattern):
+    init_upstream_check_log()
+    @stream_with_context
     def event_stream():
         found = False
         redirect_url = None
@@ -277,6 +290,7 @@ def stream_check_upstreams(pattern):
             yield from send_log(f"Constructed URL: {check_url}")
             yield from send_log(f"Fail criteria → URL: {fail_url}, Status: {fail_status_code or 'Not specified'}")
 
+            tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
             try:
                 verify_ssl = up.get('verify_ssl',False)
                 resp = requests.get(check_url, allow_redirects=True, timeout=3,verify=verify_ssl)
@@ -292,15 +306,26 @@ def stream_check_upstreams(pattern):
                 if not fail_url_match or (fail_status_code and not fail_status_match):
                     found = True
                     redirect_url = actual_url
+                    log_upstream_check(
+                        pattern, up_name, check_url, 'success',
+                        f"actual_url={actual_url}, status_code={status_code}", tried_at
+                    )
                     yield from send_log(
                         f"✅ Shortcut found in {up_name} (redirected to {actual_url}, status {status_code})",
                         {'found': True, 'redirect_url': redirect_url}
                     )
                     break
                 else:
+                    log_upstream_check(
+                        pattern, up_name, check_url, 'fail',
+                        f"actual_url={actual_url}, status_code={status_code}", tried_at
+                    )
                     yield from send_log(f"❌ Shortcut not found in {up_name} — matched fail criteria.")
 
             except Exception as e:
+                log_upstream_check(
+                    pattern, up_name, check_url, 'exception', str(e), tried_at
+                )
                 yield from send_log(f"⚠️ Error checking {up_name}: {str(e)}")
 
             yield from send_log(f"--- Finished check for {up_name} ---")
@@ -311,3 +336,54 @@ def stream_check_upstreams(pattern):
             yield f"data: {json.dumps({'done': True})}\n\n"
 
     return Response(event_stream(), mimetype='text/event-stream')
+
+@bp.route('/admin/upstream-logs')
+def admin_upstream_logs():
+    if not session.get('admin_logged_in'):
+        # Try both possible endpoint names for admin_login
+        try:
+            return redirect(url_for('admin_login', next=request.path))
+        except Exception:
+            return redirect(url_for('main.admin_login', next=request.path))
+    logs = get_upstream_logs()
+    return render_template('admin_upstream_logs.html', logs=logs)
+
+@bp.route('/admin/export-redirects')
+@login_required
+def admin_export_redirects():
+    db = get_db()
+    cursor = db.execute('PRAGMA table_info(redirects)')
+    columns = [row[1] for row in cursor.fetchall()]
+    cursor = db.execute(f'SELECT {", ".join(columns)} FROM redirects')
+    redirects = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    buf = io.BytesIO(json.dumps(redirects, indent=2).encode('utf-8'))
+    buf.seek(0)
+    return send_file(buf, mimetype='application/json', as_attachment=True, download_name='redirects.json')
+
+@bp.route('/admin/import-redirects', methods=['GET', 'POST'])
+@login_required
+def admin_import_redirects():
+    error = None
+    success = None
+    if request.method == 'POST':
+        file = request.files.get('file')
+        if file and file.filename.endswith('.json'):
+            try:
+                data = json.load(file)
+                if not isinstance(data, list):
+                    raise ValueError('JSON must be a list of redirect objects.')
+                db = get_db()
+                cursor = db.execute('PRAGMA table_info(redirects)')
+                columns = [row[1] for row in cursor.fetchall()]
+                db.execute('DELETE FROM redirects')
+                for entry in data:
+                    values = [entry.get(col) for col in columns]
+                    placeholders = ','.join(['?'] * len(columns))
+                    db.execute(f'INSERT INTO redirects ({", ".join(columns)}) VALUES ({placeholders})', values)
+                db.commit()
+                success = 'Redirect data imported successfully.'
+            except Exception as e:
+                error = f'Import failed: {e}'
+        else:
+            error = 'Please upload a valid .json file.'
+    return render_template('admin_import_export.html', error=error, success=success, session=flask_session)

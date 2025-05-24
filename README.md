@@ -55,6 +55,24 @@ docker stop redirector && docker rm redirector
 ```
 > (then re-run the above docker run command)
 
+#### Running with Host Network Access (Advanced)
+
+> **Note:** The `--network=host` option allows the container to use the host's network stack. This is useful if the app needs to access services running on the host (e.g., databases, APIs) or for advanced networking scenarios.
+>
+> - On **Linux**, this works as expected.
+> - On **Windows/macOS**, `--network=host` is not fully supported; use port mappings instead.
+
+**Linux Example:**
+```sh
+# Run with host network (Linux only)
+docker run -d --restart unless-stopped --network=host -v redirector_data:/app/data --name redirector rajlabs/redirector
+```
+
+**Windows/macOS:**
+- Use the standard port mapping (`-p 80:80`) as shown above.
+
+
+
 ### 2. Manual (Python)
 
 - Requires Python 3.8+
@@ -117,6 +135,11 @@ server {
 - **Can't find admin password?**
   - Check the first lines of the container or app logs for the generated password.
   - Or, view/edit `data/redirect.json.config` directly.
+  - To view the admin password in Docker, run:
+    ```sh
+    docker exec redirector cat /app/data/redirect.json.config
+    ```
+    Look for the `admin_password` field in the output.
 - **Port already in use?**
   - Change the `port` in the config file or Docker port mapping.
 - **Data not persisting?**
@@ -426,3 +449,22 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 This method works on macOS, Windows, and Linux when using Docker named volumes.
 
 ---
+
+#### Updating Config in a Running Docker Container
+
+If you want to update the config file inside your running Docker container with a new or edited version from your local machine, you can use the `docker cp` command:
+
+1. Edit your local config file (e.g., `data/redirect.json.config`).
+2. Copy it into the running container (replace `redirector` with your container name if different):
+   ```sh
+   docker cp data/redirect.json.config redirector:/app/data/redirect.json.config
+   ```
+3. (Optional) Restart the container to ensure the app reloads the new config:
+   ```sh
+   docker restart redirector
+   ```
+
+This will overwrite the config file inside the container with your local version.
+
+---
+

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Upstream Logs - URL Shortener/Redirector{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto my-10 bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+  <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300 flex items-center gap-2">
+    <i class="fa-solid fa-list-alt"></i> Upstream Logs
+  </h2>
+  {% if logs and logs|length > 0 %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="bg-blue-50 dark:bg-gray-800">
+            <th class="px-3 py-2 text-left">Time</th>
+            <th class="px-3 py-2 text-left">Shortcut</th>
+            <th class="px-3 py-2 text-left">Upstream</th>
+            <th class="px-3 py-2 text-left">Result</th>
+            <th class="px-3 py-2 text-left">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800">
+            <td class="px-3 py-2 font-mono text-xs">{{ log.time or log.timestamp or '-' }}</td>
+            <td class="px-3 py-2 font-mono">{{ log.shortcut or '-' }}</td>
+            <td class="px-3 py-2">{{ log.upstream or '-' }}</td>
+            <td class="px-3 py-2">{{ log.result or '-' }}</td>
+            <td class="px-3 py-2 text-xs break-all">{{ log.details or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="text-gray-500 dark:text-gray-400">No upstream logs found.</div>
+  {% endif %}
+</div>
+{% endblock %}

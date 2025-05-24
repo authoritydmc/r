@@ -33,18 +33,49 @@
         <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" class="w-8 h-8 rounded shadow">
         <span class="text-xl font-bold text-blue-700 dark:text-blue-300">URL Shortener/Redirector</span>
       </div>
-      <nav class="flex gap-4 font-semibold">
-        <a href="/" class="hover:underline text-blue-700 dark:text-blue-300">Dashboard</a>
-        <a href="/version" class="hover:underline text-blue-700 dark:text-blue-300">Version</a>
-        <a href="/tutorial" class="hover:underline text-blue-700 dark:text-blue-300">Dynamic URL Tutorial</a>
-        <a href="/admin/upstreams" class="hover:underline text-blue-700 dark:text-blue-300">Upstream Config</a>
-        <a href="https://github.com/authoritydmc/redirector" target="_blank" class="hover:underline flex items-center gap-1 text-blue-700 dark:text-blue-300">
-          <i class="fab fa-github"></i> GitHub
-        </a>
+      <nav class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 py-3 px-4 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <a href="/version" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Version Info">
+            <i class="fa-solid fa-code-branch fa-lg"></i>
+            <span class="text-xs mt-1 group-hover:underline hidden sm:block">Version</span>
+          </a>
+          <a href="/tutorial" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Dynamic URL Tutorial">
+            <i class="fa-solid fa-graduation-cap fa-lg"></i>
+            <span class="text-xs mt-1 group-hover:underline hidden sm:block">Tutorial</span>
+          </a>
+          {% if session.admin_logged_in %}
+            <a href="/admin/upstreams" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Upstream Config">
+              <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
+              <span class="text-xs mt-1 group-hover:underline hidden sm:block">Upstreams</span>
+            </a>
+            <a href="/admin/upstream-logs" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Upstream Logs">
+              <i class="fa-solid fa-list-alt fa-lg"></i>
+              <span class="text-xs mt-1 group-hover:underline hidden sm:block">Upstream Logs</span>
+            </a>
+            <a href="/admin/import-redirects" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Import/Export Redirects">
+              <i class="fa-solid fa-file-arrow-up fa-lg"></i>
+              <span class="text-xs mt-1 group-hover:underline hidden sm:block">Import/Export</span>
+            </a>
+          {% endif %}
+          <a href="https://github.com/authoritydmc/redirector" target="_blank" class="flex flex-col items-center text-blue-700 dark:text-blue-300 group" title="GitHub">
+            <i class="fab fa-github fa-lg"></i>
+            <span class="text-xs mt-1 group-hover:underline hidden sm:block">GitHub</span>
+          </a>
+        </div>
+        <div class="flex items-center gap-4">
+          {% if session.admin_logged_in %}
+            <span class="text-green-700 dark:text-green-300 font-semibold flex items-center gap-2  ml-3"><i class="fa-solid fa-user-shield"></i> Admin</span>
+            <a href="/logout" class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 font-semibold flex items-center gap-2"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+          {% else %}
+            <a href="/admin-login" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 font-semibold flex items-center gap-2"><i class="fa-solid fa-user-shield"></i> Login as Admin</a>
+          {% endif %}
+          <button id="toggle-dark" class="flex items-center justify-center h-9 w-9 transition-colors duration-300 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded focus:outline-none ml-1" title="Toggle dark/light mode" style="margin-top:0;align-self:center;">
+            <span id="toggle-icon" class="transition-transform duration-300 text-xl flex items-center justify-center">
+              <i class="fa-solid fa-moon"></i>
+            </span>
+          </button>
+        </div>
       </nav>
-      <button id="toggle-dark" class="ml-4 px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 text-xs flex items-center gap-1" title="Toggle dark/light mode">
-        <span id="toggle-icon"><i class="fa-solid fa-moon"></i></span>
-      </button>
     </div>
   </header>
 
@@ -58,43 +89,66 @@
 
   <!-- Footer -->
   <footer class="bg-white dark:bg-gray-900 border-t py-6 mt-auto w-full">
-    <div class="max-w-5xl mx-auto px-4 text-center text-gray-500 dark:text-gray-400">
-      &copy; {{ now().year }} URL Shortener/Redirector &mdash;
-      <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 dark:text-blue-400 hover:underline">GitHub</a>
+    <div class="max-w-5xl mx-auto px-4 flex flex-row items-center justify-between text-gray-500 dark:text-gray-400">
+      <!-- Left: Logo + Made with love by rajlabs.in -->
+      <div class="flex items-center gap-2">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" class="w-6 h-6 rounded shadow-sm">
+        <span>Made with</span>
+        <span class="animate-pulse text-red-500">&#10084;&#65039;</span>
+        <span>by</span>
+        <a href="https://rajlabs.in" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">rajlabs.in</a>
+      </div>
+      <!-- Center: Copyright + GitHub -->
+      <div class="text-center flex flex-col items-center">
+        <span>&copy; {{ now().year }} URL Shortener/Redirector</span>
+  
+      </div>
+      <!-- Right: Version -->
+      <div class="text-xs text-right font-mono text-gray-400 dark:text-gray-500">
+        Version: {{ version if version is defined else 'unknown' }}
+      </div>
     </div>
   </footer>
 <script>
-  // Check localStorage for stored theme preference
+  // Theme toggle logic with smooth icon animation
+  function updateToggleIcon() {
+    const icon = document.getElementById('toggle-icon');
+    if (document.documentElement.classList.contains('dark')) {
+      icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
+      icon.classList.add('rotate-180');
+    } else {
+      icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
+      icon.classList.remove('rotate-180');
+    }
+  }
+
+  document.getElementById('toggle-dark').onclick = function() {
+    const html = document.documentElement;
+    html.classList.add('transition-colors');
+    html.classList.add('duration-500');
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+    updateToggleIcon();
+    setTimeout(() => {
+      html.classList.remove('transition-colors');
+      html.classList.remove('duration-500');
+    }, 600);
+  };
+
+  // Initial theme setup
   if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.classList.add('dark');
   } else if (localStorage.getItem('theme') === 'light') {
     document.documentElement.classList.remove('dark');
   } else {
-    // Default to dark mode
     document.documentElement.classList.add('dark');
     localStorage.setItem('theme', 'dark');
   }
-
-  function updateToggleIcon() {
-    const icon = document.getElementById('toggle-icon');
-    if (document.documentElement.classList.contains('dark')) {
-      icon.innerHTML = '<i class="fa-solid fa-sun"></i>';
-    } else {
-      icon.innerHTML = '<i class="fa-solid fa-moon"></i>';
-    }
-  }
-
-  document.getElementById('toggle-dark').onclick = function() {
-    if (document.documentElement.classList.contains('dark')) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-    updateToggleIcon();
-  };
-
   updateToggleIcon();
 </script>
 

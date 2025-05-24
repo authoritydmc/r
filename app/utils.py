@@ -264,3 +264,55 @@ def get_created_updated(pattern):
     if row:
         return row[0], row[1]
     return None, None
+
+# --- Upstream Check Logging (moved from routes.py) ---
+def init_upstream_check_log():
+    db = get_db()
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS upstream_check_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pattern TEXT,
+            upstream_name TEXT,
+            check_url TEXT,
+            result TEXT,
+            detail TEXT,
+            tried_at TEXT,
+            count INTEGER DEFAULT 1,
+            UNIQUE(pattern, upstream_name)
+        )
+    ''')
+    # Add count column if missing (for upgrades)
+    try:
+        db.execute('ALTER TABLE upstream_check_log ADD COLUMN count INTEGER DEFAULT 1')
+        db.commit()
+    except Exception:
+        pass
+    db.commit()
+
+def log_upstream_check(pattern, upstream_name, check_url, result, detail, tried_at):
+    db = get_db()
+    db.execute('''
+        INSERT INTO upstream_check_log (pattern, upstream_name, check_url, result, detail, tried_at, count)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+        ON CONFLICT(pattern, upstream_name) DO UPDATE SET
+            check_url=excluded.check_url,
+            result=excluded.result,
+            detail=excluded.detail,
+            tried_at=excluded.tried_at,
+            count=upstream_check_log.count+1
+    ''', (pattern, upstream_name, check_url, result, detail, tried_at))
+    db.commit()
+
+def get_upstream_logs():
+    # Example: logs stored in data/upstream_logs.jsonl (one JSON per line)
+    import os, json
+    log_path = os.path.join(os.path.dirname(__file__), '../data/upstream_logs.jsonl')
+    logs = []
+    if os.path.exists(log_path):
+        with open(log_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                try:
+                    logs.append(json.loads(line.strip()))
+                except Exception:
+                    continue
+    return logs[::-1]  # Most recent first

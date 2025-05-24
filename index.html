@@ -8,9 +8,12 @@
   <link rel="icon" href="app/static/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-blue-200 min-h-screen">
-  <header class="bg-white shadow sticky top-0 z-10">
+  <!-- 3D Background Canvas -->
+  <canvas id="bg3d" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
+  <header class="bg-white shadow sticky top-0 z-10 backdrop-blur-md bg-opacity-70 border-b border-blue-100" style="backdrop-filter: blur(12px);">
     <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <img src="app/static/assets/logo.png" alt="Logo" class="w-10 h-10 rounded shadow">
@@ -84,14 +87,23 @@
       <h2 class="text-3xl font-bold text-blue-700 mb-4">Quick Start</h2>
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-brands fa-docker mr-2"></i> Docker (Recommended)</h3>
-        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
+        <div class="relative group mb-2">
+          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="docker-cmd-1">docker run -d --restart unless-stopped -p 80:80 -v redirect_data:/app/data --name redirect rajlabs/redirect</code></pre>
+          <button onclick="copyCmd('docker-cmd-1')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
         <p class="text-gray-700 mt-2">Or use a bind mount for easy access to data:</p>
-        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
+        <div class="relative group">
+          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="docker-cmd-2">docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirect rajlabs/redirect</code></pre>
+          <button onclick="copyCmd('docker-cmd-2')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
       </div>
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-terminal mr-2"></i> Manual (Python)</h3>
-        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>pip install -r requirements.txt
+        <div class="relative group">
+          <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code id="python-cmd">pip install -r requirements.txt
 python app.py</code></pre>
+          <button onclick="copyCmd('python-cmd')" class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-80 hover:opacity-100 transition"><i class="fa-regular fa-copy"></i> Copy</button>
+        </div>
       </div>
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-wrench mr-2"></i> Automated Hostname Setup</h3>
@@ -124,14 +136,134 @@ python app.py</code></pre>
         </ul>
       </div>
     </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 mb-4">Upstream Shortcut Checking & Integration</h2>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-arrow-up-right-dots mr-2"></i> Prevent Shortcut Conflicts with Upstream Checks</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Before creating or editing a shortcut, the app checks all configured <b>upstreams</b> (e.g., Bitly, go/, your legacy shortener) to see if the shortcut already exists elsewhere.</li>
+          <li>If a shortcut is found in any upstream, you see a real-time log and are prevented from creating a conflicting shortcut.</li>
+          <li>If no upstreams have the shortcut, you can safely create it.</li>
+          <li>All checks and results are shown in a live UI log for transparency.</li>
+        </ul>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-plug mr-2"></i> Integrate with Existing Redirect Solutions</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Add any existing redirector (Bitly, go/, custom, etc.) as an <b>upstream</b> in the config or UI.</li>
+          <li>Specify the <code>base_url</code>, <code>fail_url</code> (the URL returned for non-existent shortcuts), and <code>fail_status_code</code> (e.g., 404).</li>
+          <li>Example config for an upstream:</li>
+        </ul>
+        <pre class="bg-gray-100 rounded p-4 text-sm overflow-x-auto"><code>{
+  "name": "bitly",
+  "base_url": "https://bit.ly/",
+  "fail_url": "https://bitly.com/404",
+  "fail_status_code": 404
+}</code></pre>
+        <p class="text-gray-700 mt-2">You can manage upstreams in the UI at <b>Upstream Config</b> or by editing <code>data/redirect.json.config</code> directly.</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-xl font-semibold mb-2 text-blue-800"><i class="fa-solid fa-link mr-2"></i> How Existing Redirectors Can Integrate</h3>
+        <ul class="list-disc list-inside text-gray-700 mb-2">
+          <li>Any redirector that returns a unique URL or status code for non-existent shortcuts can be used as an upstream.</li>
+          <li>Supports both public and private/internal shorteners.</li>
+          <li>Allows seamless migration and coexistence with legacy solutions.</li>
+        </ul>
+      </div>
+    </section>
     <section class="mb-12 text-center">
       <a href="https://github.com/authoritydmc/r" target="_blank" class="inline-block bg-blue-700 text-white px-8 py-4 rounded-lg shadow-lg text-xl font-bold hover:bg-blue-800 transition"><i class="fab fa-github mr-2"></i> View on GitHub</a>
     </section>
   </main>
   <footer class="bg-white border-t py-6 mt-10">
-    <div class="max-w-5xl mx-auto px-4 text-center text-gray-500">
-      &copy; 2025 URL Shortener/Redirector &mdash; <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 hover:underline">GitHub</a>
+    <div class="max-w-5xl mx-auto px-4 flex flex-row items-center justify-between text-gray-500">
+      <div class="flex items-center gap-2">
+        <img src="app/static/assets/logo.png" alt="Logo" class="w-6 h-6 rounded shadow-sm">
+        <span>Made with</span>
+        <span class="animate-pulse text-red-500">&#10084;&#65039;</span>
+        <span>by</span>
+        <a href="https://rajlabs.in" target="_blank" class="text-blue-600 hover:underline font-semibold">rajlabs.in</a>
+      </div>
+      <div class="text-center flex flex-col items-center">
+        <span>&copy; 2025 URL Shortener/Redirector</span>
+        <a href="https://github.com/authoritydmc/redirector" class="text-blue-600 hover:underline flex items-center gap-1 mt-1" target="_blank">
+          <i class="fab fa-github"></i> GitHub
+        </a>
+      </div>
+      <div class="text-xs text-right font-mono text-gray-400">
+        <!-- Version info can be added here if needed -->
+      </div>
     </div>
   </footer>
+  <!-- Animated Butterfly Background -->
+  <div id="butterfly-bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;overflow:hidden;">
+    <svg id="butterfly" width="64" height="64" viewBox="0 0 64 64" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(0deg);transition:filter 0.3s;filter:drop-shadow(0 2px 8px #a5b4fc88);">
+      <g>
+        <ellipse cx="20" cy="32" rx="18" ry="10" fill="#fbbf24" fill-opacity="0.7" stroke="#f59e42" stroke-width="2"/>
+        <ellipse cx="44" cy="32" rx="18" ry="10" fill="#818cf8" fill-opacity="0.7" stroke="#6366f1" stroke-width="2"/>
+        <ellipse cx="32" cy="32" rx="7" ry="18" fill="#f9fafb" fill-opacity="0.8" stroke="#6366f1" stroke-width="1.5"/>
+        <ellipse cx="32" cy="32" rx="3.5" ry="10" fill="#f59e42" fill-opacity="0.7" stroke="#f59e42" stroke-width="1"/>
+        <circle cx="32" cy="32" r="3" fill="#1e293b"/>
+        <ellipse cx="32" cy="22" rx="2" ry="4" fill="#6366f1" fill-opacity="0.7"/>
+        <ellipse cx="32" cy="42" rx="2" ry="4" fill="#6366f1" fill-opacity="0.7"/>
+        <path d="M32 14 Q30 8 28 14" stroke="#6366f1" stroke-width="1.5" fill="none"/>
+        <path d="M32 14 Q34 8 36 14" stroke="#6366f1" stroke-width="1.5" fill="none"/>
+      </g>
+    </svg>
+  </div>
+  <script>
+    // Butterfly flight animation
+    const butterfly = document.getElementById('butterfly');
+    const bg = document.getElementById('butterfly-bg');
+    let w = window.innerWidth, h = window.innerHeight;
+    let x = w/2, y = h/2, angle = 0, t = 0;
+    function randomTarget() {
+      // Stay within 10vw/10vh of edges
+      return [
+        64 + Math.random() * (w - 128),
+        64 + Math.random() * (h - 128),
+        (Math.random() - 0.5) * 60 // random angle delta
+      ];
+    }
+    let [tx, ty, ta] = randomTarget();
+    function fly() {
+      t += 0.008 + Math.random()*0.002;
+      // Move a fraction toward target
+      x += (tx - x) * 0.012;
+      y += (ty - y) * 0.012;
+      angle += (ta - angle) * 0.02;
+      // Flap effect
+      const flap = Math.sin(t*8) * 12;
+      butterfly.style.left = x + 'px';
+      butterfly.style.top = y + 'px';
+      butterfly.style.transform = `translate(-50%,-50%) rotate(${angle+flap}deg)`;
+      // If close to target, pick a new one
+      if (Math.abs(x-tx)<16 && Math.abs(y-ty)<16) {
+        [tx, ty, ta] = randomTarget();
+      }
+      requestAnimationFrame(fly);
+    }
+    function resizeButterfly() {
+      w = window.innerWidth; h = window.innerHeight;
+      // Clamp butterfly to viewport if resized
+      x = Math.max(64, Math.min(x, w-64));
+      y = Math.max(64, Math.min(y, h-64));
+    }
+    window.addEventListener('resize', resizeButterfly);
+    fly();
+  </script>
+  <script>
+    function copyCmd(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const text = el.innerText || el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target.closest('button');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      });
+    }
+  </script>
 </body>
 </html>
