@@ -10,6 +10,7 @@ import time
 from flask import send_file
 import io
 from flask import session as flask_session
+from flask import jsonify
 
 bp = Blueprint('main', __name__)
 
@@ -389,3 +390,37 @@ def admin_import_redirects():
         else:
             error = 'Please upload a valid .json file.'
     return render_template('admin_import_export.html', error=error, success=success, session=flask_session)
+
+@bp.route('/api/check-shortcut-exists/<pattern>')
+def api_check_shortcut_exists(pattern):
+    db = get_db()
+    cursor = db.execute('SELECT 1 FROM redirects WHERE pattern = ?', (pattern,))
+    exists = cursor.fetchone() is not None
+    return jsonify({'exists': exists})
+
+@bp.route('/edit/', methods=['GET', 'POST'])
+def edit_redirect_blank():
+    # Always show the create shortcut page with an empty pattern
+    from datetime import datetime
+    if request.method == 'POST':
+        # Handle form submission for new shortcut
+        pattern = request.form.get('pattern', '').strip()
+        type_ = request.form.get('type', 'static')
+        target = request.form.get('target', '').strip()
+        now = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+        ip = request.remote_addr or ''
+        db = get_db()
+        # Check if pattern is empty or already exists
+        if not pattern:
+            return render_template('create_shortcut.html', pattern='', error='Shortcut pattern cannot be empty.', now=datetime.utcnow)
+        cursor = db.execute('SELECT 1 FROM redirects WHERE pattern=?', (pattern,))
+        if cursor.fetchone():
+            return render_template('create_shortcut.html', pattern=pattern, error='A shortcut with this pattern already exists.', now=datetime.utcnow)
+        db.execute('''
+            INSERT INTO redirects (type, pattern, target, created_at, updated_at, created_ip, updated_ip)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (type_, pattern, target, now, now, ip, ip))
+        db.commit()
+        return render_template('success_create.html', pattern=pattern, target=target, now=datetime.utcnow)
+    # GET: show blank create page
+    return render_template('create_shortcut.html', pattern='', now=datetime.utcnow)
