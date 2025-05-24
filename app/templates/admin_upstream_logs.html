@@ -19,17 +19,24 @@
               <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Shortcut</th>
               <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Upstream</th>
               <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Result</th>
-              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Details</th>
+              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Status Code</th>
+              <th class="px-3 py-2 text-left text-gray-700 dark:text-gray-200">Actual URL</th>
             </tr>
           </thead>
           <tbody id="logs-table-body">
             {% for log in logs %}
-            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800">
+            {% set is_success = (log.result or '').lower() == 'success' %}
+            {% set is_fail = (log.result or '').lower() in ['fail', 'exception'] %}
+            {% set details = log.details or '' %}
+            {% set status_code = details.split('status_code=')[1].split(',')[0].strip() if 'status_code=' in details else '-' %}
+            {% set actual_url = details.split('actual_url=')[1].split(',')[0].strip() if 'actual_url=' in details else '-' %}
+            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 {% if is_success %}bg-green-50 dark:bg-green-900/40{% elif is_fail %}bg-red-50 dark:bg-red-900/40{% endif %}">
               <td class="px-3 py-2 font-mono text-xs text-gray-800 dark:text-gray-100">{{ log.time or log.timestamp or '-' }}</td>
               <td class="px-3 py-2 font-mono text-gray-800 dark:text-gray-100">{{ log.shortcut or '-' }}</td>
               <td class="px-3 py-2 text-gray-800 dark:text-gray-100">{{ log.upstream or '-' }}</td>
               <td class="px-3 py-2 text-gray-800 dark:text-gray-100">{{ log.result or '-' }}</td>
-              <td class="px-3 py-2 text-xs break-all text-gray-800 dark:text-gray-100">{{ log.details or '-' }}</td>
+              <td class="px-3 py-2 text-gray-800 dark:text-gray-100">{{ status_code }}</td>
+              <td class="px-3 py-2 text-xs break-all text-blue-700 dark:text-blue-300 underline"><a href="{{ actual_url }}" target="_blank">{{ actual_url }}</a></td>
             </tr>
             {% endfor %}
           </tbody>
