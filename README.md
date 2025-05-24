@@ -168,7 +168,7 @@ If you prefer to edit your hosts file manually:
 - All config is in `data/redirect.json.config` (auto-created if missing):
   - `port`: Port to run the app (default: 80)
   - `admin_password`: Admin password (random on first run)
-  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
+  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0). **All redirect delays and countdowns in the app (including UI and backend logic) use this value for consistency.**
   - `delete_requires_password`: Require password to delete shortcuts (default: true)
 
 - Change config by editing the file or using the UI (where available).

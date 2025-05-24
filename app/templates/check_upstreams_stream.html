@@ -45,22 +45,40 @@ function startCountdown(seconds, redirectUrl) {
       clearInterval(countdownInterval);
       window.location.href = redirectUrl;
     }
-  }, 100);
+  }, 1000); // Changed from 100ms to 1000ms for seconds
 }
 const evtSource = new EventSource(`/stream/check-upstreams/${encodeURIComponent(pattern)}`);
 evtSource.onmessage = function(event) {
   const data = JSON.parse(event.data);
   if (data.log) addLog(data.log);
   if (data.found && data.redirect_url && !redirected) {
-    showResult('<b>Shortcut exists in upstream!</b> Redirecting...', false);
+    showResult('<b>Shortcut exists in upstream!</b> Redirecting in <span id="upstream-countdown">' + parseInt('{{delay}}', 10) + '</span> seconds...<br><button id="redirectNowBtn" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Redirect Now</button>', false);
     redirected = true;
     editBtn.classList.add('hidden');
-    setTimeout(() => { window.location.href = data.redirect_url; }, {{delay}});
+    let upstreamSeconds = parseInt('{{delay}}', 10);
+    const upstreamCountdown = document.getElementById('upstream-countdown');
+    const redirectNowBtn = document.getElementById('redirectNowBtn');
+    let upstreamInterval = setInterval(() => {
+      upstreamSeconds--;
+      if (upstreamCountdown) upstreamCountdown.textContent = upstreamSeconds;
+      if (upstreamSeconds <= 0) {
+        clearInterval(upstreamInterval);
+        window.location.href = data.redirect_url;
+      }
+    }, 1000);
+    if (redirectNowBtn) {
+      redirectNowBtn.onclick = function() {
+        clearInterval(upstreamInterval);
+        window.location.href = data.redirect_url;
+      };
+    }
+    // Remove auto-redirect setTimeout (now handled by countdown)
     evtSource.close();
+    return;
   }
   if (data.done && !found) {
     // Show countdown and button
-    startCountdown({{delay}}, `/edit/${encodeURIComponent(pattern)}`);
+    startCountdown(parseInt('{{delay}}', 10), `/edit/${encodeURIComponent(pattern)}`); // delay is in seconds from config
     evtSource.close();
   }
 };
