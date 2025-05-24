@@ -78,7 +78,7 @@ def admin_logout():
 @bp.route('/', methods=['GET'])
 def dashboard():
     db = get_db()
-    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY created_at DESC LIMIT 10')
+    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects ORDER BY updated_at DESC LIMIT 5')
     shortcuts = [
         dict(
             pattern=row[0],
