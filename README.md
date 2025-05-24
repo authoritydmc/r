@@ -71,6 +71,8 @@ docker run -d --restart unless-stopped --network=host -v redirector_data:/app/da
 **Windows/macOS:**
 - Use the standard port mapping (`-p 80:80`) as shown above.
 
+
+
 ### 2. Manual (Python)
 
 - Requires Python 3.8+
@@ -133,7 +135,11 @@ server {
 - **Can't find admin password?**
   - Check the first lines of the container or app logs for the generated password.
   - Or, view/edit `data/redirect.json.config` directly.
-  - in docker run this `docker exec rediretor cat /data/redirect.json.config`
+  - To view the admin password in Docker, run:
+    ```sh
+    docker exec redirector cat /app/data/redirect.json.config
+    ```
+    Look for the `admin_password` field in the output.
 - **Port already in use?**
   - Change the `port` in the config file or Docker port mapping.
 - **Data not persisting?**
