@@ -1,6 +1,6 @@
-from app import create_app
-from app.utils import get_port
+import platform
 import argparse
+from app import create_app
 
 try:
     app = create_app()
@@ -10,12 +10,57 @@ except Exception as e:
     traceback.print_exc()
     raise
 
+def get_os_name():
+    """Detect the operating system and return its name."""
+    os_name = platform.system().lower()
+    if os_name == "windows":
+        return "Windows"
+    elif os_name == "darwin":  # macOS is detected as 'Darwin'
+        return "macOS"
+    elif os_name == "linux":
+        return "Linux"
+    else:
+        return "Unknown OS"
+
+def print_os_instructions(os_name):
+    """Print instructions to enable r/ based on detected OS."""
+    print("\n==============================")
+    print(f"Detected OS: {os_name}")
+    print("==============================\n")
+
+    if os_name == "Windows":
+        print("Run the following command in PowerShell as Administrator:")
+        print("  .\\scripts\\add-r-host-windows.ps1")
+        print("Or manually add this line to C:\\Windows\\System32\\drivers\\etc\\hosts:")
+        print("  127.0.0.1   r\n")
+
+    elif os_name == "macOS":
+        print("Run the following command in Terminal:")
+        print("  bash scripts/add-r-host-macos.sh")
+        print("Or manually edit /etc/hosts using:")
+        print("  sudo nano /etc/hosts")
+        print("Then add this line:")
+        print("  127.0.0.1   r\n")
+        print("Run `dscacheutil -flushcache && sudo killall -HUP mDNSResponder` to apply changes.\n")
+
+    elif os_name == "Linux":
+        print("Run the following command in Terminal:")
+        print("  bash scripts/add-r-host-linux.sh")
+        print("Or manually edit /etc/hosts using:")
+        print("  sudo nano /etc/hosts")
+        print("Then add this line:")
+        print("  127.0.0.1   r\n")
+
+    else:
+        print("Your OS is not explicitly supported. Please manually update your hosts file:\n")
+        print("  127.0.0.1   r")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
     args = parser.parse_args()
     mode = "DEV" if args.debug else "PROD"
+
     ascii_art = r''' _______  _______  ______  _________ _______  _______  _______ _________ _______  _______ 
 (  ____ )(  ____ \(  __  \ \__   __/(  ____ )(  ____ \(  ____ \\__   __/(  ___  )(  ____ )
 | (    )|| (    \/| (  \  )   ) (   | (    )|| (    \/| (    \/   ) (   | (   ) || (    )|
@@ -25,16 +70,16 @@ if __name__ == "__main__":
 | ) \ \__| (____/\| (__/  )___) (___| ) \ \__| (____/\| (____/\   | |   | (___) || ) \ \__
 |/   \__/(_______/(______/ \_______/|/   \__/(_______/(_______/   )_(   (_______)|/   \__/
 '''
+
     print(ascii_art)
     print(f"==============================\n   RUNNING IN {mode} MODE\n==============================")
     print("URL Shortener & Redirector starting up...")
     print(f"Running on port: {app.config['port']}")
-    print("\n[INFO] If you are running this in Docker:")
-    print("  - Map the container port to your desired host port using -p <host_port>:<container_port>.")
-    print("  - For production, use -p 80:80 or a reverse proxy for clean URLs (e.g., http://r/shortcut).\n")
-    print("  - Mount your data directory with -v ./data:/app/data to persist shortcuts.")
-    print("  - The database file will be at /app/data/redirects.db inside the container.\n")
-    print("[INFO] For local testing, access: http://localhost:<port>/\n")
-    print("==============================\n")
+    
+    # Detect OS and print instructions
+    os_name = get_os_name()
+    print_os_instructions(os_name)
+
+    print("\n==============================\n")
     app.init_db()
     app.run(debug=args.debug, host="0.0.0.0", port=app.config['port'])
