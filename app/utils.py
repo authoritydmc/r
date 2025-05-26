@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 from flask import g
+import redis
 
 # Ensure data directory exists (cross-platform)
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
@@ -81,129 +82,6 @@ def ensure_audit_columns(db):
         db.commit()
     except sqlite3.OperationalError:
         pass
-
-CREATE_FORM = '''
-<!DOCTYPE html>
-<html><body>
-<h2>Create new redirect for: <code>{{ pattern }}</code></h2>
-<form method="post">
-  <label>Type:</label>
-  <select name="type">
-    <option value="static">Static</option>
-    <option value="dynamic">Dynamic</option>
-  </select><br><br>
-  <label>Target URL (use {name} for dynamic):</label><br>
-  <input type="text" name="target" style="width:400px" required><br><br>
-  <button type="submit">Create Redirect</button>
-</form>
-</body></html>
-'''
-
-EDIT_FORM = '''
-<!DOCTYPE html>
-<html><body>
-<h2>Edit redirect for: <code>{{ pattern }}</code></h2>
-<form method="post">
-  <label>Type:</label>
-  <select name="type">
-    <option value="static" {% if type=='static' %}selected{% endif %}>Static</option>
-    <option value="dynamic" {% if type=='dynamic' %}selected{% endif %}>Dynamic</option>
-  </select><br><br>
-  <label>Target URL (use {name} for dynamic):</label><br>
-  <input type="text" name="target" style="width:400px" value="{{ target }}" required><br><br>
-  <button type="submit">Update Redirect</button>
-</form>
-</body></html>
-'''
-
-DASHBOARD_TEMPLATE = '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>URL Shortener Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen">
-  <div class="max-w-3xl mx-auto py-8">
-    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">
-      <a href="/" class="hover:underline flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-8 h-8 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m4 4h1a2 2 0 002-2V7a2 2 0 00-2-2h-6a2 2 0 00-2 2v7a2 2 0 002 2h1" /></svg>
-        URL Shortener/Redirector Dashboard
-      </a>
-    </h1>
-    <div class="flex flex-wrap justify-center gap-4 mb-8">
-      <a href="/version" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">Version</a>
-      <a href="/tutorial" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">Dynamic URL Tutorial</a>
-      <a href="https://github.com/authoritydmc/r/blob/main/README.md" target="_blank" class="bg-gray-200 px-4 py-2 rounded hover:bg-blue-200 text-blue-700 font-semibold">GitHub README</a>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4">All Shortcuts</h2>
-      <table class="min-w-full table-auto text-left">
-        <thead>
-          <tr>
-            <th class="px-4 py-2">Shortcut</th>
-            <th class="px-4 py-2">Type</th>
-            <th class="px-4 py-2">Target</th>
-            <th class="px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for shortcut in shortcuts %}
-          <tr class="border-t align-top">
-            <td class="px-4 py-2 font-mono align-top">
-              <div class="flex items-center gap-2">
-                {% if shortcut['type'] == 'static' %}
-                  <span title="Static shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 14.828a4 4 0 010-5.656m1.415 1.414a2 2 0 010 2.828m-2.829-2.828a6 6 0 018.485 8.485l-3.536 3.535a6 6 0 01-8.485-8.485l3.535-3.535a2 2 0 112.828 2.828l-3.535 3.535a2 2 0 102.828 2.828l3.535-3.535" /></svg></span>
-                {% else %}
-                  <span title="Dynamic shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg></span>
-                {% endif %}
-                {{ shortcut['pattern'] }}
-              </div>
-              <div class="text-xs text-gray-400 mt-1 flex items-center gap-4">
-                <span title="Accesses" class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>{{ shortcut['access_count'] }}</span>
-                <span title="Created" class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>{{ shortcut['created_at'] if shortcut['created_at'] else 'N/A' }}</span>
-                <span title="Last updated" class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{{ shortcut['updated_at'] if shortcut['updated_at'] else 'N/A' }}</span>
-              </div>
-            </td>
-            <td class="px-4 py-2 align-top">
-              {% if shortcut['type'] == 'static' %}
-                <span title="Static shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 14.828a4 4 0 010-5.656m1.415 1.414a2 2 0 010 2.828m-2.829-2.828a6 6 0 018.485 8.485l-3.536 3.535a6 6 0 01-8.485-8.485l3.535-3.535a2 2 0 112.828 2.828l-3.535 3.535a2 2 0 102.828 2.828l3.535-3.535" /></svg></span>
-              {% else %}
-                <span title="Dynamic shortcut"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg></span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-2 break-all align-top"><a class="text-blue-600 underline" href="{{ shortcut['target'] }}" target="_blank">{{ shortcut['target'] }}</a></td>
-            <td class="px-4 py-2 align-top">
-              <a class="text-green-600 hover:underline mr-2" href="/{{ shortcut['pattern'] }}" target="_blank" title="Go"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
-              <a class="text-yellow-600 hover:underline mr-2" href="/edit/{{ shortcut['pattern'] }}" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 21h6a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg></a>
-              <a class="text-red-600 hover:underline" href="/delete/{{ shortcut['pattern'] }}" onclick="return confirm('Delete this shortcut?');" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></a>
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="4" class="px-4 py-2 text-center text-gray-500">No shortcuts found.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      <div class="mt-6 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
-        <div class="font-semibold mb-1">Legend:</div>
-        <div class="flex flex-wrap gap-6 items-center">
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 14.828a4 4 0 010-5.656m1.415 1.414a2 2 0 010 2.828m-2.829-2.828a6 6 0 018.485 8.485l-3.536 3.535a6 6 0 01-8.485-8.485l3.535-3.535a2 2 0 112.828 2.828l-3.535 3.535a2 2 0 102.828 2.828l3.535-3.535" /></svg>Static</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>Dynamic</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>Accesses</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>Created</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Last updated</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>Go</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-1 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 21h6a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>Edit</span>
-          <span class="flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>Delete</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-'''
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -323,3 +201,195 @@ def get_upstream_logs():
             'count': row[6],
         })
     return logs
+
+# --- Redis helpers ---
+_redis_client = None
+_redis_enabled = False
+_redis_host = 'localhost'
+_redis_port = 6379
+
+def init_redis_from_config():
+    global _redis_client, _redis_enabled, _redis_host, _redis_port
+    cfg = _load_config()
+    redis_cfg = cfg.get('redis', {})
+    _redis_enabled = redis_cfg.get('enabled', False)
+    _redis_host = redis_cfg.get('host', 'localhost')
+    _redis_port = redis_cfg.get('port', 6379)
+    if _redis_enabled:
+        try:
+            _redis_client = redis.Redis(host=_redis_host, port=_redis_port, decode_responses=True)
+            _redis_client.ping()
+            print(f"[INFO] Redis enabled: host={_redis_host}, port={_redis_port}")
+        except Exception as e:
+            print(f"[WARN] Redis config enabled but connection failed: {e}")
+            _redis_enabled = False
+    else:
+        print("[INFO] Redis is disabled (see config)")
+
+def redis_get(key):
+    if _redis_enabled and _redis_client:
+        try:
+            return _redis_client.get(key)
+        except Exception:
+            return None
+    return None
+
+def redis_set(key, value):
+    if _redis_enabled and _redis_client:
+        try:
+            _redis_client.set(key, value)
+        except Exception:
+            pass
+
+def redis_delete(key):
+    if _redis_enabled and _redis_client:
+        try:
+            _redis_client.delete(key)
+        except Exception:
+            pass
+
+def get_shortcut(pattern):
+    # Try Redis first
+    shortcut = None
+    if _redis_enabled:
+        val = redis_get(f"shortcut:{pattern}")
+        if val:
+            try:
+                shortcut = json.loads(val)
+            except Exception:
+                shortcut = None
+    if shortcut:
+        return shortcut
+    # Fallback to DB
+    db = get_db()
+    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects WHERE pattern=?', (pattern,))
+    row = cursor.fetchone()
+    if row:
+        shortcut = dict(
+            pattern=row[0],
+            type=row[1],
+            target=row[2],
+            access_count=row[3] if row[3] is not None else 0,
+            created_at=row[4],
+            updated_at=row[5]
+        )
+        # Save to Redis for next time
+        if _redis_enabled:
+            try:
+                redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
+            except Exception:
+                pass
+        return shortcut
+    return None
+
+def set_shortcut(pattern, type_, target, access_count=0, created_at=None, updated_at=None):
+    db = get_db()
+    now = updated_at or None
+    cursor = db.execute('SELECT 1 FROM redirects WHERE pattern=?', (pattern,))
+    exists = cursor.fetchone()
+    if exists:
+        db.execute('''
+            UPDATE redirects
+            SET type=?, target=?, updated_at=?
+            WHERE pattern=?
+        ''', (type_, target, now, pattern))
+    else:
+        db.execute('''
+            INSERT INTO redirects (type, pattern, target, access_count, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (type_, pattern, target, access_count, created_at, now))
+    db.commit()
+    # Update Redis
+    if _redis_enabled:
+        shortcut = dict(
+            pattern=pattern,
+            type=type_,
+            target=target,
+            access_count=access_count,
+            created_at=created_at,
+            updated_at=now
+        )
+        try:
+            redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
+        except Exception:
+            pass
+
+def app_startup_banner(app=None):
+    import platform
+    ascii_art = r''' _______  _______  ______  _________ _______  _______  _______ _________ _______  _______ 
+(  ____ )(  ____ \\  __  \\ \__   __/(  ____ )(  ____ \\  ____ \\__   __/(  ___  )(  ____ )
+| (    )|| (    \/| (  \  )   ) (   | (    )|| (    \/| (    \/   ) (   | (   ) || (    )|
+| (____)|| (__    | |   ) |   | |   | (____)|| (__    | |         | |   | |   | || (____)|
+|     __)|  __)   | |   | |   | |   |     __)|  __)   | |         | |   | |   | ||     __)
+| (\ (   | (      | |   ) |   | |   | (\ (   | (      | |         | |   | |   | || (\ (   
+| ) \ \__| (____/\\| (__/  )___) (___| ) \ \__| (____/\\| (____/\\   | |   | (___) || ) \ \__
+|/   \__/(_______/(______/ \_______/|/   \__/(_______/(_______/   )_(   (_______)|/   \__/
+
+'''
+    print(ascii_art)
+    print(f"==============================\n   GUNICORN MODE - READY\n==============================")
+    print("URL Shortener & Redirector app initialized.")
+    if app is not None:
+        print(f"Configured to run on port: {app.config.get('port', 'unknown')}")
+    else:
+        print("(Port unknown: app not provided)")
+    # Detect OS and print instructions for host file entry
+    os_name = platform.system().lower()
+    if os_name == "windows":
+        print("\n==============================")
+        print(f"Detected OS: Windows")
+        print("==============================\n")
+        print("Run the following command in PowerShell as Administrator:")
+        print("  .\\scripts\\add-r-host-windows.ps1")
+        print("Or manually add this line to C:\\Windows\\System32\\drivers\\etc\\hosts:")
+        print("  127.0.0.1   r\n")
+    elif os_name == "darwin":
+        print("\n==============================")
+        print(f"Detected OS: macOS")
+        print("==============================\n")
+        print("Run the following command in Terminal:")
+        print("  bash scripts/add-r-host-macos.sh")
+        print("Or manually edit /etc/hosts using:")
+        print("  sudo nano /etc/hosts")
+        print("Then add this line:")
+        print("  127.0.0.1   r\n")
+        print("Run `dscacheutil -flushcache && sudo killall -HUP mDNSResponder` to apply changes.\n")
+    elif os_name == "linux":
+        print("\n==============================")
+        print(f"Detected OS: Linux")
+        print("==============================\n")
+        print("Run the following command in Terminal:")
+        print("  bash scripts/add-r-host-linux.sh")
+        print("Or manually edit /etc/hosts using:")
+        print("  sudo nano /etc/hosts")
+        print("Then add this line:")
+        print("  127.0.0.1   r\n")
+    else:
+        print("Your OS is not explicitly supported. Please manually update your hosts file:\n")
+        print("  127.0.0.1   r")
+    # Print Redis status
+    if _redis_enabled:
+        print(f"[INFO] Redis enabled: host={_redis_host}, port={_redis_port}")
+    else:
+        print("[INFO] Redis is disabled (see config)")
+
+    # Check if 'r' hostname resolves to localhost
+    import socket
+    try:
+        r_ip = socket.gethostbyname('r')
+        if r_ip == '127.0.0.1':
+            print("[INFO] Hostname 'r' resolves to 127.0.0.1 (OK)")
+        else:
+            print(f"[WARN] Hostname 'r' resolves to {r_ip} (not 127.0.0.1). Check your hosts/DNS setup.")
+    except Exception:
+        print("[WARN] Hostname 'r' does not resolve. Add '127.0.0.1   r' to your hosts file or set up DNS.")
+
+    # Docker environment and port/network info
+    import os
+    running_in_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER')
+    if running_in_docker:
+        print("[INFO] Running inside a Docker container.")
+        print("      The app listens on the internal container port (default 80).\n      To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker.")
+        print("      If using Docker Compose or custom networks, check your port mappings and network mode.")
+    else:
+        print("[INFO] Not running in Docker. If using Docker, make sure to map ports correctly.")

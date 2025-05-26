@@ -1,5 +1,5 @@
 from flask import Flask
-from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password
+from .utils import get_db, get_admin_password, get_port, get_auto_redirect_delay, DASHBOARD_TEMPLATE, get_delete_requires_password, init_redis_from_config, app_startup_banner
 import secrets
 
 def create_app():
@@ -33,4 +33,10 @@ def create_app():
             )''')
             db.commit()
     app.init_db = init_db
+
     return app
+
+def run_standalone_startup(app):
+    init_redis_from_config()
+    app_startup_banner(app)
+    app.init_db()

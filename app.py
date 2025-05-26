@@ -1,14 +1,9 @@
 import platform
 import argparse
-from app import create_app
+from app import create_app, run_standalone_startup
 
-try:
-    app = create_app()
-except Exception as e:
-    import traceback
-    print("\n[ERROR] Failed to initialize Flask app.\n")
-    traceback.print_exc()
-    raise
+app = create_app()
+run_standalone_startup(app)
 
 def get_os_name():
     """Detect the operating system and return its name."""
