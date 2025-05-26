@@ -128,7 +128,7 @@ def dashboard_delete(subpath):
 def edit_redirect(subpath):
     # --- Upstream check done during GET ---
     if request.method == 'GET':
-        shortcut = get_shortcut(subpath)
+        shortcut,source_data,resp_time = get_shortcut(subpath)
         if not shortcut:
             return render_template('create_shortcut.html', pattern=subpath, now=datetime.utcnow)
         return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'], now=datetime.utcnow)
