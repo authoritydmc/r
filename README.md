@@ -7,7 +7,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 ## Table of Contents
 - [Features](#features)
 - [Quick Start](#quick-start)
-  - [Docker (Recommended)](#docker-recommended)
+  - [Docker Compose (Recommended)](#docker-compose-recommended)
   - [Manual (Python)](#manual-python)
 - [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
   - [Quick Hostname Setup (Recommended)](#quick-hostname-setup-recommended)
@@ -42,56 +42,34 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ## Quick Start
 
-### 1. Docker (Recommended)
+### 1. Docker Compose (Recommended)
 
-#### Using a named volume (managed by Docker)
-
-```sh
-docker run -d --restart unless-stopped -p 80:80 -v redirector_data:/app/data --name redirector rajlabs/redirector
-```
-- Data is stored in the Docker-managed volume:
-  - **Linux/macOS:** `/var/lib/docker/volumes/redirector_data/_data`
-  - **Windows (Docker Desktop):** `\\wsl$\docker-desktop-data\data\docker\volumes\redirector_data\_data` (access via WSL or Docker Desktop's file explorer)
-
-#### Using your current folder (bind mount, recommended for easy access)
+A `docker-compose.yml` is provided for easy setup with Redis:
 
 ```sh
-docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirector rajlabs/redirector
+docker compose up --build
 ```
-- This will create (or use) a `data` folder in your current directory for persistent config and DB files.
-- Works in PowerShell (Windows) and most modern shells. On Linux/macOS, you can use `$(pwd)/data:/app/data` instead.
 
-- Visit: [http://localhost:80](http://localhost:80)
-- The app's data directory inside the container is always `/app/data`.
-- Admin password is auto-generated on first run (see container logs or the config file in the data folder).
+- This will build and start two containers:
+  - `app`: The Flask URL shortener/redirector (port 80)
+  - `redis`: Redis server (port 6379)
+- Data is stored in the `data/` folder on your host and mounted into the app container.
+- The app will connect to Redis at `redis:6379` (service name in Docker Compose).
+- The config file is `data/redirect.config.json`.
 
 #### Updating
 
-Just pull the latest image and restart:
+To update, pull the latest code and run:
 
 ```sh
-docker pull rajlabs/redirector
-docker stop redirector && docker rm redirector
+docker compose up --build -d
 ```
-> (then re-run the above docker run command)
 
-#### Running with Host Network Access (Advanced)
+#### Stopping
 
-> **Note:** The `--network=host` option allows the container to use the host's network stack. This is useful if the app needs to access services running on the host (e.g., databases, APIs) or for advanced networking scenarios.
->
-> - On **Linux**, this works as expected.
-> - On **Windows/macOS**, `--network=host` is not fully supported; use port mappings instead.
-
-**Linux Example:**
 ```sh
-# Run with host network (Linux only)
-docker run -d --restart unless-stopped --network=host -v redirector_data:/app/data --name redirector rajlabs/redirector
+docker compose down
 ```
-
-**Windows/macOS:**
-- Use the standard port mapping (`-p 80:80`) as shown above.
-
-
 
 ### 2. Manual (Python)
 
@@ -167,10 +145,24 @@ If you prefer to edit your hosts file manually:
 - All config is in `data/redirect.config.json` (auto-created if missing):
   - `port`: Port to run the app (default: 80)
   - `admin_password`: Admin password (random on first run)
-  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0). **All redirect delays and countdowns in the app (including UI and backend logic) use this value for consistency.**
+  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
   - `delete_requires_password`: Require password to delete shortcuts (default: true)
+  - `upstreams`: List of upstream redirectors (see below)
+  - `redis`: Redis config (enabled, host, port)
 
 - Change config by editing the file or using the UI (where available).
+
+---
+
+## Docker Compose Details
+
+- The app and Redis run as separate services.
+- The app connects to Redis using the hostname `redis` (as set in `docker-compose.yml`).
+- Ports:
+  - `80:80` maps the app's internal port 80 to your host's port 80.
+  - `6379:6379` exposes Redis for debugging (optional; not needed for app to work).
+- Data is persisted in the `data/` directory on your host.
+- If you change the Redis config, update `data/redirect.config.json` accordingly (e.g., set `"host": "redis"`).
 
 ---
 
