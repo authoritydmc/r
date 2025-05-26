@@ -8,6 +8,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 - [Features](#features)
 - [Quick Start](#quick-start)
   - [Docker Compose (Recommended)](#docker-compose-recommended)
+  - [Docker (Pull Prebuilt Image)](#docker-pull-prebuilt-image)
   - [Manual (Python)](#manual-python)
 - [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
   - [Quick Hostname Setup (Recommended)](#quick-hostname-setup-recommended)
@@ -71,7 +72,56 @@ docker compose up --build -d
 docker compose down
 ```
 
-### 2. Manual (Python)
+### 2. Docker (Pull Prebuilt Image)
+
+You can run the app using the official image from Docker Hub: [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector)
+
+#### With Docker Redis (separate container)
+
+First, start Redis:
+
+```sh
+docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpine
+```
+
+Then run the app, connecting to Redis by container name:
+
+```sh
+docker run -d --name redirector --restart unless-stopped \
+  -p 80:80 \
+  -v redirector_data:/app/data \
+  -e REDIS_HOST=redis \
+  -e REDIS_PORT=6379 \
+  --link redis:redis \
+  rajlabs/redirector
+```
+
+- This uses a Docker named volume (`redirector_data`) for persistent data.
+- The app will connect to Redis at `redis:6379`.
+
+#### With a Host Directory (custom location)
+
+To store data in a specific folder on your host:
+
+```sh
+docker run -d --name redirector --restart unless-stopped \
+  -p 80:80 \
+  -v /absolute/path/to/your/data:/app/data \
+  -e REDIS_HOST=redis \
+  -e REDIS_PORT=6379 \
+  --link redis:redis \
+  rajlabs/redirector
+```
+
+Replace `/absolute/path/to/your/data` with your desired directory.
+
+#### Without Redis (SQLite only)
+
+If you do not want to use Redis, set `"enabled": false` in `data/redirect.config.json` under the `redis` section, or omit the Redis environment variables.
+
+---
+
+### 3. Manual (Python)
 
 - Requires Python 3.8+
 - Install dependencies:
