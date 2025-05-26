@@ -7,7 +7,8 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 ## Table of Contents
 - [Features](#features)
 - [Quick Start](#quick-start)
-  - [Docker (Recommended)](#docker-recommended)
+  - [Docker Compose (Recommended)](#docker-compose-recommended)
+  - [Docker (Pull Prebuilt Image)](#docker-pull-prebuilt-image)
   - [Manual (Python)](#manual-python)
 - [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
   - [Quick Hostname Setup (Recommended)](#quick-hostname-setup-recommended)
@@ -29,7 +30,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 ## Features
 
 - **Modern UI**: Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.
-- **Config as JSON**: All settings stored in `data/redirect.json.config` (auto-created with secure defaults).
+- **Config as JSON**: All settings stored in `data/redirect.config.json` (auto-created with secure defaults).
 - **Secure by Default**: Random admin password generated on first run.
 - **Docker-Ready**: Official image [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector) with persistent data and easy volume/bind mount support.
 - **Reverse Proxy Friendly**: Works behind Nginx, Traefik, etc. (see below).
@@ -42,58 +43,73 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ## Quick Start
 
-### 1. Docker (Recommended)
+### 1. Docker Compose (Recommended)
 
-#### Using a named volume (managed by Docker)
-
-```sh
-docker run -d --restart unless-stopped -p 80:80 -v redirector_data:/app/data --name redirector rajlabs/redirector
-```
-- Data is stored in the Docker-managed volume:
-  - **Linux/macOS:** `/var/lib/docker/volumes/redirector_data/_data`
-  - **Windows (Docker Desktop):** `\\wsl$\docker-desktop-data\data\docker\volumes\redirector_data\_data` (access via WSL or Docker Desktop's file explorer)
-
-#### Using your current folder (bind mount, recommended for easy access)
+A `docker-compose.yml` is provided for easy setup with Redis:
 
 ```sh
-docker run -d --restart unless-stopped -p 80:80 -v "${PWD}/data:/app/data" --name redirector rajlabs/redirector
+docker compose up --build
 ```
-- This will create (or use) a `data` folder in your current directory for persistent config and DB files.
-- Works in PowerShell (Windows) and most modern shells. On Linux/macOS, you can use `$(pwd)/data:/app/data` instead.
 
-- Visit: [http://localhost:80](http://localhost:80)
-- The app's data directory inside the container is always `/app/data`.
-- Admin password is auto-generated on first run (see container logs or the config file in the data folder).
+- This will build and start two containers:
+  - `app`: The Flask URL shortener/redirector (port 80)
+  - `redis`: Redis server (port 6379)
+- Data is stored in the `data/` folder on your host and mounted into the app container.
+- The app will connect to Redis at `redis:6379` (service name in Docker Compose).
+- The config file is `data/redirect.config.json`.
 
 #### Updating
 
-Just pull the latest image and restart:
+To update, pull the latest code and run:
 
 ```sh
-docker pull rajlabs/redirector
-docker stop redirector && docker rm redirector
+docker compose up --build -d
 ```
-> (then re-run the above docker run command)
 
-#### Running with Host Network Access (Advanced)
+#### Stopping
 
-> **Note:** The `--network=host` option allows the container to use the host's network stack. This is useful if the app needs to access services running on the host (e.g., databases, APIs) or for advanced networking scenarios.
->
-> - On **Linux**, this works as expected.
-> - On **Windows/macOS**, `--network=host` is not fully supported; use port mappings instead.
-
-**Linux Example:**
 ```sh
-# Run with host network (Linux only)
-docker run -d --restart unless-stopped --network=host -v redirector_data:/app/data --name redirector rajlabs/redirector
+docker compose down
 ```
 
-**Windows/macOS:**
-- Use the standard port mapping (`-p 80:80`) as shown above.
+### 2. Docker (Pull Prebuilt Image)
 
+You can run the app using the official image from Docker Hub: [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector)
 
+#### With Docker Redis (separate container)
 
-### 2. Manual (Python)
+First, start Redis:
+
+```sh
+docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpine
+```
+
+Then run the app, connecting to Redis by container name:
+
+```sh
+docker run -d --name redirector --restart unless-stopped  -p 80:80   -v redirector_data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis  rajlabs/redirector
+```
+
+- This uses a Docker named volume (`redirector_data`) for persistent data.
+- The app will connect to Redis at `redis:6379`.
+
+#### With a Host Directory (custom location)
+
+To store data in a specific folder on your host:
+
+```sh
+docker run -d --name redirector --restart unless-stopped -p 80:80 -v /absolute/path/to/your/data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379  --link redis:redis rajlabs/redirector
+```
+
+Replace `/absolute/path/to/your/data` with your desired directory.
+
+#### Without Redis (SQLite only)
+
+If you do not want to use Redis, set `"enabled": false` in `data/redirect.config.json` under the `redis` section, or omit the Redis environment variables.
+
+---
+
+### 3. Manual (Python)
 
 - Requires Python 3.8+
 - Install dependencies:
@@ -164,13 +180,27 @@ If you prefer to edit your hosts file manually:
 
 ## Configuration
 
-- All config is in `data/redirect.json.config` (auto-created if missing):
+- All config is in `data/redirect.config.json` (auto-created if missing):
   - `port`: Port to run the app (default: 80)
   - `admin_password`: Admin password (random on first run)
-  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0). **All redirect delays and countdowns in the app (including UI and backend logic) use this value for consistency.**
+  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
   - `delete_requires_password`: Require password to delete shortcuts (default: true)
+  - `upstreams`: List of upstream redirectors (see below)
+  - `redis`: Redis config (enabled, host, port)
 
 - Change config by editing the file or using the UI (where available).
+
+---
+
+## Docker Compose Details
+
+- The app and Redis run as separate services.
+- The app connects to Redis using the hostname `redis` (as set in `docker-compose.yml`).
+- Ports:
+  - `80:80` maps the app's internal port 80 to your host's port 80.
+  - `6379:6379` exposes Redis for debugging (optional; not needed for app to work).
+- Data is persisted in the `data/` directory on your host.
+- If you change the Redis config, update `data/redirect.config.json` accordingly (e.g., set `"host": "redis"`).
 
 ---
 
@@ -204,10 +234,10 @@ server {
 
 - **Can't find admin password?**
   - Check the first lines of the container or app logs for the generated password.
-  - Or, view/edit `data/redirect.json.config` directly.
+  - Or, view/edit `data/redirect.config.json` directly.
   - To view the admin password in Docker, run:
     ```sh
-    docker exec redirector cat /app/data/redirect.json.config
+    docker exec redirector cat /app/data/redirect.config.json
     ```
     Look for the `admin_password` field in the output.
 - **Port already in use?**
@@ -247,7 +277,7 @@ The official Docker image runs with Gunicorn (production WSGI server) by default
     ```
 
 - The app prints an ASCII art banner and clearly shows whether it is running in DEV or PROD mode at startup.
-- By default, `python app.py` runs in production mode (debug=False). Use `--debug` for development.
+- By default, `python app.py` runs in debug mode (debug=True). Use `--prod` for production. Docker is run with Gunicorn and gevent (PRODUCTION READY WSGI Servers)
 
 ---
 
@@ -329,7 +359,7 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 - If a shortcut is found in an upstream, you are automatically redirected to that upstream's URL after a short delay.
 
 ### Upstream Configuration
-- Upstreams are configured in the `data/redirect.json.config` file under the `upstreams` key.
+- Upstreams are configured in the `data/redirect.config.json` file under the `upstreams` key.
 - Each upstream requires:
   - `name`: A label for the upstream (e.g., "bitly", "go")
   - `base_url`: The base URL to check (e.g., `https://bit.ly/`)
@@ -459,7 +489,7 @@ To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1`
 
 ## Accessing Config Data in a Docker Named Volume (macOS, Windows, Linux)
 
-> **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.json.config`), you need to use an interactive terminal inside the running container.
+> **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.config.json`), you need to use an interactive terminal inside the running container.
 
 **Steps:**
 
@@ -473,11 +503,11 @@ To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1`
    ```
 3. View the config file:
    ```sh
-   cat /app/data/redirect.json.config
+   cat /app/data/redirect.config.json
    ```
 4. (Optional) Copy the file to your host:
    ```sh
-   docker cp redirector:/app/data/redirect.json.config ./redirect.json.config
+   docker cp redirector:/app/data/redirect.config.json ./redirect.config.json
    ```
 
 This method works on macOS, Windows, and Linux when using Docker named volumes.
@@ -488,10 +518,10 @@ This method works on macOS, Windows, and Linux when using Docker named volumes.
 
 If you want to update the config file inside your running Docker container with a new or edited version from your local machine, you can use the `docker cp` command:
 
-1. Edit your local config file (e.g., `data/redirect.json.config`).
+1. Edit your local config file (e.g., `data/redirect.config.json`).
 2. Copy it into the running container (replace `redirector` with your container name if different):
    ```sh
-   docker cp data/redirect.json.config redirector:/app/data/redirect.json.config
+   docker cp data/redirect.config.json redirector:/app/data/redirect.config.json
    ```
 3. (Optional) Restart the container to ensure the app reloads the new config:
    ```sh

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, stream_with_context, url_for, session
 from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, init_upstream_check_log, log_upstream_check, get_upstream_logs
+from .utils import get_shortcut, set_shortcut, init_redis_from_config
 from functools import wraps
 from datetime import datetime
 import json
@@ -14,6 +15,9 @@ from flask import jsonify
 
 bp = Blueprint('main', __name__)
 
+# At the top of the file, after imports, initialize Redis
+init_redis_from_config()
+
 @bp.context_processor
 def inject_now():
     from datetime import datetime
@@ -27,7 +31,7 @@ def inject_now():
         version = 'unknown'
     return {'now': datetime.now, 'version': version}
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.json.config')
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.config.json')
 
 def load_config():
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
@@ -117,15 +121,12 @@ def dashboard_delete(subpath):
 # GET/POST: Edit or create shortcut. Triggered when user visits /edit/<subpath> or submits edit form.
 @bp.route('/edit/<path:subpath>', methods=['GET', 'POST'])
 def edit_redirect(subpath):
-    db = get_db()
     # --- Upstream check done during GET ---
     if request.method == 'GET':
-        #  allow creation or edit
-        cursor = db.execute('SELECT type, target FROM redirects WHERE pattern=?', (subpath,))
-        row = cursor.fetchone()
-        if not row:
+        shortcut = get_shortcut(subpath)
+        if not shortcut:
             return render_template('create_shortcut.html', pattern=subpath, now=datetime.utcnow)
-        return render_template('edit_shortcut.html', pattern=subpath, type=row[0], target=row[1], now=datetime.utcnow)
+        return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'], now=datetime.utcnow)
 
     # POST: Form was submitted to update/create shortcut
     elif request.method == 'POST':
@@ -133,25 +134,12 @@ def edit_redirect(subpath):
         target = request.form['target']
         now = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
         ip = request.remote_addr or ''
-
-        # Proceed with insert/update (upstream was already checked on GET)
-        cursor = db.execute('SELECT 1 FROM redirects WHERE pattern=?', (subpath,))
+        cursor = get_db().execute('SELECT 1 FROM redirects WHERE pattern=?', (subpath,))
         exists = cursor.fetchone()
-
         if exists:
-            db.execute('''
-                UPDATE redirects
-                SET type=?, target=?, updated_at=?, updated_ip=?
-                WHERE pattern=?
-            ''', (type_, target, now, ip, subpath))
+            set_shortcut(subpath, type_, target, updated_at=now)
         else:
-            db.execute('''
-                INSERT INTO redirects
-                (type, pattern, target, created_at, updated_at, created_ip, updated_ip)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (type_, subpath, target, now, now, ip, ip))
-        db.commit()
-
+            set_shortcut(subpath, type_, target, created_at=now, updated_at=now)
         return render_template('success_create.html', pattern=subpath, target=target, now=datetime.utcnow)
 
     db = get_db()
@@ -181,15 +169,14 @@ def edit_redirect(subpath):
 # GET: Handle redirect for static and dynamic shortcuts. Triggered for any /<subpath> not matching other routes.
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
-    db = get_db()
-    cursor = db.execute('SELECT target FROM redirects WHERE type = ? AND pattern = ?', ('static', subpath))
-    row = cursor.fetchone()
-    if row:
+    shortcut = get_shortcut(subpath)
+    if shortcut and shortcut['type'] == 'static':
         increment_access_count(subpath)
         if get_auto_redirect_delay() > 0:
-            return render_template('redirect.html', target=row[0], delay=get_auto_redirect_delay(), now=datetime.utcnow)
-        return redirect(row[0], code=302)
+            return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), now=datetime.utcnow)
+        return redirect(shortcut['target'], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
+    db = get_db()
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
     for pattern, target in cursor.fetchall():
         import re as _re
@@ -207,8 +194,13 @@ def handle_redirect(subpath):
             if get_auto_redirect_delay() > 0:
                 return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow)
             return redirect(dest_url, code=302)
-    first_segment = subpath.split('/')[0]
-    return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
+    # Only check upstreams if any are configured
+    from .routes import get_upstreams
+    if get_upstreams():
+        first_segment = subpath.split('/')[0]
+        return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
+    # If no upstreams, redirect to create shortcut page
+    return redirect(url_for('main.edit_redirect', subpath=subpath))
 
 # GET: Tutorial/help page. Triggered when user visits /tutorial.
 @bp.route('/tutorial', methods=['GET'])
@@ -283,9 +275,17 @@ def stream_check_upstreams(pattern):
         yield from send_log(f"🔍 Starting upstream check for pattern: `{pattern}`")
 
         for up in get_upstreams():
-            up_name = up['name']
-            base_url = up['base_url'].rstrip('/')
-            fail_url = up['fail_url'].rstrip('/')
+            # Check required fields
+            required_fields = ['name', 'base_url', 'fail_url']
+            missing_fields = [field for field in required_fields if not up.get(field)]
+            if missing_fields:
+                yield from send_log(f"⚠️ Warning: Upstream missing required fields: {', '.join(missing_fields)}. Upstream config: {json.dumps(up)}")
+            up_name = up.get('name', '[unnamed]')
+            base_url = up.get('base_url', '').rstrip('/')
+            fail_url = up.get('fail_url', '')
+            if 'fail_url' not in up:
+                yield from send_log(f"⚠️ Warning: Upstream '{up_name}' missing 'fail_url' key. Treating as empty string.")
+            fail_url = fail_url.rstrip('/')
             fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
 
             check_url = f"{base_url}/{pattern}"

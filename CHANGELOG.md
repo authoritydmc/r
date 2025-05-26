@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Accessible URLs on /version page are now clickable, copyable (with button), and have open-in-new-tab icons (FontAwesome).
 - Modernized all UI with Tailwind CSS and SVG/FontAwesome icons.
-- Config is now stored in `data/redirect.json.config` (JSON), not the DB. File is auto-created with secure defaults (random admin password).
+- Config is now stored in `data/redirect.config.json` (JSON), not the DB. File is auto-created with secure defaults (random admin password).
 - Database path is now `data/redirects.db`, with directory auto-creation for cross-platform and Docker compatibility.
 - Docker instructions updated: use `rajlabs/redirect` image, with clear volume/bind mount and data location notes.
 - Startup prints info about Docker port mapping, data persistence, and best practices.

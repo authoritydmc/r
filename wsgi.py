@@ -1,8 +1,8 @@
 # wsgi.py
 
 import platform
-import argparse
 from app import create_app
+from app.utils import init_redis_from_config, app_startup_banner
 
 def get_os_name():
     """Detect the operating system and return its name."""
@@ -49,6 +49,9 @@ def print_os_instructions(os_name):
         print("Your OS is not explicitly supported. Please manually update your hosts file:\n")
         print("  127.0.0.1   r")
 
+# Initialize Redis before app
+init_redis_from_config()
+
 # Initialize Flask app
 try:
     app = create_app()
@@ -59,24 +62,7 @@ except Exception as e:
     raise
 
 # Print environment details and host setup tips
-ascii_art = r''' _______  _______  ______  _________ _______  _______  _______ _________ _______  _______ 
-(  ____ )(  ____ \(  __  \ \__   __/(  ____ )(  ____ \(  ____ \\__   __/(  ___  )(  ____ )
-| (    )|| (    \/| (  \  )   ) (   | (    )|| (    \/| (    \/   ) (   | (   ) || (    )|
-| (____)|| (__    | |   ) |   | |   | (____)|| (__    | |         | |   | |   | || (____)|
-|     __)|  __)   | |   | |   | |   |     __)|  __)   | |         | |   | |   | ||     __)
-| (\ (   | (      | |   ) |   | |   | (\ (   | (      | |         | |   | |   | || (\ (   
-| ) \ \__| (____/\| (__/  )___) (___| ) \ \__| (____/\| (____/\   | |   | (___) || ) \ \__
-|/   \__/(_______/(______/ \_______/|/   \__/(_______/(_______/   )_(   (_______)|/   \__/
-'''
-
-print(ascii_art)
-print(f"==============================\n   GUNICORN MODE - READY\n==============================")
-print("URL Shortener & Redirector app initialized.")
-print(f"Configured to run on port: {app.config['port']}")
-
-# Detect OS and print instructions for host file entry
-os_name = get_os_name()
-print_os_instructions(os_name)
+app_startup_banner(app)
 
 # Optional: Init DB before Gunicorn takes over
 app.init_db()
