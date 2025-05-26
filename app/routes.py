@@ -504,9 +504,64 @@ def admin_upstream_cache_resync(upstream, pattern):
             return jsonify({'success': False, 'error': str(e)})
     except Exception as e:
         # Catch any unexpected error and always return JSON
-        import sys
         print(f"[RESYNC] Unexpected Exception: {e}", file=sys.stderr)
         return jsonify({'success': False, 'error': 'Unexpected server error', 'details': str(e)}), 500
+
+@bp.route('/admin/upstream-cache/purge/<upstream>', methods=['POST'])
+@login_required
+def admin_upstream_cache_purge(upstream):
+    try:
+        from .utils import list_upstream_cache, clear_upstream_cache
+        cached = list_upstream_cache(upstream)
+        for entry in cached:
+            clear_upstream_cache(entry['pattern'])
+        return jsonify({'success': True, 'purged': len(cached)})
+    except Exception as e:
+        import sys
+        print(f"[PURGE] Exception: {e}", file=sys.stderr)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/admin/upstream-cache/resync-all/<upstream>', methods=['POST'])
+@login_required
+def admin_upstream_cache_resync_all(upstream):
+    try:
+        from .utils import list_upstream_cache
+        import requests
+        from datetime import datetime
+        up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
+        if not up:
+            return jsonify({'success': False, 'error': 'Upstream not found'}), 404
+        base_url = up.get('base_url', '').rstrip('/')
+        fail_url = up.get('fail_url', '').rstrip('/')
+        fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
+        verify_ssl = up.get('verify_ssl', False)
+        cached = list_upstream_cache(upstream)
+        results = []
+        for entry in cached:
+            pattern = entry['pattern']
+            check_url = f"{base_url}/{pattern}"
+            try:
+                resp = requests.get(check_url, allow_redirects=True, timeout=3, verify=verify_ssl)
+                actual_url = resp.url.rstrip('/')
+                status_code = str(resp.status_code)
+                fail_url_match = actual_url.startswith(fail_url) if fail_url else False
+                fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
+                tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+                if not fail_url_match or (fail_status_code and not fail_status_match):
+                    from .utils import cache_upstream_result
+                    cache_upstream_result(pattern, upstream, actual_url, tried_at)
+                    results.append({'pattern': pattern, 'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
+                else:
+                    from .utils import clear_upstream_cache
+                    clear_upstream_cache(pattern)
+                    results.append({'pattern': pattern, 'success': False, 'error': 'Fail criteria matched'})
+            except Exception as e:
+                results.append({'pattern': pattern, 'success': False, 'error': str(e)})
+        return jsonify({'success': True, 'results': results})
+    except Exception as e:
+        import sys
+        print(f"[RESYNC-ALL] Exception: {e}", file=sys.stderr)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @bp.route('/admin/clear-upstream-logs', methods=['POST'])
 @login_required

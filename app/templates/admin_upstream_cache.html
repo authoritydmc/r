@@ -10,7 +10,11 @@
       <i class="fa-solid fa-circle-info text-blue-400"></i>
       <span>These are shortcuts found in this upstream and cached for fast redirect. Resync to update from upstream.</span>
     </div>
-    <a href="{{ url_for('main.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-left"></i> Back to Upstreams</a>
+    <div class="flex flex-col sm:flex-row gap-2">
+      <button class="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 flex items-center gap-1" onclick="resyncAllCache('{{ upstream }}', this)"><i class="fa-solid fa-arrows-rotate"></i> Resync All</button>
+      <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1" onclick="purgeAllCache('{{ upstream }}', this)"><i class="fa-solid fa-trash"></i> Purge All</button>
+      <a href="{{ url_for('main.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-left"></i> Back to Upstreams</a>
+    </div>
   </div>
   {% if cached %}
     <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto">
@@ -78,6 +82,64 @@ function resyncCache(upstream, pattern, btn) {
         msg += '\n\nThe server could not be reached or returned an unexpected error.';
       }
       alert(msg);
+      btn.disabled = false;
+    });
+}
+
+function resyncAllCache(upstream, btn) {
+  if (!confirm('Resync all cached shortcuts from upstream? This will update all entries.')) return;
+  btn.disabled = true;
+  btn.textContent = 'Resyncing...';
+  fetch(`/admin/upstream-cache/resync-all/${encodeURIComponent(upstream)}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        btn.textContent = 'Resynced!';
+        setTimeout(() => location.reload(), 800);
+      } else {
+        btn.textContent = 'Failed';
+        alert(data.error || 'Resync all failed.');
+        btn.disabled = false;
+      }
+    })
+    .catch((err) => {
+      btn.textContent = 'Failed';
+      alert('Resync all failed.');
+      btn.disabled = false;
+    });
+}
+
+let purgeConfirmStep = 0;
+function purgeAllCache(upstream, btn) {
+  if (purgeConfirmStep === 0) {
+    btn.textContent = 'Confirm Purge';
+    btn.classList.add('bg-red-800');
+    purgeConfirmStep = 1;
+    setTimeout(() => {
+      btn.textContent = 'Purge All';
+      btn.classList.remove('bg-red-800');
+      purgeConfirmStep = 0;
+    }, 3000);
+    return;
+  }
+  if (!confirm('Are you absolutely sure? This will delete ALL cached shortcuts for this upstream.')) return;
+  btn.disabled = true;
+  btn.textContent = 'Purging...';
+  fetch(`/admin/upstream-cache/purge/${encodeURIComponent(upstream)}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        btn.textContent = 'Purged!';
+        setTimeout(() => location.reload(), 800);
+      } else {
+        btn.textContent = 'Failed';
+        alert(data.error || 'Purge all failed.');
+        btn.disabled = false;
+      }
+    })
+    .catch((err) => {
+      btn.textContent = 'Failed';
+      alert('Purge all failed.');
       btn.disabled = false;
     });
 }
