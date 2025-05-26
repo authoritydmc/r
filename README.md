@@ -87,13 +87,7 @@ docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpin
 Then run the app, connecting to Redis by container name:
 
 ```sh
-docker run -d --name redirector --restart unless-stopped \
-  -p 80:80 \
-  -v redirector_data:/app/data \
-  -e REDIS_HOST=redis \
-  -e REDIS_PORT=6379 \
-  --link redis:redis \
-  rajlabs/redirector
+docker run -d --name redirector --restart unless-stopped  -p 80:80   -v redirector_data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis  rajlabs/redirector
 ```
 
 - This uses a Docker named volume (`redirector_data`) for persistent data.
@@ -104,13 +98,7 @@ docker run -d --name redirector --restart unless-stopped \
 To store data in a specific folder on your host:
 
 ```sh
-docker run -d --name redirector --restart unless-stopped \
-  -p 80:80 \
-  -v /absolute/path/to/your/data:/app/data \
-  -e REDIS_HOST=redis \
-  -e REDIS_PORT=6379 \
-  --link redis:redis \
-  rajlabs/redirector
+docker run -d --name redirector --restart unless-stopped -p 80:80 -v /absolute/path/to/your/data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379  --link redis:redis rajlabs/redirector
 ```
 
 Replace `/absolute/path/to/your/data` with your desired directory.
@@ -289,7 +277,7 @@ The official Docker image runs with Gunicorn (production WSGI server) by default
     ```
 
 - The app prints an ASCII art banner and clearly shows whether it is running in DEV or PROD mode at startup.
-- By default, `python app.py` runs in production mode (debug=False). Use `--debug` for development.
+- By default, `python app.py` runs in debug mode (debug=True). Use `--prod` for production. Docker is run with Gunicorn and gevent (PRODUCTION READY WSGI Servers)
 
 ---
 
