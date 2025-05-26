@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- Upstream shortcut caching: successful upstream lookups are now cached in both SQLite and Redis (if enabled) for fast, low-latency redirects.
+- Configurable upstream cache: enable/disable via `redirect.config.json` (`"upstream_cache": { "enabled": true }`), defaulting to enabled.
+- Admin UI for viewing, resyncing, and purging upstream cache entries, with modern, responsive design and dark mode support.
+- "Resync All" and "Purge All" actions for upstream cache, with robust error handling and double confirmation for purging.
+- Gunicorn support for production: faster, multi-worker serving out of the box.
+- Improved error diagnostics and logging for all cache and upstream operations.
+- All admin and cache management endpoints now return valid JSON and robust error feedback.
+
+### Changed
+- Redirect route now uses upstream cache hits with the same logic as local shortcut hits (including delay and redirect template).
+- Upstream and cache admin pages redesigned for modern, visually-contained, and mobile-friendly experience.
+- Improved backend and UI error handling for all cache and upstream management actions.
+
+### Fixed
+- Route import and endpoint registration issues for upstream cache management.
+- All endpoints now robustly handle errors and return valid JSON.
+- UI feedback for resync and purge actions is now clear and actionable.
+
+### Performance
+- Redis is now used for in-memory, low-latency cache of both local and upstream shortcuts (if enabled).
+- Gunicorn is recommended for production for high concurrency and speed.
+
+---
+
 ### Added
 - Accessible URLs on /version page are now clickable, copyable (with button), and have open-in-new-tab icons (FontAwesome).
 - Modernized all UI with Tailwind CSS and SVG/FontAwesome icons.
