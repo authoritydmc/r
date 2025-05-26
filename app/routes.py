@@ -12,7 +12,7 @@ import time
 from flask import send_file
 import io
 from flask import session as flask_session
-from flask import jsonify
+from flask import jsonify, make_response
 
 bp = Blueprint('main', __name__)
 
@@ -56,7 +56,11 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
-            return render_template('admin_login.html', error=None)
+            # If AJAX/JSON request, return JSON error
+            if request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']:
+                return jsonify({'success': False, 'error': 'Authentication required'}), 401
+            # Otherwise, redirect to login page
+            return redirect(url_for('main.admin_login', next=request.path))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -449,6 +453,7 @@ def edit_redirect_blank():
 def enable_r_instructions():
     return render_template('enable_r_instructions.html', now=datetime.utcnow)
 
+# --- Upstream Cache Management ---
 @bp.route('/admin/upstream-cache/<upstream>')
 @login_required
 def admin_upstream_cache(upstream):
@@ -456,35 +461,52 @@ def admin_upstream_cache(upstream):
     cached = list_upstream_cache(upstream)
     return render_template('admin_upstream_cache.html', upstream=upstream, cached=cached)
 
-@bp.route('/admin/upstream-cache/resync/<upstream>/<pattern>', methods=['POST'])
+# Explicitly allow both GET and POST for resync endpoint, and add a print to confirm route is hit
+@bp.route('/admin/upstream-cache/resync/<upstream>/<pattern>', methods=['GET', 'POST'])
 @login_required
 def admin_upstream_cache_resync(upstream, pattern):
-    from .utils import get_upstreams, cache_upstream_result, clear_upstream_cache
-    import requests
-    from datetime import datetime
-    up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
-    if not up:
-        return jsonify({'success': False, 'error': 'Upstream not found'}), 404
-    base_url = up.get('base_url', '').rstrip('/')
-    check_url = f"{base_url}/{pattern}"
     try:
-        verify_ssl = up.get('verify_ssl', False)
-        resp = requests.get(check_url, allow_redirects=True, timeout=3, verify=verify_ssl)
-        actual_url = resp.url.rstrip('/')
-        status_code = str(resp.status_code)
-        fail_url = up.get('fail_url', '').rstrip('/')
-        fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
-        fail_url_match = actual_url.startswith(fail_url) if fail_url else False
-        fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
-        tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
-        if not fail_url_match or (fail_status_code and not fail_status_match):
-            cache_upstream_result(pattern, upstream, actual_url, tried_at)
-            return jsonify({'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
-        else:
-            clear_upstream_cache(pattern)
-            return jsonify({'success': False, 'error': 'Pattern not found in upstream (fail criteria matched).', 'checked_at': tried_at})
+        print(f"[DEBUG] admin_upstream_cache_resync called for upstream={upstream}, pattern={pattern}")
+        from .utils import cache_upstream_result, clear_upstream_cache
+        import requests
+        from datetime import datetime
+        import sys
+        up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
+        print(f"[RESYNC] Upstream: {upstream}, Pattern: {pattern}", file=sys.stderr)
+        if not up:
+            print(f"[RESYNC] Upstream not found: {upstream}", file=sys.stderr)
+            return jsonify({'success': False, 'error': 'Upstream not found'}), 404
+        base_url = up.get('base_url', '').rstrip('/')
+        check_url = f"{base_url}/{pattern}"
+        print(f"[RESYNC] Check URL: {check_url}", file=sys.stderr)
+        try:
+            verify_ssl = up.get('verify_ssl', False)
+            resp = requests.get(check_url, allow_redirects=True, timeout=3, verify=verify_ssl)
+            actual_url = resp.url.rstrip('/')
+            status_code = str(resp.status_code)
+            print(f"[RESYNC] Response: actual_url={actual_url}, status_code={status_code}", file=sys.stderr)
+            fail_url = up.get('fail_url', '').rstrip('/')
+            fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
+            fail_url_match = actual_url.startswith(fail_url) if fail_url else False
+            fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
+            tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+            print(f"[RESYNC] fail_url_match={fail_url_match}, fail_status_match={fail_status_match}", file=sys.stderr)
+            if not fail_url_match or (fail_status_code and not fail_status_match):
+                cache_upstream_result(pattern, upstream, actual_url, tried_at)
+                print(f"[RESYNC] Cached result for {pattern} in {upstream}", file=sys.stderr)
+                return jsonify({'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
+            else:
+                clear_upstream_cache(pattern)
+                print(f"[RESYNC] Fail criteria matched. Cleared cache for {pattern}", file=sys.stderr)
+                return jsonify({'success': False, 'error': 'Pattern not found in upstream (fail criteria matched).', 'checked_at': tried_at})
+        except Exception as e:
+            print(f"[RESYNC] Exception: {e}", file=sys.stderr)
+            return jsonify({'success': False, 'error': str(e)})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        # Catch any unexpected error and always return JSON
+        import sys
+        print(f"[RESYNC] Unexpected Exception: {e}", file=sys.stderr)
+        return jsonify({'success': False, 'error': 'Unexpected server error', 'details': str(e)}), 500
 
 @bp.route('/admin/clear-upstream-logs', methods=['POST'])
 @login_required
@@ -493,3 +515,11 @@ def clear_upstream_logs():
     db.execute('DELETE FROM upstream_check_log')
     db.commit()
     return redirect(url_for('main.admin_upstream_logs'))
+
+# Global error handler for 500 errors: return JSON if requested
+from flask import current_app
+@bp.app_errorhandler(500)
+def handle_500_error(e):
+    if request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']:
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+    return render_template('500.html'), 500

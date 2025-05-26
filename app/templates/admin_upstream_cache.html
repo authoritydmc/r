@@ -1,37 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Upstream Cache for {{ upstream }}{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
-  <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-200">Cached URLs for Upstream: <span class="font-mono">{{ upstream }}</span></h2>
-  {% if cached %}
-    <table class="w-full mb-4">
-      <thead>
-        <tr class="text-left border-b">
-          <th class="py-2 text-gray-700 dark:text-gray-200">Pattern</th>
-          <th class="py-2 text-gray-700 dark:text-gray-200">Resolved URL</th>
-          <th class="py-2 text-gray-700 dark:text-gray-200">Checked At</th>
-          <th class="py-2 text-gray-700 dark:text-gray-200">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for entry in cached %}
-        <tr>
-          <td class="font-mono">{{ entry.pattern }}</td>
-          <td class="break-all"><a href="{{ entry.resolved_url }}" target="_blank" class="underline text-blue-600 dark:text-blue-400">{{ entry.resolved_url }}</a></td>
-          <td>{{ entry.checked_at }}</td>
-          <td>
-            <button class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" onclick="resyncCache('{{ upstream }}', '{{ entry.pattern }}', this)">Resync</button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <div class="text-gray-600 dark:text-gray-300">No cached URLs for this upstream.</div>
-  {% endif %}
-  <div class="mt-4">
-    <a href="{{ url_for('main.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline">&larr; Back to Upstreams</a>
+<div class="w-full max-w-3xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 sm:p-8 mt-10 border border-blue-100 dark:border-gray-700">
+  <h2 class="text-2xl sm:text-3xl font-extrabold mb-6 sm:mb-8 text-blue-700 dark:text-blue-200 flex items-center gap-3">
+    <i class="fa-solid fa-database text-blue-400"></i> Cached URLs for <span class="font-mono text-blue-900 dark:text-blue-100">{{ upstream }}</span>
+  </h2>
+  <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-200 text-sm">
+      <i class="fa-solid fa-circle-info text-blue-400"></i>
+      <span>These are shortcuts found in this upstream and cached for fast redirect. Resync to update from upstream.</span>
+    </div>
+    <a href="{{ url_for('main.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-left"></i> Back to Upstreams</a>
   </div>
+  {% if cached %}
+    <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-x-auto">
+      <table class="w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-blue-50 dark:bg-gray-800">
+          <tr>
+            <th class="py-2 px-2 sm:px-4 text-left text-blue-800 dark:text-blue-200 font-semibold w-[20%]"><i class="fa-solid fa-signature"></i> Pattern</th>
+            <th class="py-2 px-2 sm:px-4 text-left text-blue-800 dark:text-blue-200 font-semibold w-[40%]"><i class="fa-solid fa-link"></i> Resolved URL</th>
+            <th class="py-2 px-2 sm:px-4 text-left text-blue-800 dark:text-blue-200 font-semibold w-[20%]"><i class="fa-solid fa-clock"></i> Checked At</th>
+            <th class="py-2 px-2 sm:px-4 text-left text-blue-800 dark:text-blue-200 font-semibold w-[20%]"><i class="fa-solid fa-arrows-rotate"></i> Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for entry in cached %}
+          <tr class="hover:bg-blue-50 dark:hover:bg-gray-800 transition">
+            <td class="py-2 px-2 sm:px-4 font-mono text-blue-900 dark:text-blue-100">{{ entry.pattern }}</td>
+            <td class="py-2 px-2 sm:px-4 break-all">
+              <a href="{{ entry.resolved_url }}" target="_blank" class="underline text-blue-600 dark:text-blue-400 flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> {{ entry.resolved_url }}</a>
+            </td>
+            <td class="py-2 px-2 sm:px-4 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <i class="fa-solid fa-clock text-blue-400"></i> {{ entry.checked_at }}
+            </td>
+            <td class="py-2 px-2 sm:px-4">
+              <button class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 flex items-center gap-1" onclick="resyncCache('{{ upstream }}', '{{ entry.pattern }}', this)"><i class="fa-solid fa-arrows-rotate"></i> Resync</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="text-gray-600 dark:text-gray-300 flex items-center gap-2 mt-6"><i class="fa-solid fa-circle-info text-blue-400"></i> No cached URLs for this upstream.</div>
+  {% endif %}
 </div>
 <script>
 function resyncCache(upstream, pattern, btn) {
@@ -45,13 +57,27 @@ function resyncCache(upstream, pattern, btn) {
         setTimeout(() => location.reload(), 800);
       } else {
         btn.textContent = 'Failed';
-        alert(data.error || 'Resync failed.');
+        let msg = data.error || 'Resync failed.';
+        if (msg.includes('fail criteria')) {
+          msg += '\n\nThis means the upstream returned a fail URL or status code, so the shortcut is not present in the upstream.';
+        } else if (msg.includes('Upstream not found')) {
+          msg += '\n\nThe upstream configuration may have changed or been deleted.';
+        } else if (msg.includes('timeout')) {
+          msg += '\n\nThe request to the upstream timed out. Check your network or upstream availability.';
+        }
+        alert(msg);
         btn.disabled = false;
       }
     })
-    .catch(() => {
+    .catch((err) => {
       btn.textContent = 'Failed';
-      alert('Resync failed.');
+      let msg = 'Resync failed.';
+      if (err && err.message) {
+        msg += '\n\nError: ' + err.message;
+      } else {
+        msg += '\n\nThe server could not be reached or returned an unexpected error.';
+      }
+      alert(msg);
       btn.disabled = false;
     });
 }
