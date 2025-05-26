@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install git for version info support
+# Install dependencies
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
@@ -13,4 +13,5 @@ COPY . .
 
 EXPOSE 80
 
-CMD ["python", "app.py"]
+# Use Gunicorn with gevent as the worker class
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "wsgi:app"]
