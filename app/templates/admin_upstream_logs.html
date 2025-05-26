@@ -27,6 +27,7 @@
               <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Status</th>
               <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Actual URL</th>
               <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Details</th>
+              <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-200 whitespace-nowrap">Cache</th>
             </tr>
           </thead>
           <tbody id="logs-table-body">
@@ -38,6 +39,7 @@
             {% set status_code = details.split('status_code=')[1].split(',')[0].strip() if 'status_code=' in details else '-' %}
             {% set actual_url = details.split('actual_url=')[1].split(',')[0].strip() if 'actual_url=' in details else '-' %}
             {% set exception_msg = details if is_exception else '' %}
+            {% set cache_info = cache_status_map.get((log.shortcut, log.upstream)) %}
             <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800">
               <td class="px-4 py-2 font-mono text-xs text-gray-800 dark:text-gray-100">{{ log.time or log.timestamp or '-' }}</td>
               <td class="px-4 py-2 font-mono text-gray-800 dark:text-gray-100">{{ log.shortcut or '-' }}</td>
@@ -64,6 +66,13 @@
                   <span class="inline-flex items-center gap-1 text-red-700 dark:text-red-300 font-mono"><i class="fa-solid fa-bug"></i> {{ exception_msg }}</span>
                 {% else %}
                   {{ details }}
+                {% endif %}
+              </td>
+              <td class="px-4 py-2 text-xs text-center">
+                {% if cache_info %}
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200" title="Cached at {{ cache_info.checked_at }}"><i class="fa-solid fa-database"></i> {{ cache_info.checked_at }}</span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400" title="Not cached"><i class="fa-regular fa-circle"></i></span>
                 {% endif %}
               </td>
             </tr>

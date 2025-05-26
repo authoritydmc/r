@@ -360,7 +360,15 @@ def admin_upstream_logs():
         except Exception:
             return redirect(url_for('main.admin_login', next=request.path))
     logs = get_upstream_logs()
-    return render_template('admin_upstream_logs.html', logs=logs)
+    # Build cache_status_map: (pattern, upstream) -> {checked_at}
+    from .utils import list_upstream_cache
+    cache_status_map = {}
+    # For all upstreams, get their cache entries
+    for up in get_upstreams():
+        cached = list_upstream_cache(up.get('name'))
+        for entry in cached:
+            cache_status_map[(entry['pattern'], up.get('name'))] = {'checked_at': entry['checked_at']}
+    return render_template('admin_upstream_logs.html', logs=logs, cache_status_map=cache_status_map)
 
 @bp.route('/admin/export-redirects')
 @login_required
