@@ -27,6 +27,9 @@ def _load_config():
                 "enabled": True,
                 "host": "redis",
                 "port": 6379
+            },
+            "upstream_cache": {
+                "enabled": True
             }
         }
         with open(CONFIG_FILE, 'w') as f:
@@ -34,6 +37,7 @@ def _load_config():
         return default
     with open(CONFIG_FILE, 'r') as f:
         return json.load(f)
+
 
 def _save_config(cfg):
     with open(CONFIG_FILE, 'w') as f:
@@ -317,6 +321,72 @@ def set_shortcut(pattern, type_, target, access_count=0, created_at=None, update
         )
         try:
             redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
+        except Exception:
+            pass
+
+# --- Upstream Cache helpers ---
+def is_upstream_cache_enabled():
+    cfg = _load_config()
+    return cfg.get('upstream_cache', {}).get('enabled', True)
+
+def cache_upstream_result(pattern, upstream_name, resolved_url, checked_at):
+    db = get_db()
+    db.execute('''
+        INSERT OR REPLACE INTO upstream_cache (pattern, upstream_name, resolved_url, checked_at)
+        VALUES (?, ?, ?, ?)
+    ''', (pattern, upstream_name, resolved_url, checked_at))
+    db.commit()
+    if _redis_enabled:
+        try:
+            redis_set(f"upstream_cache:{pattern}", json.dumps({
+                'pattern': pattern,
+                'upstream_name': upstream_name,
+                'resolved_url': resolved_url,
+                'checked_at': checked_at
+            }))
+        except Exception:
+            pass
+
+def get_cached_upstream_result(pattern):
+    if _redis_enabled:
+        val = redis_get(f"upstream_cache:{pattern}")
+        if val:
+            try:
+                return json.loads(val)
+            except Exception:
+                pass
+    db = get_db()
+    cursor = db.execute('SELECT pattern, upstream_name, resolved_url, checked_at FROM upstream_cache WHERE pattern=?', (pattern,))
+    row = cursor.fetchone()
+    if row:
+        result = {
+            'pattern': row[0],
+            'upstream_name': row[1],
+            'resolved_url': row[2],
+            'checked_at': row[3]
+        }
+        if _redis_enabled:
+            try:
+                redis_set(f"upstream_cache:{pattern}", json.dumps(result))
+            except Exception:
+                pass
+        return result
+    return None
+
+def list_upstream_cache(upstream_name):
+    db = get_db()
+    cursor = db.execute('SELECT pattern, resolved_url, checked_at FROM upstream_cache WHERE upstream_name=? ORDER BY checked_at DESC', (upstream_name,))
+    return [
+        {'pattern': row[0], 'resolved_url': row[1], 'checked_at': row[2]} for row in cursor.fetchall()
+    ]
+
+def clear_upstream_cache(pattern):
+    db = get_db()
+    db.execute('DELETE FROM upstream_cache WHERE pattern=?', (pattern,))
+    db.commit()
+    if _redis_enabled:
+        try:
+            redis_delete(f"upstream_cache:{pattern}")
         except Exception:
             pass
 

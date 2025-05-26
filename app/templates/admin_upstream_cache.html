@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Upstream Cache for {{ upstream }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
+  <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-200">Cached URLs for Upstream: <span class="font-mono">{{ upstream }}</span></h2>
+  {% if cached %}
+    <table class="w-full mb-4">
+      <thead>
+        <tr class="text-left border-b">
+          <th class="py-2 text-gray-700 dark:text-gray-200">Pattern</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Resolved URL</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Checked At</th>
+          <th class="py-2 text-gray-700 dark:text-gray-200">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in cached %}
+        <tr>
+          <td class="font-mono">{{ entry.pattern }}</td>
+          <td class="break-all"><a href="{{ entry.resolved_url }}" target="_blank" class="underline text-blue-600 dark:text-blue-400">{{ entry.resolved_url }}</a></td>
+          <td>{{ entry.checked_at }}</td>
+          <td>
+            <button class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" onclick="resyncCache('{{ upstream }}', '{{ entry.pattern }}', this)">Resync</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="text-gray-600 dark:text-gray-300">No cached URLs for this upstream.</div>
+  {% endif %}
+  <div class="mt-4">
+    <a href="{{ url_for('main.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline">&larr; Back to Upstreams</a>
+  </div>
+</div>
+<script>
+function resyncCache(upstream, pattern, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Resyncing...';
+  fetch(`/admin/upstream-cache/resync/${encodeURIComponent(upstream)}/${encodeURIComponent(pattern)}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        btn.textContent = 'Resynced!';
+        setTimeout(() => location.reload(), 800);
+      } else {
+        btn.textContent = 'Failed';
+        alert(data.error || 'Resync failed.');
+        btn.disabled = false;
+      }
+    })
+    .catch(() => {
+      btn.textContent = 'Failed';
+      alert('Resync failed.');
+      btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}
