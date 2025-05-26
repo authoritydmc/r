@@ -10,14 +10,50 @@
 <body class="bg-gradient-to-br from-blue-100 to-blue-300 min-h-screen flex items-center justify-center">
   <div class="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
     <div class="flex flex-col items-center gap-4">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+      <!-- Redirect Icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
+
       <h2 class="text-2xl font-bold text-blue-700">Redirecting...</h2>
       <p class="text-lg text-gray-700">You are being redirected to:</p>
       <a href="{{ target }}" class="text-blue-600 underline break-all text-lg font-mono hover:text-blue-800" target="_blank">{{ target }}</a>
+
+      <!-- Redirect Metadata -->
+    {% if source  %}
+      <div class="flex flex-col items-center gap-2 mt-4 text-gray-600">
+        <div class="flex items-center gap-2">
+          {% if source == "redis" %}
+            <span class="text-green-500 flex items-center gap-2">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10h18l-9 9-9-9z"/></svg>
+              Cached in Redis
+            </span>
+          {% elif source == "redirect_table" %}
+            <span class="text-blue-500 flex items-center gap-2">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+              Stored in Redirect Table
+            </span>
+          {% elif source == "upstream_table" %}
+            <span class="text-orange-500 flex items-center gap-2">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 21h20L12 3z"/></svg>
+              Retrieved from Upstream Cache
+            </span>
+            {% else %}
+         
+          {% endif %}
+        </div>
+        <p class="text-sm">
+  {% if created_at %} Created: {{ created_at }} {% endif %}
+  {% if modified_at %} | Modified: {{ modified_at }} {% endif %}
+</p>
+</div>
+{% endif %}
+
       <p class="mt-4 text-gray-500">Redirecting in <span id="countdown" class="font-semibold">{{ delay }}</span> second{{ 's' if delay != 1 else '' }}...</p>
       <button onclick="window.location.href='{{ target }}'" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Go Now</button>
     </div>
   </div>
+
   <script>
     let seconds = {{ delay }};
     const countdown = document.getElementById('countdown');
