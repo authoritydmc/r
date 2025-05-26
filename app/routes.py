@@ -194,8 +194,13 @@ def handle_redirect(subpath):
             if get_auto_redirect_delay() > 0:
                 return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow)
             return redirect(dest_url, code=302)
-    first_segment = subpath.split('/')[0]
-    return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
+    # Only check upstreams if any are configured
+    from .routes import get_upstreams
+    if get_upstreams():
+        first_segment = subpath.split('/')[0]
+        return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
+    # If no upstreams, redirect to create shortcut page
+    return redirect(url_for('main.edit_redirect', subpath=subpath))
 
 # GET: Tutorial/help page. Triggered when user visits /tutorial.
 @bp.route('/tutorial', methods=['GET'])
@@ -270,9 +275,17 @@ def stream_check_upstreams(pattern):
         yield from send_log(f"🔍 Starting upstream check for pattern: `{pattern}`")
 
         for up in get_upstreams():
-            up_name = up['name']
-            base_url = up['base_url'].rstrip('/')
-            fail_url = up['fail_url'].rstrip('/')
+            # Check required fields
+            required_fields = ['name', 'base_url', 'fail_url']
+            missing_fields = [field for field in required_fields if not up.get(field)]
+            if missing_fields:
+                yield from send_log(f"⚠️ Warning: Upstream missing required fields: {', '.join(missing_fields)}. Upstream config: {json.dumps(up)}")
+            up_name = up.get('name', '[unnamed]')
+            base_url = up.get('base_url', '').rstrip('/')
+            fail_url = up.get('fail_url', '')
+            if 'fail_url' not in up:
+                yield from send_log(f"⚠️ Warning: Upstream '{up_name}' missing 'fail_url' key. Treating as empty string.")
+            fail_url = fail_url.rstrip('/')
             fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
 
             check_url = f"{base_url}/{pattern}"
