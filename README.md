@@ -29,7 +29,7 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 ## Features
 
 - **Modern UI**: Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.
-- **Config as JSON**: All settings stored in `data/redirect.json.config` (auto-created with secure defaults).
+- **Config as JSON**: All settings stored in `data/redirect.config.json` (auto-created with secure defaults).
 - **Secure by Default**: Random admin password generated on first run.
 - **Docker-Ready**: Official image [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector) with persistent data and easy volume/bind mount support.
 - **Reverse Proxy Friendly**: Works behind Nginx, Traefik, etc. (see below).
@@ -164,7 +164,7 @@ If you prefer to edit your hosts file manually:
 
 ## Configuration
 
-- All config is in `data/redirect.json.config` (auto-created if missing):
+- All config is in `data/redirect.config.json` (auto-created if missing):
   - `port`: Port to run the app (default: 80)
   - `admin_password`: Admin password (random on first run)
   - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0). **All redirect delays and countdowns in the app (including UI and backend logic) use this value for consistency.**
@@ -204,10 +204,10 @@ server {
 
 - **Can't find admin password?**
   - Check the first lines of the container or app logs for the generated password.
-  - Or, view/edit `data/redirect.json.config` directly.
+  - Or, view/edit `data/redirect.config.json` directly.
   - To view the admin password in Docker, run:
     ```sh
-    docker exec redirector cat /app/data/redirect.json.config
+    docker exec redirector cat /app/data/redirect.config.json
     ```
     Look for the `admin_password` field in the output.
 - **Port already in use?**
@@ -329,7 +329,7 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 - If a shortcut is found in an upstream, you are automatically redirected to that upstream's URL after a short delay.
 
 ### Upstream Configuration
-- Upstreams are configured in the `data/redirect.json.config` file under the `upstreams` key.
+- Upstreams are configured in the `data/redirect.config.json` file under the `upstreams` key.
 - Each upstream requires:
   - `name`: A label for the upstream (e.g., "bitly", "go")
   - `base_url`: The base URL to check (e.g., `https://bit.ly/`)
@@ -459,7 +459,7 @@ To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1`
 
 ## Accessing Config Data in a Docker Named Volume (macOS, Windows, Linux)
 
-> **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.json.config`), you need to use an interactive terminal inside the running container.
+> **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.config.json`), you need to use an interactive terminal inside the running container.
 
 **Steps:**
 
@@ -473,11 +473,11 @@ To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1`
    ```
 3. View the config file:
    ```sh
-   cat /app/data/redirect.json.config
+   cat /app/data/redirect.config.json
    ```
 4. (Optional) Copy the file to your host:
    ```sh
-   docker cp redirector:/app/data/redirect.json.config ./redirect.json.config
+   docker cp redirector:/app/data/redirect.config.json ./redirect.config.json
    ```
 
 This method works on macOS, Windows, and Linux when using Docker named volumes.
@@ -488,10 +488,10 @@ This method works on macOS, Windows, and Linux when using Docker named volumes.
 
 If you want to update the config file inside your running Docker container with a new or edited version from your local machine, you can use the `docker cp` command:
 
-1. Edit your local config file (e.g., `data/redirect.json.config`).
+1. Edit your local config file (e.g., `data/redirect.config.json`).
 2. Copy it into the running container (replace `redirector` with your container name if different):
    ```sh
-   docker cp data/redirect.json.config redirector:/app/data/redirect.json.config
+   docker cp data/redirect.config.json redirector:/app/data/redirect.config.json
    ```
 3. (Optional) Restart the container to ensure the app reloads the new config:
    ```sh

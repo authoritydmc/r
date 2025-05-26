@@ -31,7 +31,7 @@ def inject_now():
         version = 'unknown'
     return {'now': datetime.now, 'version': version}
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.json.config')
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.config.json')
 
 def load_config():
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:

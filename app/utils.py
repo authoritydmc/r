@@ -8,7 +8,7 @@ import redis
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 DATABASE = os.path.join(DATA_DIR, 'redirects.db')
-CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.json.config')
+CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.config.json')
 
 # --- JSON config helpers ---
 def _load_config():
@@ -19,9 +19,15 @@ def _load_config():
         print(f"Generated password :{random_pwd} for admin access")
         default = {
             "port": 80,
-            "auto_redirect_delay":3,
+            "auto_redirect_delay": 3,
             "admin_password": random_pwd,
-            "delete_requires_password": True
+            "delete_requires_password": True,
+            "upstreams": [],
+            "redis": {
+                "enabled": True,
+                "host": "localhost",
+                "port": 6379
+            }
         }
         with open(CONFIG_FILE, 'w') as f:
             json.dump(default, f, indent=2)
