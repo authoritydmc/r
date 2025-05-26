@@ -31,7 +31,7 @@
           {% elif source == "redirect_table" %}
             <span class="text-blue-500 flex items-center gap-2">
               <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
-              Stored in Redirect Table
+              Retrieved from  Redirect Table
             </span>
           {% elif source == "upstream_table" %}
             <span class="text-orange-500 flex items-center gap-2">
@@ -42,6 +42,16 @@
          
           {% endif %}
         </div>
+      <div class="flex items-center gap-2 mt-4 text-gray-700">
+  <!-- Clock Icon -->
+  <svg class="h-6 w-6 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 5v6h5v-2h-3V7h-2z"/>
+  </svg>
+  
+  <span class="text-lg font-medium">Response Time:</span>
+  <span class="text-blue-600 font-bold">{{ response_time }} ms</span>
+</div>
+
         <p class="text-sm">
   {% if created_at %} Created: {{ created_at }} {% endif %}
   {% if modified_at %} | Modified: {{ modified_at }} {% endif %}

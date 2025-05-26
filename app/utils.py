@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import json
+import time
 from flask import g
 import redis
 
@@ -260,7 +261,9 @@ def redis_delete(key):
 
 def get_shortcut(pattern):
     # Try Redis first
+    start_time = time.time()
     shortcut = None
+    source = 'redis'
     if _redis_enabled:
         val = redis_get(f"shortcut:{pattern}")
         if val:
@@ -269,9 +272,10 @@ def get_shortcut(pattern):
             except Exception:
                 shortcut = None
     if shortcut:
-        return shortcut
+        return shortcut,source,round(time.time() - start_time, 6)
     # Fallback to DB
     db = get_db()
+    source='redirect_table'
     cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects WHERE pattern=?', (pattern,))
     row = cursor.fetchone()
     if row:
@@ -289,8 +293,8 @@ def get_shortcut(pattern):
                 redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
             except Exception:
                 pass
-        return shortcut
-    return None
+        return shortcut,source,round(time.time() - start_time, 6)
+    return None, None, round(time.time() - start_time, 6)
 
 def set_shortcut(pattern, type_, target, access_count=0, created_at=None, updated_at=None):
     db = get_db()
