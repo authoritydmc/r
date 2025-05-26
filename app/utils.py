@@ -25,7 +25,7 @@ def _load_config():
             "upstreams": [],
             "redis": {
                 "enabled": True,
-                "host": "localhost",
+                "host": "redis",
                 "port": 6379
             }
         }
