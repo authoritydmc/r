@@ -14,4 +14,4 @@ COPY . .
 EXPOSE 80
 
 # Use Gunicorn with gevent as the worker class
-CMD ["gunicorn", "-k", "gevent", "-b", "0.0.0.0:80", "app:app"]
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "wsgi:app"]
