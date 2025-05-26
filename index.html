@@ -252,6 +252,19 @@ python app.py</code></pre>
         </ul>
       </div>
     </section>
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-blue-700 dark:text-blue-200 mb-4">Key Features & Improvements (2025)</h2>
+      <ul class="list-disc list-inside text-lg text-gray-700 dark:text-blue-200 mb-6 space-y-2">
+        <li><b>Gunicorn-powered serving</b> for high concurrency and fast production performance (multi-worker, robust, Docker-ready).</li>
+        <li><b>Redis in-memory cache</b> for ultra-low-latency shortcut and upstream cache lookups (optional, recommended for production).</li>
+        <li><b>Upstream shortcut caching</b>: successful upstream lookups are cached in both SQLite and Redis for instant future redirects.</li>
+        <li><b>Configurable upstream cache</b>: enable/disable via <code>redirect.config.json</code> (<code>"upstream_cache": { "enabled": true }</code>), default enabled.</li>
+        <li><b>Modern admin UI</b> for viewing, resyncing, and purging upstream cache entries, with dark mode and mobile support.</li>
+        <li><b>Resync All</b> and <b>Purge All</b> actions for upstream cache, with robust error handling and double confirmation for purging.</li>
+        <li><b>Consistent redirect logic</b>: Upstream cache hits use the same redirect/delay logic as local shortcuts.</li>
+        <li><b>Improved error diagnostics</b> and logging for all cache and upstream operations, with clear UI feedback.</li>
+      </ul>
+    </section>
     <section class="mb-12 text-center">
       <a href="https://github.com/authoritydmc/r" target="_blank" class="inline-block bg-blue-700 text-white px-8 py-4 rounded-lg shadow-lg text-xl font-bold hover:bg-blue-800 transition"><i class="fab fa-github mr-2"></i> View on GitHub</a>
     </section>

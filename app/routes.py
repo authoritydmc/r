@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, stream_with_context, url_for, session
 from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, init_upstream_check_log, log_upstream_check, get_upstream_logs
 from .utils import get_shortcut, set_shortcut, init_redis_from_config
+from .utils import is_upstream_cache_enabled, get_cached_upstream_result, cache_upstream_result, clear_upstream_cache
 from functools import wraps
 from datetime import datetime
 import json
@@ -11,7 +12,7 @@ import time
 from flask import send_file
 import io
 from flask import session as flask_session
-from flask import jsonify
+from flask import jsonify, make_response
 
 bp = Blueprint('main', __name__)
 
@@ -55,7 +56,11 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
-            return render_template('admin_login.html', error=None)
+            # If AJAX/JSON request, return JSON error
+            if request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']:
+                return jsonify({'success': False, 'error': 'Authentication required'}), 401
+            # Otherwise, redirect to login page
+            return redirect(url_for('main.admin_login', next=request.path))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -123,7 +128,7 @@ def dashboard_delete(subpath):
 def edit_redirect(subpath):
     # --- Upstream check done during GET ---
     if request.method == 'GET':
-        shortcut = get_shortcut(subpath)
+        shortcut,source_data,resp_time = get_shortcut(subpath)
         if not shortcut:
             return render_template('create_shortcut.html', pattern=subpath, now=datetime.utcnow)
         return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'], now=datetime.utcnow)
@@ -169,12 +174,21 @@ def edit_redirect(subpath):
 # GET: Handle redirect for static and dynamic shortcuts. Triggered for any /<subpath> not matching other routes.
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
-    shortcut = get_shortcut(subpath)
+    start_time = time.time()
+    shortcut,data_source,resp_time = get_shortcut(subpath)
     if shortcut and shortcut['type'] == 'static':
         increment_access_count(subpath)
         if get_auto_redirect_delay() > 0:
-            return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), now=datetime.utcnow)
+            return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source=data_source,response_time=resp_time)
         return redirect(shortcut['target'], code=302)
+    # Check upstream cache before running upstream checks
+    if is_upstream_cache_enabled():
+        cached = get_cached_upstream_result(subpath)
+        if cached and cached.get('resolved_url'):
+            # Use the same redirect logic as for local hits
+            if get_auto_redirect_delay() > 0:
+                return render_template('redirect.html', target=cached['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source='upstream_table',response_time=round(time.time() - start_time, 6))
+            return redirect(cached['resolved_url'], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
     db = get_db()
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
@@ -184,7 +198,6 @@ def handle_redirect(subpath):
         var_name = match.group(1) if match else 'name'
         if subpath == pattern:
             example_var = 'yourvalue'
-            example_url = f'/{pattern}/' + example_var
             example_target = target.replace(f'{{{var_name}}}', example_var)
             return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=var_name, example_target=example_target, now=datetime.utcnow)
         if subpath.startswith(pattern + "/"):
@@ -192,7 +205,7 @@ def handle_redirect(subpath):
             dest_url = _re.sub(r"\{\w+\}", variable, target)
             increment_access_count(pattern)
             if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow)
+                return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), now=datetime.utcnow,source="redirect_table")
             return redirect(dest_url, code=302)
     # Only check upstreams if any are configured
     from .routes import get_upstreams
@@ -258,6 +271,7 @@ def check_upstreams_ui(pattern):
 
 @bp.route('/stream/check-upstreams/<pattern>')
 def stream_check_upstreams(pattern):
+    from .utils import cache_upstream_result, is_upstream_cache_enabled
     init_upstream_check_log()
     @stream_with_context
     def event_stream():
@@ -313,6 +327,9 @@ def stream_check_upstreams(pattern):
                         pattern, up_name, check_url, 'success',
                         f"actual_url={actual_url}, status_code={status_code}", tried_at
                     )
+                    # Cache the result if enabled
+                    if is_upstream_cache_enabled():
+                        cache_upstream_result(pattern, up_name, actual_url, tried_at)
                     yield from send_log(
                         f"✅ Shortcut found in {up_name} (redirected to {actual_url}, status {status_code})",
                         {'found': True, 'redirect_url': redirect_url}
@@ -349,7 +366,15 @@ def admin_upstream_logs():
         except Exception:
             return redirect(url_for('main.admin_login', next=request.path))
     logs = get_upstream_logs()
-    return render_template('admin_upstream_logs.html', logs=logs)
+    # Build cache_status_map: (pattern, upstream) -> {checked_at}
+    from .utils import list_upstream_cache
+    cache_status_map = {}
+    # For all upstreams, get their cache entries
+    for up in get_upstreams():
+        cached = list_upstream_cache(up.get('name'))
+        for entry in cached:
+            cache_status_map[(entry['pattern'], up.get('name'))] = {'checked_at': entry['checked_at']}
+    return render_template('admin_upstream_logs.html', logs=logs, cache_status_map=cache_status_map)
 
 @bp.route('/admin/export-redirects')
 @login_required
@@ -429,3 +454,129 @@ def edit_redirect_blank():
 @bp.route('/enable-r-instructions', methods=['GET'])
 def enable_r_instructions():
     return render_template('enable_r_instructions.html', now=datetime.utcnow)
+
+# --- Upstream Cache Management ---
+@bp.route('/admin/upstream-cache/<upstream>')
+@login_required
+def admin_upstream_cache(upstream):
+    from .utils import list_upstream_cache
+    cached = list_upstream_cache(upstream)
+    return render_template('admin_upstream_cache.html', upstream=upstream, cached=cached)
+
+# Explicitly allow both GET and POST for resync endpoint, and add a print to confirm route is hit
+@bp.route('/admin/upstream-cache/resync/<upstream>/<pattern>', methods=['GET', 'POST'])
+@login_required
+def admin_upstream_cache_resync(upstream, pattern):
+    try:
+        print(f"[DEBUG] admin_upstream_cache_resync called for upstream={upstream}, pattern={pattern}")
+        from .utils import cache_upstream_result, clear_upstream_cache
+        import requests
+        from datetime import datetime
+        import sys
+        up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
+        print(f"[RESYNC] Upstream: {upstream}, Pattern: {pattern}", file=sys.stderr)
+        if not up:
+            print(f"[RESYNC] Upstream not found: {upstream}", file=sys.stderr)
+            return jsonify({'success': False, 'error': 'Upstream not found'}), 404
+        base_url = up.get('base_url', '').rstrip('/')
+        check_url = f"{base_url}/{pattern}"
+        print(f"[RESYNC] Check URL: {check_url}", file=sys.stderr)
+        try:
+            verify_ssl = up.get('verify_ssl', False)
+            resp = requests.get(check_url, allow_redirects=True, timeout=3, verify=verify_ssl)
+            actual_url = resp.url.rstrip('/')
+            status_code = str(resp.status_code)
+            print(f"[RESYNC] Response: actual_url={actual_url}, status_code={status_code}", file=sys.stderr)
+            fail_url = up.get('fail_url', '').rstrip('/')
+            fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
+            fail_url_match = actual_url.startswith(fail_url) if fail_url else False
+            fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
+            tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+            print(f"[RESYNC] fail_url_match={fail_url_match}, fail_status_match={fail_status_match}", file=sys.stderr)
+            if not fail_url_match or (fail_status_code and not fail_status_match):
+                cache_upstream_result(pattern, upstream, actual_url, tried_at)
+                print(f"[RESYNC] Cached result for {pattern} in {upstream}", file=sys.stderr)
+                return jsonify({'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
+            else:
+                clear_upstream_cache(pattern)
+                print(f"[RESYNC] Fail criteria matched. Cleared cache for {pattern}", file=sys.stderr)
+                return jsonify({'success': False, 'error': 'Pattern not found in upstream (fail criteria matched).', 'checked_at': tried_at})
+        except Exception as e:
+            print(f"[RESYNC] Exception: {e}", file=sys.stderr)
+            return jsonify({'success': False, 'error': str(e)})
+    except Exception as e:
+        # Catch any unexpected error and always return JSON
+        print(f"[RESYNC] Unexpected Exception: {e}", file=sys.stderr)
+        return jsonify({'success': False, 'error': 'Unexpected server error', 'details': str(e)}), 500
+
+@bp.route('/admin/upstream-cache/purge/<upstream>', methods=['POST'])
+@login_required
+def admin_upstream_cache_purge(upstream):
+    try:
+        from .utils import list_upstream_cache, clear_upstream_cache
+        cached = list_upstream_cache(upstream)
+        for entry in cached:
+            clear_upstream_cache(entry['pattern'])
+        return jsonify({'success': True, 'purged': len(cached)})
+    except Exception as e:
+        import sys
+        print(f"[PURGE] Exception: {e}", file=sys.stderr)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/admin/upstream-cache/resync-all/<upstream>', methods=['POST'])
+@login_required
+def admin_upstream_cache_resync_all(upstream):
+    try:
+        from .utils import list_upstream_cache
+        import requests
+        from datetime import datetime
+        up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
+        if not up:
+            return jsonify({'success': False, 'error': 'Upstream not found'}), 404
+        base_url = up.get('base_url', '').rstrip('/')
+        fail_url = up.get('fail_url', '').rstrip('/')
+        fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
+        verify_ssl = up.get('verify_ssl', False)
+        cached = list_upstream_cache(upstream)
+        results = []
+        for entry in cached:
+            pattern = entry['pattern']
+            check_url = f"{base_url}/{pattern}"
+            try:
+                resp = requests.get(check_url, allow_redirects=True, timeout=3, verify=verify_ssl)
+                actual_url = resp.url.rstrip('/')
+                status_code = str(resp.status_code)
+                fail_url_match = actual_url.startswith(fail_url) if fail_url else False
+                fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
+                tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+                if not fail_url_match or (fail_status_code and not fail_status_match):
+                    from .utils import cache_upstream_result
+                    cache_upstream_result(pattern, upstream, actual_url, tried_at)
+                    results.append({'pattern': pattern, 'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
+                else:
+                    from .utils import clear_upstream_cache
+                    clear_upstream_cache(pattern)
+                    results.append({'pattern': pattern, 'success': False, 'error': 'Fail criteria matched'})
+            except Exception as e:
+                results.append({'pattern': pattern, 'success': False, 'error': str(e)})
+        return jsonify({'success': True, 'results': results})
+    except Exception as e:
+        import sys
+        print(f"[RESYNC-ALL] Exception: {e}", file=sys.stderr)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/admin/clear-upstream-logs', methods=['POST'])
+@login_required
+def clear_upstream_logs():
+    db = get_db()
+    db.execute('DELETE FROM upstream_check_log')
+    db.commit()
+    return redirect(url_for('main.admin_upstream_logs'))
+
+# Global error handler for 500 errors: return JSON if requested
+from flask import current_app
+@bp.app_errorhandler(500)
+def handle_500_error(e):
+    if request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']:
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+    return render_template('500.html'), 500

@@ -7,9 +7,9 @@ run_standalone_startup(app)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prod", action="store_true", help="Run Flask in prod mode")
+    parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
     args = parser.parse_args()
-    mode = "PROD" if args.prod else "DEV"
+    mode = "DEV" if args.debug else "PROD"
     print("\n==============================\n")
     # app.init_db()
-    app.run(debug=args.prod, host="0.0.0.0", port=app.config['port'])
+    app.run(debug=args.debug, host="0.0.0.0", port=app.config['port'])
