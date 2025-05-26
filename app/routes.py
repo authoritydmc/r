@@ -186,7 +186,7 @@ def handle_redirect(subpath):
         if cached and cached.get('resolved_url'):
             # Use the same redirect logic as for local hits
             if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=cached['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow)
+                return render_template('redirect.html', target=cached['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source='upstream_table')
             return redirect(cached['resolved_url'], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
     db = get_db()
