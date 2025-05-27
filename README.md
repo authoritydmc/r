@@ -129,14 +129,43 @@ python app.py
 
 ## Configuration
 
-- All config is in `data/redirect.config.json` (auto-created if missing):
-  - `port`: Port to run the app (default: 80)
-  - `admin_password`: Admin password (random on first run)
-  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
-  - `delete_requires_password`: Require password to delete shortcuts (default: true)
-  - `upstreams`: List of upstream redirectors (see below)
-  - `redis`: Redis config (enabled, host, port)
-  - `upstream_cache`: Upstream cache config (enabled)
+All configuration is managed in the `data/redirect.config.json` file (auto-created if missing). Here is a breakdown of each option:
+
+```json
+{
+  "port": 80, // Port the app listens on (default: 80)
+  "auto_redirect_delay": 300, // Delay (in seconds) before auto-redirect (0 = instant)
+  "admin_password": "...", // Admin password (randomly generated on first run)
+  "delete_requires_password": true, // Require password to delete shortcuts (recommended: true)
+  "upstreams": [ // List of upstream redirectors to check for existing shortcuts
+    {
+      "name": "bitly", // Name/label for the upstream
+      "base_url": "https://go.dev", // Base URL for upstream shortcut checks
+      "fail_url": "", // URL returned by upstream when shortcut does not exist (leave blank if not used)
+      "fail_status_code": 200 // HTTP status code indicating a failed lookup (e.g., 404 for not found)
+    }
+  ],
+  "redis": {
+    "enabled": true, // Enable Redis for in-memory caching (recommended for performance)
+    "host": "localhost", // Redis server hostname (use 'redis' for Docker Compose)
+    "port": 6379 // Redis server port
+  },
+  "upstream_cache": {
+    "enabled": true // Enable upstream shortcut caching (recommended)
+  }
+}
+```
+
+**Key fields:**
+- `port`: The port the app will listen on. Change if you want to run on a different port.
+- `auto_redirect_delay`: Number of seconds to wait before redirecting. Set to 0 for instant redirect.
+- `admin_password`: The admin password for the web UI. Auto-generated if not set.
+- `delete_requires_password`: If true, deleting a shortcut requires the admin password.
+- `upstreams`: List of upstream redirectors (e.g., Bitly, go/). Each must have a `name`, `base_url`, and optionally `fail_url` and `fail_status_code` to detect non-existent shortcuts.
+- `redis`: Redis config. Set `enabled` to true for best performance. Use `host: redis` in Docker Compose, or `localhost` for local testing.
+- `upstream_cache`: Set `enabled` to true to cache successful upstream lookups for fast future redirects.
+
+You can edit this file directly or use the admin UI for most settings. Changes take effect immediately after saving the file or restarting the app/container.
 
 ---
 
