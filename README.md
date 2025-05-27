@@ -8,7 +8,8 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 - [Features](#features)
 - [Quick Start](#quick-start)
   - [Docker Compose (Recommended)](#docker-compose-recommended)
-  - [Manual (Python, Gunicorn, Redis)](#manual-python-gunicorn-redis)
+  - [Docker (Pull Prebuilt Image)](#docker-pull-prebuilt-image)
+  - [Manual (Python)](#manual-python)
 - [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
   - [Quick Hostname Setup (Recommended)](#quick-hostname-setup-recommended)
   - [Manual Hostname Setup](#manual-hostname-setup)
@@ -28,15 +29,15 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ## Features
 
-- **Gunicorn-powered serving**: Run with Gunicorn for high concurrency, multi-worker performance, and robust production deployments. (See Docker and manual instructions below.)
-- **Redis in-memory cache**: Optional Redis support for ultra-low-latency shortcut and upstream cache lookups. Enable in `redirect.config.json` for best performance.
-- **Upstream shortcut caching**: Successful upstream lookups are cached in both SQLite and Redis (if enabled) for instant future redirects.
-- **Configurable upstream cache**: Enable/disable via `redirect.config.json` (`"upstream_cache": { "enabled": true }`), default enabled.
-- **Modern admin UI**: View, resync, and purge upstream cache entries with a beautiful, responsive, and dark-mode-ready interface.
-- **Resync All** and **Purge All** actions for upstream cache, with robust error handling and double confirmation for purging.
-- **Consistent redirect logic**: Upstream cache hits use the same redirect/delay logic as local shortcuts, including countdown and stats.
-- **Improved error diagnostics** and logging for all cache and upstream operations, with clear UI feedback.
-- **All previous features**: Dynamic/static shortcuts, audit & stats, Docker-ready, reverse proxy support, secure config, and more.
+- **Modern UI**: Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.
+- **Config as JSON**: All settings stored in `data/redirect.config.json` (auto-created with secure defaults).
+- **Secure by Default**: Random admin password generated on first run.
+- **Docker-Ready**: Official image [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector) with persistent data and easy volume/bind mount support.
+- **Reverse Proxy Friendly**: Works behind Nginx, Traefik, etc. (see below).
+- **Robust Testing**: Pytest-based tests for config and DB logic.
+- **Audit & Stats**: Tracks access count, creation/update times, and IPs for each shortcut.
+- **Dynamic Shortcuts**: Supports static and dynamic (parameterized) redirects.
+- **Version Info**: `/version` page shows live version, commit info, and all accessible URLs (with copy/open buttons).
 
 ---
 
@@ -44,15 +45,14 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ### 1. Docker Compose (Recommended)
 
-- Uses Gunicorn and Redis by default for best performance.
-- All config in `data/redirect.config.json`.
+A `docker-compose.yml` is provided for easy setup with Redis:
 
 ```sh
-pwsh.exe -c "docker compose up --build"
+docker compose up --build
 ```
 
 - This will build and start two containers:
-  - `app`: Gunicorn + Flask URL shortener/redirector (port 80)
+  - `app`: The Flask URL shortener/redirector (port 80)
   - `redis`: Redis server (port 6379)
 - Data is stored in the `data/` folder on your host and mounted into the app container.
 - The app will connect to Redis at `redis:6379` (service name in Docker Compose).
@@ -63,36 +63,62 @@ pwsh.exe -c "docker compose up --build"
 To update, pull the latest code and run:
 
 ```sh
-pwsh.exe -c "docker compose up --build -d"
+docker compose up --build -d
 ```
 
 #### Stopping
 
 ```sh
-pwsh.exe -c "docker compose down"
+docker compose down
 ```
 
-### 2. Manual (Python, Gunicorn, Redis)
+### 2. Docker (Pull Prebuilt Image)
 
-- Install requirements:
+You can run the app using the official image from Docker Hub: [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector)
+
+#### With Docker Redis (separate container)
+
+First, start Redis:
+
+```sh
+docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpine
+```
+
+Then run the app, connecting to Redis by container name:
+
+```sh
+docker run -d --name redirector --restart unless-stopped  -p 80:80   -v redirector_data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis  rajlabs/redirector
+```
+
+- This uses a Docker named volume (`redirector_data`) for persistent data.
+- The app will connect to Redis at `redis:6379`.
+
+#### With a Host Directory (custom location)
+
+To store data in a specific folder on your host:
+
+```sh
+docker run -d --name redirector --restart unless-stopped -p 80:80 -v /absolute/path/to/your/data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379  --link redis:redis rajlabs/redirector
+```
+
+Replace `/absolute/path/to/your/data` with your desired directory.
+
+#### Without Redis (SQLite only)
+
+If you do not want to use Redis, set `"enabled": false` in `data/redirect.config.json` under the `redis` section, or omit the Redis environment variables.
+
+---
+
+### 3. Manual (Python)
+
+- Requires Python 3.8+
+- Install dependencies:
 
 ```sh
 pip install -r requirements.txt
 ```
 
-- Start Redis (optional, but recommended for performance):
-
-```sh
-pwsh.exe -c "docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpine"
-```
-
-- Run the app with Gunicorn for production:
-
-```sh
-pwsh.exe -c "gunicorn -c gunicorn.conf.py wsgi:app"
-```
-
-- Or for development (single worker, auto-reload):
+- Run:
 
 ```sh
 python app.py
@@ -161,17 +187,20 @@ If you prefer to edit your hosts file manually:
   - `delete_requires_password`: Require password to delete shortcuts (default: true)
   - `upstreams`: List of upstream redirectors (see below)
   - `redis`: Redis config (enabled, host, port)
-  - `upstream_cache`: Upstream cache config (enabled)
+
+- Change config by editing the file or using the UI (where available).
 
 ---
 
-## Upstream Shortcut Caching & Integration
+## Docker Compose Details
 
-- Successful upstream lookups are cached for fast, low-latency redirects.
-- Admin UI allows viewing, resyncing, and purging cache entries per upstream.
-- "Resync All" and "Purge All" actions for upstream cache, with robust error handling and double confirmation for purging.
-- Upstream cache is enabled by default; disable in config if not needed.
-- Upstream cache hits use the same redirect/delay logic as local shortcuts.
+- The app and Redis run as separate services.
+- The app connects to Redis using the hostname `redis` (as set in `docker-compose.yml`).
+- Ports:
+  - `80:80` maps the app's internal port 80 to your host's port 80.
+  - `6379:6379` exposes Redis for debugging (optional; not needed for app to work).
+- Data is persisted in the `data/` directory on your host.
+- If you change the Redis config, update `data/redirect.config.json` accordingly (e.g., set `"host": "redis"`).
 
 ---
 
