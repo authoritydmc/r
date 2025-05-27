@@ -75,15 +75,17 @@ docker run -d --name redirector --restart unless-stopped -p 80:80 -v /absolute/p
 
 Replace `/absolute/path/to/your/data` with your desired directory.
 
-#### With Named Volume (recommended for easy upgrades)
+#### 🚀 **Recommended: With Named Volume (Best for Upgrades & Backups)**
 
 ```sh
+# Create a persistent named volume (only once)
 docker volume create redirector_data
 
+# Run the app with Redis (best performance)
 docker run -d --name redirector --restart unless-stopped -p 80:80 -v redirector_data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis rajlabs/redirector
 ```
 
-- This uses a Docker named volume (`redirector_data`) for persistent data, making upgrades and backups easier.
+> **Recommended:** Using a Docker named volume (`redirector_data`) keeps your data safe and makes upgrades and backups easy.
 
 ---
 
