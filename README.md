@@ -1,26 +1,23 @@
-# URL Shortener/Redirector [![Docker Image CI](https://github.com/authoritydmc/r/actions/workflows/deploy-prod-main.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/deploy-prod-main.yml)[![Docker Image CI](https://github.com/authoritydmc/r/actions/workflows/deploy-develop.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/deploy-develop.yml) [![Validate](https://github.com/authoritydmc/r/actions/workflows/validate.yml/badge.svg)](https://github.com/authoritydmc/r/actions/workflows/validate.yml)
+# URL Shortener/Redirector
 
-A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker support, and secure config management. Easily create, manage, and share custom short URLs for your team or company.
+A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker support, Redis in-memory cache, and robust config management. Easily create, manage, and share custom short URLs for your team or company.
 
 ---
 
 ## Table of Contents
 - [Features](#features)
 - [Quick Start](#quick-start)
-  - [Docker Compose (Recommended)](#docker-compose-recommended)
-  - [Docker (Pull Prebuilt Image)](#docker-pull-prebuilt-image)
+  - [Docker (Prebuilt Image, Recommended)](#docker-prebuilt-image-recommended)
+  - [Docker Compose](#docker-compose)
   - [Manual (Python)](#manual-python)
-- [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
-  - [Quick Hostname Setup (Recommended)](#quick-hostname-setup-recommended)
-  - [Manual Hostname Setup](#manual-hostname-setup)
 - [Configuration](#configuration)
+- [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
 - [Data Persistence](#data-persistence)
 - [Reverse Proxy Example](#reverse-proxy-example-nginx)
-- [Troubleshooting](#troubleshooting)
+- [Upstream Shortcut Checking & Integration](#upstream-shortcut-checking--integration)
 - [Production Deployment](#production-deployment)
 - [Development & Testing](#development--testing)
 - [Project Structure](#project-structure)
-- [Upstream Shortcut Checking](#upstream-shortcut-existence-checking--upstream-config)
 - [Company-Wide Installation & Team Usage](#company-wide-installation--team-usage)
 - [Version & Credits](#version--credits)
 - [License](#license)
@@ -29,12 +26,13 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ## Features
 
-- **Modern UI**: Clean, responsive dashboard and success pages using Tailwind CSS and SVG/FontAwesome icons.
-- **Config as JSON**: All settings stored in `data/redirect.config.json` (auto-created with secure defaults).
-- **Secure by Default**: Random admin password generated on first run.
-- **Docker-Ready**: Official image [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector) with persistent data and easy volume/bind mount support.
-- **Reverse Proxy Friendly**: Works behind Nginx, Traefik, etc. (see below).
-- **Robust Testing**: Pytest-based tests for config and DB logic.
+- **Production-ready Docker image**: [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector) for instant deployment.
+- **Redis in-memory cache**: Ultra-fast shortcut and upstream cache lookups for low-latency redirects.
+- **Upstream shortcut caching**: Successful upstream lookups are cached in both SQLite and Redis (if enabled) for instant future redirects.
+- **Configurable upstream cache**: Enable/disable via `redirect.config.json` (`"upstream_cache": { "enabled": true }`), default enabled.
+- **Modern admin UI**: View, resync, and purge upstream cache entries with a beautiful, responsive, and dark-mode-ready interface.
+- **Resync All** and **Purge All** actions for upstream cache, with robust error handling and double confirmation for purging.
+- **Consistent redirect logic**: Upstream cache hits use the same redirect/delay logic as local shortcuts, including countdown and stats.
 - **Audit & Stats**: Tracks access count, creation/update times, and IPs for each shortcut.
 - **Dynamic Shortcuts**: Supports static and dynamic (parameterized) redirects.
 - **Version Info**: `/version` page shows live version, commit info, and all accessible URLs (with copy/open buttons).
@@ -43,7 +41,43 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
 
 ## Quick Start
 
-### 1. Docker Compose (Recommended)
+### Docker (Prebuilt Image, Recommended)
+
+#### With Redis (Best Performance)
+
+Start Redis (if you don't have it running):
+
+```sh
+docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpine
+```
+
+Then run the app, linking to Redis:
+
+```sh
+docker run -d --name redirector --restart unless-stopped -p 80:80 -v $PWD/data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis rajlabs/redirector
+```
+
+- Data is stored in the `data/` folder on your host and mounted into the app container.
+- The app will connect to Redis at `redis:6379`.
+- The config file is `data/redirect.config.json`.
+
+#### Without Redis (slower, but works)
+
+```sh
+docker run -d --name redirector --restart unless-stopped -p 80:80 -v $PWD/data:/app/data rajlabs/redirector
+```
+
+#### With a Host Directory (custom location)
+
+```sh
+docker run -d --name redirector --restart unless-stopped -p 80:80 -v /absolute/path/to/your/data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis rajlabs/redirector
+```
+
+Replace `/absolute/path/to/your/data` with your desired directory.
+
+---
+
+### Docker Compose
 
 A `docker-compose.yml` is provided for easy setup with Redis:
 
@@ -52,7 +86,7 @@ docker compose up --build
 ```
 
 - This will build and start two containers:
-  - `app`: The Flask URL shortener/redirector (port 80)
+  - `app`: Gunicorn + Flask URL shortener/redirector (port 80)
   - `redis`: Redis server (port 6379)
 - Data is stored in the `data/` folder on your host and mounted into the app container.
 - The app will connect to Redis at `redis:6379` (service name in Docker Compose).
@@ -72,44 +106,9 @@ docker compose up --build -d
 docker compose down
 ```
 
-### 2. Docker (Pull Prebuilt Image)
-
-You can run the app using the official image from Docker Hub: [`rajlabs/redirector`](https://hub.docker.com/r/rajlabs/redirector)
-
-#### With Docker Redis (separate container)
-
-First, start Redis:
-
-```sh
-docker run -d --name redis --restart unless-stopped -p 6379:6379 redis:7.2-alpine
-```
-
-Then run the app, connecting to Redis by container name:
-
-```sh
-docker run -d --name redirector --restart unless-stopped  -p 80:80   -v redirector_data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379 --link redis:redis  rajlabs/redirector
-```
-
-- This uses a Docker named volume (`redirector_data`) for persistent data.
-- The app will connect to Redis at `redis:6379`.
-
-#### With a Host Directory (custom location)
-
-To store data in a specific folder on your host:
-
-```sh
-docker run -d --name redirector --restart unless-stopped -p 80:80 -v /absolute/path/to/your/data:/app/data -e REDIS_HOST=redis -e REDIS_PORT=6379  --link redis:redis rajlabs/redirector
-```
-
-Replace `/absolute/path/to/your/data` with your desired directory.
-
-#### Without Redis (SQLite only)
-
-If you do not want to use Redis, set `"enabled": false` in `data/redirect.config.json` under the `redis` section, or omit the Redis environment variables.
-
 ---
 
-### 3. Manual (Python)
+### Manual (Python)
 
 - Requires Python 3.8+
 - Install dependencies:
@@ -125,6 +124,19 @@ python app.py
 ```
 
 - Visit: [http://localhost:80](http://localhost:80)
+
+---
+
+## Configuration
+
+- All config is in `data/redirect.config.json` (auto-created if missing):
+  - `port`: Port to run the app (default: 80)
+  - `admin_password`: Admin password (random on first run)
+  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
+  - `delete_requires_password`: Require password to delete shortcuts (default: true)
+  - `upstreams`: List of upstream redirectors (see below)
+  - `redis`: Redis config (enabled, host, port)
+  - `upstream_cache`: Upstream cache config (enabled)
 
 ---
 
@@ -178,32 +190,6 @@ If you prefer to edit your hosts file manually:
 
 ---
 
-## Configuration
-
-- All config is in `data/redirect.config.json` (auto-created if missing):
-  - `port`: Port to run the app (default: 80)
-  - `admin_password`: Admin password (random on first run)
-  - `auto_redirect_delay`: Delay (seconds) before auto-redirect (default: 0)
-  - `delete_requires_password`: Require password to delete shortcuts (default: true)
-  - `upstreams`: List of upstream redirectors (see below)
-  - `redis`: Redis config (enabled, host, port)
-
-- Change config by editing the file or using the UI (where available).
-
----
-
-## Docker Compose Details
-
-- The app and Redis run as separate services.
-- The app connects to Redis using the hostname `redis` (as set in `docker-compose.yml`).
-- Ports:
-  - `80:80` maps the app's internal port 80 to your host's port 80.
-  - `6379:6379` exposes Redis for debugging (optional; not needed for app to work).
-- Data is persisted in the `data/` directory on your host.
-- If you change the Redis config, update `data/redirect.config.json` accordingly (e.g., set `"host": "redis"`).
-
----
-
 ## Data Persistence
 
 - All data (config, DB) is in the `data/` directory.
@@ -230,22 +216,52 @@ server {
 
 ---
 
-## Troubleshooting
+## Upstream Shortcut Checking & Integration
 
-- **Can't find admin password?**
-  - Check the first lines of the container or app logs for the generated password.
-  - Or, view/edit `data/redirect.config.json` directly.
-  - To view the admin password in Docker, run:
-    ```sh
-    docker exec redirector cat /app/data/redirect.config.json
-    ```
-    Look for the `admin_password` field in the output.
-- **Port already in use?**
-  - Change the `port` in the config file or Docker port mapping.
-- **Data not persisting?**
-  - Ensure you are mounting the `data/` directory as a Docker volume or bind mount.
-- **Reverse proxy issues?**
-  - Make sure to set the correct headers (see above) and check your proxy config.
+This app supports checking for existing shortcuts in external upstreams (like Bitly, go/, etc.) before allowing creation or editing of a shortcut. This helps prevent conflicts and ensures you don't create a shortcut that already exists in your organization's or a public shortener's namespace.
+
+### How Upstream Checking Works
+- When you attempt to create or edit a shortcut, the app checks all configured upstreams to see if the shortcut already exists.
+- If any upstream returns a result (i.e., the shortcut exists), you are shown a log of the check and are not allowed to create or edit the shortcut.
+- If all upstreams fail (i.e., the shortcut does not exist in any upstream), you are allowed to proceed.
+- The check is performed in real time, and a log of each upstream's response (including status code and verdict) is shown in the UI.
+- If a shortcut is found in an upstream, you are automatically redirected to that upstream's URL after a short delay.
+
+### Upstream Configuration
+- Upstreams are configured in the `data/redirect.config.json` file under the `upstreams` key.
+- Each upstream requires:
+  - `name`: A label for the upstream (e.g., "bitly", "go")
+  - `base_url`: The base URL to check (e.g., `https://bit.ly/`)
+  - `fail_url`: The URL that is returned when a shortcut does not exist (used to detect non-existence)
+  - `fail_status_code`: The HTTP status code that indicates a failed lookup (e.g., `404`)
+- Example config:
+
+```json
+"upstreams": [
+  {
+    "name": "bitly",
+    "base_url": "https://bit.ly/",
+    "fail_url": "https://bitly.com/404",
+    "fail_status_code": 404
+  },
+  {
+    "name": "go",
+    "base_url": "http://go/",
+    "fail_url": "http://go/404",
+    "fail_status_code": 404
+  }
+]
+```
+
+### Managing Upstreams in the UI
+- Go to **Upstream Config** in the navigation bar (or visit `/admin/upstreams` after logging in as admin).
+- You can add, edit, or delete upstreams using a simple table form.
+- Changes are saved to the config file and take effect immediately.
+
+### Real-Time Upstream Check UI
+- When you try to create or edit a shortcut, you are first shown a real-time log of upstream checks.
+- Each upstream is checked in sequence, and the log updates as results come in.
+- If a shortcut is found in any upstream, you are redirected to that URL; otherwise, you are allowed to proceed with creation.
 
 ---
 
@@ -347,55 +363,6 @@ project-root/
 
 ---
 
-## Upstream Shortcut Existence Checking & Upstream Config
-
-This app supports checking for existing shortcuts in external upstreams (like Bitly, go/, etc.) before allowing creation or editing of a shortcut. This helps prevent conflicts and ensures you don't create a shortcut that already exists in your organization's or a public shortener's namespace.
-
-### How Upstream Checking Works
-- When you attempt to create or edit a shortcut, the app checks all configured upstreams to see if the shortcut already exists.
-- If any upstream returns a result (i.e., the shortcut exists), you are shown a log of the check and are not allowed to create or edit the shortcut.
-- If all upstreams fail (i.e., the shortcut does not exist in any upstream), you are allowed to proceed.
-- The check is performed in real time, and a log of each upstream's response (including status code and verdict) is shown in the UI.
-- If a shortcut is found in an upstream, you are automatically redirected to that upstream's URL after a short delay.
-
-### Upstream Configuration
-- Upstreams are configured in the `data/redirect.config.json` file under the `upstreams` key.
-- Each upstream requires:
-  - `name`: A label for the upstream (e.g., "bitly", "go")
-  - `base_url`: The base URL to check (e.g., `https://bit.ly/`)
-  - `fail_url`: The URL that is returned when a shortcut does not exist (used to detect non-existence)
-  - `fail_status_code`: The HTTP status code that indicates a failed lookup (e.g., `404`)
-- Example config:
-
-```json
-"upstreams": [
-  {
-    "name": "bitly",
-    "base_url": "https://bit.ly/",
-    "fail_url": "https://bitly.com/404",
-    "fail_status_code": 404
-  },
-  {
-    "name": "go",
-    "base_url": "http://go/",
-    "fail_url": "http://go/404",
-    "fail_status_code": 404
-  }
-]
-```
-
-### Managing Upstreams in the UI
-- Go to **Upstream Config** in the navigation bar (or visit `/admin/upstreams` after logging in as admin).
-- You can add, edit, or delete upstreams using a simple table form.
-- Changes are saved to the config file and take effect immediately.
-
-### Real-Time Upstream Check UI
-- When you try to create or edit a shortcut, you are first shown a real-time log of upstream checks.
-- Each upstream is checked in sequence, and the log updates as results come in.
-- If a shortcut is found in any upstream, you are redirected to that URL; otherwise, you are allowed to proceed with creation.
-
----
-
 ## Company-Wide Installation & Team Usage
 
 To make `r/` shortcuts available to your entire team or company:
@@ -428,107 +395,5 @@ This setup allows everyone in your organization to use simple, memorable shortcu
 
 ## License
 
-MIT
-
----
-
-## Automated Hostname Setup (r/ shortcut)
-
-To automatically add the `r` hostname for local shortcuts, use the provided script for your OS:
-
-- **Windows:**
-  - Run in PowerShell as Administrator:
-    ```powershell
-    ./autostart-windows.ps1
-    ```
-    This will set up the app and call `scripts/add-r-host-windows.ps1` to add `127.0.0.1   r` to your hosts file (if you have admin rights), or print instructions if not.
-- **macOS:**
-  - Run in Terminal:
-    ```sh
-    bash autostart-macos.sh
-    ```
-    This will set up the app and call `scripts/add-r-host-macos.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
-- **Linux:**
-  - Run in Terminal:
-    ```sh
-    bash autostart-linux.sh
-    ```
-    This will set up the app and call `scripts/add-r-host-linux.sh` to add `127.0.0.1   r` to `/etc/hosts` (if you have sudo/root), or print instructions if not.
-
-You can also run the scripts in `scripts/` directly to only add the host entry.
-
----
-
-## Custom Hostname Setup (Local `r/` Shortcuts)
-
-To use URLs like `http://r/google` on your local machine, map `r` to `127.0.0.1` in your hosts file:
-
-**Windows:**
-1. Open Notepad as Administrator.
-2. Open the file: `C:\Windows\System32\drivers\etc\hosts`
-3. Add this line at the end:
-   ```
-   127.0.0.1   r
-   ```
-4. Save the file. Now you can use `http://r/shortcut` in your browser.
-
-**Linux/macOS:**
-1. Edit `/etc/hosts` with sudo:
-   ```sh
-   sudo nano /etc/hosts
-   ```
-2. Add this line at the end:
-   ```
-   127.0.0.1   r
-   ```
-3. Save and close. Now you can use `http://r/shortcut` in your browser.
-
-> **Note:** On first run, if you have just set up the `r` hostname (via hosts file or DNS), make sure to access `http://r/` (not just `r/`) in your browser at least once. This ensures your browser recognizes `r` as a valid domain and flushes any old cache or search behavior. This step is only needed if you are using the custom `r/` shortcut setup described above.
-
----
-
-## Accessing Config Data in a Docker Named Volume (macOS, Windows, Linux)
-
-> **Note:** On macOS (and some environments), Docker named volumes are not directly accessible from the host filesystem. To read or copy config files (like `redirect.config.json`), you need to use an interactive terminal inside the running container.
-
-**Steps:**
-
-1. Find your running container's name (default is `redirector`):
-   ```sh
-   docker ps
-   ```
-2. Start an interactive shell in the container:
-   ```sh
-   docker exec -it redirector sh
-   ```
-3. View the config file:
-   ```sh
-   cat /app/data/redirect.config.json
-   ```
-4. (Optional) Copy the file to your host:
-   ```sh
-   docker cp redirector:/app/data/redirect.config.json ./redirect.config.json
-   ```
-
-This method works on macOS, Windows, and Linux when using Docker named volumes.
-
----
-
-#### Updating Config in a Running Docker Container
-
-If you want to update the config file inside your running Docker container with a new or edited version from your local machine, you can use the `docker cp` command:
-
-1. Edit your local config file (e.g., `data/redirect.config.json`).
-2. Copy it into the running container (replace `redirector` with your container name if different):
-   ```sh
-   docker cp data/redirect.config.json redirector:/app/data/redirect.config.json
-   ```
-3. (Optional) Restart the container to ensure the app reloads the new config:
-   ```sh
-   docker restart redirector
-   ```
-
-This will overwrite the config file inside the container with your local version.
-
----
+MIT License. See [LICENSE](LICENSE) for details.
 
