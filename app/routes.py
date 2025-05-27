@@ -30,7 +30,13 @@ def inject_now():
         version = f"v1.{commit_count}.{commit_hash}"
     except Exception:
         version = 'unknown'
-    return {'now': datetime.now, 'version': version}
+    # Add redis_connected context
+    try:
+        from .utils import _redis_enabled
+        redis_connected = bool(_redis_enabled)
+    except Exception:
+        redis_connected = False
+    return {'now': datetime.now, 'version': version, 'redis_connected': redis_connected}
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.config.json')
 
