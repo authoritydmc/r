@@ -19,3 +19,13 @@
       - changed-files:
           - any-glob-to-any-file: 'src/**/*'
           - all-globs-to-all-files: '!src/docs/*'
+
+# 🐞 Bug label: triggered if PR title contains "bug"
+🐞-bug:
+  - pr-title:
+      - '.*bug.*'
+
+# 🧪 Test label: triggered if PR title contains "test"
+🧪-test:
+  - pr-title:
+      - '.*test.*'
