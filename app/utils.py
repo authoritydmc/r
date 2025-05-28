@@ -178,6 +178,30 @@ def init_upstream_check_log():
         pass
     db.commit()
 
+def init_upstream_check_log_table(db):
+    cursor = db.cursor()
+
+    # Check if table exists before creating it
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='upstream_check_log'")
+    if not cursor.fetchone():
+        print("🛠 Initializing 'upstream_check_log' table...")
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS upstream_check_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pattern TEXT,
+                upstream_name TEXT,
+                check_url TEXT,
+                result TEXT,
+                detail TEXT,
+                tried_at TEXT,
+                count INTEGER
+            )
+        ''')
+
+        db.commit()
+
+
 def log_upstream_check(pattern, upstream_name, check_url, result, detail, tried_at):
     db = get_db()
     db.execute('''
