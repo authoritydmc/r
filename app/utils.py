@@ -5,6 +5,8 @@ import time
 from flask import g
 import redis
 
+from app import CONSTANTS
+
 # Ensure data directory exists (cross-platform)
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -288,7 +290,7 @@ def get_shortcut(pattern):
     # Try Redis first
     start_time = time.time()
     shortcut = None
-    source = 'redis'
+    source = CONSTANTS.data_source_redis
     if _redis_enabled:
         val = redis_get(f"shortcut:{pattern}")
         if val:
@@ -300,7 +302,7 @@ def get_shortcut(pattern):
         return shortcut,source,round(time.time() - start_time, 6)
     # Fallback to DB
     db = get_db()
-    source='redirect_table'
+    source=CONSTANTS.data_source_redirect
     cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects WHERE pattern=?', (pattern,))
     row = cursor.fetchone()
     if row:
@@ -320,15 +322,10 @@ def get_shortcut(pattern):
                 pass
         return shortcut,source,round(time.time() - start_time, 6)
     # check upstream DB also
-    source = 'upstream_table'
+    source = CONSTANTS.data_source_upstream
     if is_upstream_cache_enabled():
         cached = get_cached_upstream_result(pattern=pattern)
         if cached:
-            # if _redis_enabled:
-            #     try:
-            #         redis_set(f"shortcut:{pattern}", json.dumps(cached))
-            #     except Exception:
-            #         pass
             return cached,source,round(time.time() - start_time, 6)
         
     return None, None, round(time.time() - start_time, 6)
