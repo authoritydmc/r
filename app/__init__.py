@@ -1,5 +1,5 @@
 from flask import Flask
-from .utils import get_db, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table
+from .utils import get_db, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table, init_upstream_check_log_table
 import secrets
 
 def create_app():
@@ -46,6 +46,9 @@ def create_app():
 
             # Call to initialize upstream cache table
             init_upstream_cache_table(db)
+
+            # Call to initialize upstream check log table   
+            init_upstream_check_log_table(db)
 
     app.init_db = init_db
 
