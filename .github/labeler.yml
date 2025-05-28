@@ -1,0 +1,15 @@
+# .github/labeler.yml
+documentation:
+  - 'docs/**'
+  - '*.md'
+
+bug:
+  - 'src/**'
+  - '**/bugfix/**'
+
+feature:
+  - 'features/**'
+  - '**/feature/**'
+
+test:
+  - 'tests/**'
