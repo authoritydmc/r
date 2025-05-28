@@ -1,5 +1,5 @@
 from flask import Flask
-from .utils import get_db, get_port, init_redis_from_config, app_startup_banner
+from .utils import get_db, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table
 import secrets
 
 def create_app():
@@ -25,14 +25,30 @@ def create_app():
         with app.app_context():
             db = get_db()
             cursor = db.cursor()
-            cursor.execute('''CREATE TABLE IF NOT EXISTS redirects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                type TEXT NOT NULL,
-                pattern TEXT NOT NULL,
-                target TEXT NOT NULL
-            )''')
-            db.commit()
+
+            # Check if 'redirects' table exists before creating it
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='redirects'")
+            table_exists = cursor.fetchone()
+
+            if not table_exists:
+                print("🛠 Initializing 'redirects' table...")
+
+                # Create redirects table only if it does not exist
+                cursor.execute('''
+                    CREATE TABLE redirects (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        type TEXT NOT NULL,
+                        pattern TEXT NOT NULL,
+                        target TEXT NOT NULL
+                    )
+                ''')
+                db.commit()
+
+            # Call to initialize upstream cache table
+            init_upstream_cache_table(db)
+
     app.init_db = init_db
+
 
     return app
 

@@ -64,7 +64,6 @@ except Exception as e:
 # Print environment details and host setup tips
 app_startup_banner(app)
 
-# Optional: Init DB before Gunicorn takes over
 app.init_db()
 
 # Expose app variable for Gunicorn

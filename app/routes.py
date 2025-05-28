@@ -180,7 +180,6 @@ def edit_redirect(subpath):
 # GET: Handle redirect for static and dynamic shortcuts. Triggered for any /<subpath> not matching other routes.
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
-    start_time = time.time()
     shortcut,data_source,resp_time = get_shortcut(subpath)
     if shortcut and shortcut['type'] == 'static':
         increment_access_count(subpath)
@@ -188,13 +187,12 @@ def handle_redirect(subpath):
             return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source=data_source,response_time=resp_time)
         return redirect(shortcut['target'], code=302)
     # Check upstream cache before running upstream checks
-    if is_upstream_cache_enabled():
-        cached = get_cached_upstream_result(subpath)
-        if cached and cached.get('resolved_url'):
+    if data_source == 'upstream_table':
+        if shortcut and shortcut.get('resolved_url'):
             # Use the same redirect logic as for local hits
             if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=cached['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source='upstream_table',response_time=round(time.time() - start_time, 6))
-            return redirect(cached['resolved_url'], code=302)
+                return render_template('redirect.html', target=shortcut['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source=data_source,response_time=resp_time)
+            return redirect(shortcut['resolved_url'], code=302)
     # Check if subpath matches a dynamic pattern but is missing the variable
     db = get_db()
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
