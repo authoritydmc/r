@@ -23,8 +23,8 @@ bug:
 
 bug:
   - pr-title:
-    - '.*bug.*'       # contains 'bug' anywhere
+    - '.*bug.*'
 
 test:
   - pr-title:
-    - '.*test.*'      # contains 'test' anywhere
+    - '.*test.*'
