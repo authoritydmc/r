@@ -1,24 +1,31 @@
-Documentation:
-- changed-files:
-  - any-glob-to-any-file: '**/*.md'
-bug:
-  - 'src/**'
-  - '**/bugfix/**'
-
-
-
-test:
-  - 'tests/**'
-
-feature:
- - head-branch: ['^feature', 'feature']
-
-# Add 'release' label to any PR that is opened against the `main` branch
-release:
- - base-branch: 'main'
-
-source:
-- all:
+# 📄 Documentation label: triggered by any markdown file changes
+📄-documentation:
   - changed-files:
-    - any-glob-to-any-file: 'src/**/*'
-    - all-globs-to-all-files: '!src/docs/*'
+      - any-glob-to-any-file: '**/*.md'
+
+# 🌟 Feature label: triggered by head branch names starting with 'feature'
+🌟-feature:
+  - head-branch:
+      - '^feature'
+      - 'feature'
+
+# 🚀 Release label: triggered on PRs targeting the 'main' branch
+🚀-release:
+  - base-branch: 'main'
+
+# 🛠️ Source label: triggered by changes under 'src' excluding docs
+🛠️-source:
+  - all:
+      - changed-files:
+          - any-glob-to-any-file: 'src/**/*'
+          - all-globs-to-all-files: '!src/docs/*'
+
+# 🐞 Bug label: triggered if PR title contains "bug"
+🐞-bug:
+  - pr-title:
+      - '.*bug.*'
+
+# 🧪 Test label: triggered if PR title contains "test"
+🧪-test:
+  - pr-title:
+      - '.*test.*'
