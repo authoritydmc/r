@@ -1,3 +1,4 @@
+import json
 from flask import Flask
 from .utils import get_db, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table, init_upstream_check_log_table
 import secrets
@@ -59,3 +60,14 @@ def run_standalone_startup(app):
     init_redis_from_config()
     app_startup_banner(app)
     app.init_db()
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            "route": rule.rule,
+            "methods": list(rule.methods),
+            "endpoint": rule.endpoint
+        })
+
+    # Write to urlMap.json
+    with open("urlMap.json", "w") as f:
+        json.dump(routes, f, indent=4)

@@ -1,0 +1,4 @@
+[project]
+name = "redirector"
+readme = "README.md"
+license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
