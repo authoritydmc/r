@@ -294,6 +294,18 @@ def get_shortcut(pattern):
             except Exception:
                 pass
         return shortcut,source,round(time.time() - start_time, 6)
+    # check upstream DB also
+    source = 'upstream_table'
+    if is_upstream_cache_enabled():
+        cached = get_cached_upstream_result(pattern=pattern)
+        if cached:
+            # if _redis_enabled:
+            #     try:
+            #         redis_set(f"shortcut:{pattern}", json.dumps(cached))
+            #     except Exception:
+            #         pass
+            return cached,source,round(time.time() - start_time, 6)
+        
     return None, None, round(time.time() - start_time, 6)
 
 def set_shortcut(pattern, type_, target, access_count=0, created_at=None, updated_at=None):
@@ -329,6 +341,28 @@ def set_shortcut(pattern, type_, target, access_count=0, created_at=None, update
             pass
 
 # --- Upstream Cache helpers ---
+def init_upstream_cache_table(db):
+    # Check if 'upstream_cache' table exists
+    cursor = db.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='upstream_cache'")
+    table_exists = cursor.fetchone()
+
+    if not table_exists:
+        print("🛠 Initializing 'upstream_cache' table...")
+
+        # Create the upstream_cache table
+        cursor.execute('''
+            CREATE TABLE upstream_cache (
+                pattern TEXT,
+                upstream_name TEXT,
+                resolved_url TEXT,
+                checked_at TEXT,
+                PRIMARY KEY (pattern, upstream_name)
+            )
+        ''')
+        db.commit()
+
+
 def is_upstream_cache_enabled():
     cfg = _load_config()
     return cfg.get('upstream_cache', {}).get('enabled', True)
