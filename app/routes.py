@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, stream_with_context, url_for, session
+
+from app import CONSTANTS
 from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, init_upstream_check_log, log_upstream_check, get_upstream_logs
 from .utils import get_shortcut, set_shortcut, init_redis_from_config
 from .utils import is_upstream_cache_enabled, get_cached_upstream_result, cache_upstream_result, clear_upstream_cache
@@ -36,7 +38,7 @@ def inject_now():
         redis_connected = bool(_redis_enabled)
     except Exception:
         redis_connected = False
-    return {'now': datetime.now, 'version': version, 'redis_connected': redis_connected}
+    return {'now': datetime.now, 'version': version, 'redis_connected': redis_connected,'constants': CONSTANTS}
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.config.json')
 
@@ -181,18 +183,22 @@ def edit_redirect(subpath):
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
     shortcut,data_source,resp_time = get_shortcut(subpath)
-    if shortcut and shortcut['type'] == 'static':
+    if (data_source== CONSTANTS.data_source_redirect or data_source == CONSTANTS.data_source_redis) and shortcut['type'] == 'static':
+        print(f"Redirecting static shortcut: {subpath} -> {shortcut['target']}")
         increment_access_count(subpath)
         if get_auto_redirect_delay() > 0:
             return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source=data_source,response_time=resp_time)
         return redirect(shortcut['target'], code=302)
     # Check upstream cache before running upstream checks
-    if data_source == 'upstream_table':
-        if shortcut and shortcut.get('resolved_url'):
+    if data_source == CONSTANTS.data_source_upstream and shortcut.get('resolved_url'):
+        print(f"Redirecting upstream shortcut: {subpath} -> {shortcut['resolved_url']}")
             # Use the same redirect logic as for local hits
-            if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=shortcut['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source=data_source,response_time=resp_time)
-            return redirect(shortcut['resolved_url'], code=302)
+        if get_auto_redirect_delay() > 0:
+            return render_template('redirect.html', target=shortcut['resolved_url'], delay=get_auto_redirect_delay(), now=datetime.utcnow,source=data_source,response_time=resp_time)
+        return redirect(shortcut['resolved_url'], code=302)
+    
+    print(f"Handling redirect for subpath: {subpath}, data source: {data_source}, shortcut: {shortcut}")
+    # If no static shortcut found, check for dynamic patterns
     # Check if subpath matches a dynamic pattern but is missing the variable
     db = get_db()
     cursor = db.execute('SELECT pattern, target FROM redirects WHERE type = ?', ('dynamic',))
