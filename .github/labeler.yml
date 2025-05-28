@@ -1,14 +1,7 @@
 Documentation:
 - changed-files:
   - any-glob-to-any-file: '**/*.md'
-bug:
-  - 'src/**'
-  - '**/bugfix/**'
 
-
-
-test:
-  - 'tests/**'
 
 feature:
  - head-branch: ['^feature', 'feature']
@@ -22,3 +15,16 @@ source:
   - changed-files:
     - any-glob-to-any-file: 'src/**/*'
     - all-globs-to-all-files: '!src/docs/*'
+
+bug:
+  - pr-title:
+    - '^bug'
+    - 'bug'
+
+bug:
+  - pr-title:
+    - '.*bug.*'       # contains 'bug' anywhere
+
+test:
+  - pr-title:
+    - '.*test.*'      # contains 'test' anywhere
