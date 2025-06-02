@@ -18,9 +18,6 @@ from flask import jsonify, make_response
 
 bp = Blueprint('main', __name__)
 
-# At the top of the file, after imports, initialize Redis
-init_redis_from_config()
-
 @bp.context_processor
 def inject_now():
     from datetime import datetime

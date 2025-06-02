@@ -11,5 +11,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     mode = "DEV" if args.debug else "PROD"
     print("\n==============================\n")
-    # app.init_db()
     app.run(debug=args.debug, host="0.0.0.0", port=app.config['port'])
