@@ -6,6 +6,7 @@ app = create_app()
 run_standalone_startup(app)
 
 if __name__ == "__main__":
+    print("Running app.py")
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
     args = parser.parse_args()

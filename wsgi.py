@@ -6,6 +6,7 @@ from app.utils import init_redis_from_config, app_startup_banner
 
 # Initialize Flask app
 try:
+    print("Running wsgi.py")
     app = create_app()
 except Exception as e:
     import traceback
@@ -15,8 +16,6 @@ except Exception as e:
 
 # Print environment details and host setup tips
 app_startup_banner(app)
-
-app.init_db()
 
 # Expose app variable for Gunicorn
 # Gunicorn will look for: `wsgi:app`

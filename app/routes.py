@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, stream_with_context, url_for, session
 
 from app import CONSTANTS
-from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, init_upstream_check_log, log_upstream_check, get_upstream_logs
+from .utils import get_db, get_admin_password, get_auto_redirect_delay, get_delete_requires_password, increment_access_count, log_upstream_check, get_upstream_logs
 from .utils import get_shortcut, set_shortcut, init_redis_from_config
 from .utils import is_upstream_cache_enabled, get_cached_upstream_result, cache_upstream_result, clear_upstream_cache
 from functools import wraps
@@ -576,7 +576,7 @@ def admin_upstream_cache_resync_all(upstream):
 @login_required
 def clear_upstream_logs():
     db = get_db()
-    db.execute('DELETE FROM upstream_check_log')
+    db.execute('DELETE FROM model')
     db.commit()
     return redirect(url_for('main.admin_upstream_logs'))
 

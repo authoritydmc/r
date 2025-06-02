@@ -2,15 +2,13 @@ import os
 import sqlite3
 import json
 import time
-from flask import g
 import redis
-
+from model import  db
 from app import CONSTANTS
 
 # Ensure data directory exists (cross-platform)
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
-DATABASE = os.path.join(DATA_DIR, 'redirects.db')
 CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.config.json')
 
 # --- JSON config helpers ---
@@ -23,6 +21,7 @@ def _load_config():
         default = {
             "port": 80,
             "auto_redirect_delay": 3,
+            "database":"sqlite:///redirects.db",
             "admin_password": random_pwd,
             "delete_requires_password": True,
             "upstreams": [],
@@ -41,6 +40,12 @@ def _load_config():
     with open(CONFIG_FILE, 'r') as f:
         return json.load(f)
 
+def get_db_uri():
+    cfg=_load_config()
+    if "database" in cfg:
+        db_url=cfg["database"]
+        return db_url
+    return f"sqlite:///redirects.db"
 
 def _save_config(cfg):
     with open(CONFIG_FILE, 'w') as f:
@@ -96,13 +101,6 @@ def ensure_audit_columns(db):
     except sqlite3.OperationalError:
         pass
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        ensure_access_count_column(db)
-        ensure_audit_columns(db)
-    return db
 
 def get_admin_password():
     pwd = get_config('admin_password')
@@ -156,89 +154,15 @@ def get_created_updated(pattern):
         return row[0], row[1]
     return None, None
 
-# --- Upstream Check Logging (moved from routes.py) ---
-def init_upstream_check_log():
-    db = get_db()
-    db.execute('''
-        CREATE TABLE IF NOT EXISTS upstream_check_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pattern TEXT,
-            upstream_name TEXT,
-            check_url TEXT,
-            result TEXT,
-            detail TEXT,
-            tried_at TEXT,
-            count INTEGER DEFAULT 1,
-            UNIQUE(pattern, upstream_name)
-        )
-    ''')
-    # Add count column if missing (for upgrades)
-    try:
-        db.execute('ALTER TABLE upstream_check_log ADD COLUMN count INTEGER DEFAULT 1')
-        db.commit()
-    except Exception:
-        pass
-    db.commit()
-
-def init_upstream_check_log_table(db):
-    cursor = db.cursor()
-
-    # Check if table exists before creating it
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='upstream_check_log'")
-    if not cursor.fetchone():
-        print("🛠 Initializing 'upstream_check_log' table...")
-        cursor.execute('''
-            CREATE TABLE upstream_check_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                pattern TEXT NOT NULL,
-                upstream_name TEXT NOT NULL,
-                check_url TEXT,
-                result TEXT,
-                detail TEXT,
-                tried_at TEXT NOT NULL,
-                count INTEGER DEFAULT 1,
-                UNIQUE (pattern, upstream_name)
-            )
-        ''')
 
 
-        db.commit()
 
 
 def log_upstream_check(pattern, upstream_name, check_url, result, detail, tried_at):
-    db = get_db()
-    db.execute('''
-        INSERT INTO upstream_check_log (pattern, upstream_name, check_url, result, detail, tried_at, count)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
-        ON CONFLICT(pattern, upstream_name) DO UPDATE SET
-            check_url=excluded.check_url,
-            result=excluded.result,
-            detail=excluded.detail,
-            tried_at=excluded.tried_at,
-            count=upstream_check_log.count+1
-    ''', (pattern, upstream_name, check_url, result, detail, tried_at))
-    db.commit()
+    raise Exception("Implement this ")
 
 def get_upstream_logs():
-    db = get_db()
-    cursor = db.execute('''
-        SELECT pattern, upstream_name, check_url, result, detail, tried_at, count
-        FROM upstream_check_log
-        ORDER BY tried_at DESC, id DESC
-        LIMIT 200
-    ''')
-    logs = []
-    for row in cursor.fetchall():
-        logs.append({
-            'shortcut': row[0],
-            'upstream': row[1],
-            'check_url': row[2],
-            'result': row[3],
-            'details': row[4],
-            'time': row[5],
-            'count': row[6],
-        })
-    return logs
+    raise Exception ("Implement this")
 
 # --- Redis helpers ---
 _redis_client = None
@@ -301,10 +225,8 @@ def get_shortcut(pattern):
     if shortcut:
         return shortcut,source,round(time.time() - start_time, 6)
     # Fallback to DB
-    db = get_db()
-    source=CONSTANTS.data_source_redirect
-    cursor = db.execute('SELECT pattern, type, target, access_count, created_at, updated_at FROM redirects WHERE pattern=?', (pattern,))
-    row = cursor.fetchone()
+    # TODO : check from DB !! implement this
+    row=False
     if row:
         shortcut = dict(
             pattern=row[0],
@@ -331,58 +253,11 @@ def get_shortcut(pattern):
     return None, None, round(time.time() - start_time, 6)
 
 def set_shortcut(pattern, type_, target, access_count=0, created_at=None, updated_at=None):
-    db = get_db()
-    now = updated_at or None
-    cursor = db.execute('SELECT 1 FROM redirects WHERE pattern=?', (pattern,))
-    exists = cursor.fetchone()
-    if exists:
-        db.execute('''
-            UPDATE redirects
-            SET type=?, target=?, updated_at=?
-            WHERE pattern=?
-        ''', (type_, target, now, pattern))
-    else:
-        db.execute('''
-            INSERT INTO redirects (type, pattern, target, access_count, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (type_, pattern, target, access_count, created_at, now))
-    db.commit()
-    # Update Redis
-    if _redis_enabled:
-        shortcut = dict(
-            pattern=pattern,
-            type=type_,
-            target=target,
-            access_count=access_count,
-            created_at=created_at,
-            updated_at=now
-        )
-        try:
-            redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
-        except Exception:
-            pass
+    raise Exception("implement this ")
 
 # --- Upstream Cache helpers ---
 def init_upstream_cache_table(db):
-    # Check if 'upstream_cache' table exists
-    cursor = db.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='upstream_cache'")
-    table_exists = cursor.fetchone()
-
-    if not table_exists:
-        print("🛠 Initializing 'upstream_cache' table...")
-
-        # Create the upstream_cache table
-        cursor.execute('''
-            CREATE TABLE upstream_cache (
-                pattern TEXT,
-                upstream_name TEXT,
-                resolved_url TEXT,
-                checked_at TEXT,
-                PRIMARY KEY (pattern, upstream_name)
-            )
-        ''')
-        db.commit()
+    raise Exception("implement this")
 
 
 def is_upstream_cache_enabled():
@@ -390,22 +265,7 @@ def is_upstream_cache_enabled():
     return cfg.get('upstream_cache', {}).get('enabled', True)
 
 def cache_upstream_result(pattern, upstream_name, resolved_url, checked_at):
-    db = get_db()
-    db.execute('''
-        INSERT OR REPLACE INTO upstream_cache (pattern, upstream_name, resolved_url, checked_at)
-        VALUES (?, ?, ?, ?)
-    ''', (pattern, upstream_name, resolved_url, checked_at))
-    db.commit()
-    if _redis_enabled:
-        try:
-            redis_set(f"upstream_cache:{pattern}", json.dumps({
-                'pattern': pattern,
-                'upstream_name': upstream_name,
-                'resolved_url': resolved_url,
-                'checked_at': checked_at
-            }))
-        except Exception:
-            pass
+    raise Exception("Implement this")
 
 def get_cached_upstream_result(pattern):
     if _redis_enabled:
@@ -415,35 +275,36 @@ def get_cached_upstream_result(pattern):
                 return json.loads(val)
             except Exception:
                 pass
-    db = get_db()
-    cursor = db.execute('SELECT pattern, upstream_name, resolved_url, checked_at FROM upstream_cache WHERE pattern=?', (pattern,))
-    row = cursor.fetchone()
-    if row:
-        result = {
-            'pattern': row[0],
-            'upstream_name': row[1],
-            'resolved_url': row[2],
-            'checked_at': row[3]
-        }
-        if _redis_enabled:
-            try:
-                redis_set(f"upstream_cache:{pattern}", json.dumps(result))
-            except Exception:
-                pass
-        return result
+    # db = get_db()
+    # cursor = db.execute('SELECT pattern, upstream_name, resolved_url, checked_at FROM upstream_cache WHERE pattern=?', (pattern,))
+    # row = cursor.fetchone()
+    # if row:
+    #     result = {
+    #         'pattern': row[0],
+    #         'upstream_name': row[1],
+    #         'resolved_url': row[2],
+    #         'checked_at': row[3]
+    #     }
+    #     if _redis_enabled:
+    #         try:
+    #             redis_set(f"upstream_cache:{pattern}", json.dumps(result))
+    #         except Exception:
+    #             pass
+    #     return result
     return None
 
 def list_upstream_cache(upstream_name):
-    db = get_db()
-    cursor = db.execute('SELECT pattern, resolved_url, checked_at FROM upstream_cache WHERE upstream_name=? ORDER BY checked_at DESC', (upstream_name,))
-    return [
-        {'pattern': row[0], 'resolved_url': row[1], 'checked_at': row[2]} for row in cursor.fetchall()
-    ]
+    # db = get_db()
+    # cursor = db.execute('SELECT pattern, resolved_url, checked_at FROM upstream_cache WHERE upstream_name=? ORDER BY checked_at DESC', (upstream_name,))
+    # return [
+    #     {'pattern': row[0], 'resolved_url': row[1], 'checked_at': row[2]} for row in cursor.fetchall()
+    # ]
+    raise Exception("impleent")
 
 def clear_upstream_cache(pattern):
-    db = get_db()
-    db.execute('DELETE FROM upstream_cache WHERE pattern=?', (pattern,))
-    db.commit()
+    # db = get_db()
+    # db.execute('DELETE FROM upstream_cache WHERE pattern=?', (pattern,))
+    # db.commit()
     if _redis_enabled:
         try:
             redis_delete(f"upstream_cache:{pattern}")
@@ -529,3 +390,7 @@ def app_startup_banner(app=None):
         print("      If using Docker Compose or custom networks, check your port mappings and network mode.")
     else:
         print("[INFO] Not running in Docker. If using Docker, make sure to map ports correctly.")
+
+
+def get_db():
+    return db

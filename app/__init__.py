@@ -1,13 +1,20 @@
 import json
 from flask import Flask
-from .utils import get_db, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table, init_upstream_check_log_table
+from flask_migrate import Migrate
+
+from model import  db
+from .utils import get_db_uri, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table
 import secrets
 
 def create_app():
     app = Flask(__name__)
     # Set secret key for session management
     app.secret_key = secrets.token_urlsafe(32)
-
+    # Setup DB URL :
+    print("DB URL ",get_db_uri())
+    app.config["SQLALCHEMY_DATABASE_URI"] = get_db_uri()
+    db.init_app(app)
+    migrate = Migrate(app, db)
     from .routes import bp
     from .version import bp_version
     app.register_blueprint(bp)
@@ -15,51 +22,12 @@ def create_app():
 
     with app.app_context():
         app.config['port'] = get_port()
-
-    @app.teardown_appcontext
-    def close_connection(exception):
-        db = getattr(app, '_database', None)
-        if db is not None:
-            db.close()
-
-    def init_db():
-        with app.app_context():
-            db = get_db()
-            cursor = db.cursor()
-
-            # Check if 'redirects' table exists before creating it
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='redirects'")
-            table_exists = cursor.fetchone()
-
-            if not table_exists:
-                print("🛠 Initializing 'redirects' table...")
-
-                # Create redirects table only if it does not exist
-                cursor.execute('''
-                    CREATE TABLE redirects (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        type TEXT NOT NULL,
-                        pattern TEXT NOT NULL,
-                        target TEXT NOT NULL
-                    )
-                ''')
-                db.commit()
-
-            # Call to initialize upstream cache table
-            init_upstream_cache_table(db)
-
-            # Call to initialize upstream check log table   
-            init_upstream_check_log_table(db)
-
-    app.init_db = init_db
-
-
+        db.create_all()
     return app
 
 def run_standalone_startup(app):
     init_redis_from_config()
     app_startup_banner(app)
-    app.init_db()
     routes = []
     for rule in app.url_map.iter_rules():
         routes.append({
