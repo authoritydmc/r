@@ -13,6 +13,4 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
     args = parser.parse_args()
     mode = "DEV" if args.debug else "PROD"
-
-    logger.info("\n==============================\n")
     app.run(debug=args.debug, host="0.0.0.0", port=app.config['port'])
