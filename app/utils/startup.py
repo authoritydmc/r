@@ -33,9 +33,9 @@ def app_startup_banner(app=None):
                     "🌍 To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker 🔄.")
         logger.info("🔗 If using Docker Compose or custom networks, check your port mappings and network mode 🔍.")
 
-
     else:
-        logger.info("❌ Not running in Docker 🚢. If using Docker, make sure to map ports correctly 🎯.")
+        logger.info("ℹ️ Not running in Docker 🐳. If using Docker, make sure to map ports correctly 🔌.")
+
         
     # Define OS-specific emojis
     os_emojis = {
