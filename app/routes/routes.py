@@ -300,7 +300,7 @@ def admin_upstreams():
 
 @bp.route('/check-upstreams-ui/<path:pattern>')  # Use path converter
 def check_upstreams_ui(pattern):
-    delay = get_auto_redirect_delay()
+    delay = utils.get_auto_redirect_delay()
     logger.info(f"Displaying upstream check UI for pattern: '{pattern}', delay: {delay}s")
     return render_template('check_upstreams_stream.html', pattern=pattern, delay=delay)
 
@@ -415,11 +415,11 @@ def stream_check_upstreams(pattern):
 @bp.route('/admin/upstream-logs')
 @login_required
 def admin_upstream_logs():
-    logs = get_upstream_logs()
+    logs = utils.get_upstream_logs()
     cache_status_map = {}
-    if is_upstream_cache_enabled():
+    if utils.is_upstream_cache_enabled():
         for up in get_upstreams():
-            cached = list_upstream_cache(up.get('name'))
+            cached = utils.list_upstream_cache(up.get('name'))
             for entry in cached:
                 cache_status_map[(entry['pattern'], up.get('name'))] = {'checked_at': entry['checked_at']}
     logger.debug("Rendering admin upstream logs page.")
@@ -465,7 +465,7 @@ def admin_import_redirects():
                 data = json.loads(file_content)
 
                 # Call the utility function
-                import_result = import_redirects_from_json(data)
+                import_result = utils.import_redirects_from_json(data)
 
                 if import_result['success']:
                     success = import_result['message']
@@ -491,13 +491,12 @@ def admin_import_redirects():
 
 @bp.route('/api/check-shortcut-exists/<path:pattern>')  # Use path converter
 def api_check_shortcut_exists(pattern):
-    exists = isPatternExists(pattern)
+    exists = utils.isPatternExists(pattern)
     logger.debug(f"API check for shortcut '{pattern}' exists: {exists}")
     return jsonify({'exists': exists})
 
 
 @bp.route('/edit/', methods=['GET', 'POST'])
-@login_required
 def edit_redirect_blank():
     if request.method == 'POST':
         pattern = request.form.get('pattern', '').strip()
@@ -510,13 +509,13 @@ def edit_redirect_blank():
             logger.warning("Attempted to create shortcut with empty pattern.")
             return render_template('create_shortcut.html', pattern='', error='Shortcut pattern cannot be empty.')
 
-        if isPatternExists(pattern):
+        if utils.isPatternExists(pattern):
             logger.warning(f"Attempted to create shortcut '{pattern}' which already exists.")
             return render_template('create_shortcut.html', pattern=pattern,
                                    error='A shortcut with this pattern already exists.')
 
         try:
-            set_shortcut(
+            utils.set_shortcut(
                 pattern=pattern,
                 type_=type_,
                 target=target,
@@ -546,7 +545,7 @@ def enable_r_instructions():
 @bp.route('/admin/upstream-cache/<upstream>')
 @login_required
 def admin_upstream_cache(upstream):
-    cached = list_upstream_cache(upstream)
+    cached = utils.list_upstream_cache(upstream)
     logger.debug(f"Rendering admin upstream cache page for '{upstream}'.")
     return render_template('admin_upstream_cache.html', upstream=upstream, cached=cached)
 
