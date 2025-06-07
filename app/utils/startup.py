@@ -17,14 +17,26 @@ def app_startup_banner(app=None):
                                                                              
 '''
     print("\n" + ascii_art) # Log the banner
-    logger.info(f"==============================\n   {config.start_mode} - READY 🚀\n==============================")
+    logger.info(f"\n   {config.start_mode} - READY 🚀\n")
     logger.info("🌐 URL Shortener & Redirector app initialized.")
 
     if app is not None:
         logger.info(f"🖥️ Configured to run on port: {get_port()}")
     else:
         logger.info("⚠️ (Port unknown: app not provided)")
+    
+    # Docker environment and port/network info 🚢🖥️
+    
+    if config.RUNNING_IN_DOCKER:
+        logger.info("🐳 Running inside a Docker container.")
+        logger.info("💡 The app listens on the internal container port (default 80) 🎛️.\n"
+                    "🌍 To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker 🔄.")
+        logger.info("🔗 If using Docker Compose or custom networks, check your port mappings and network mode 🔍.")
 
+
+    else:
+        logger.info("❌ Not running in Docker 🚢. If using Docker, make sure to map ports correctly 🎯.")
+        
         # Detect OS and print instructions for host file entry
     os_name = platform.system().lower()
 
@@ -38,6 +50,7 @@ def app_startup_banner(app=None):
 
     # Get the emoji based on the OS, defaulting to "unknown"
     emoji = os_emojis.get(os_name, os_emojis["unknown"])
+
 
     logger.info(f"{emoji} Detected OS: {os_name.capitalize()}")
 
@@ -90,13 +103,4 @@ def app_startup_banner(app=None):
     except Exception as e:
         logger.exception(f"🔥 Unexpected error checking hostname 'r' resolution: {e} 🚑")
 
-        # Docker environment and port/network info 🚢🖥️
-
-    if config.RUNNING_IN_DOCKER:
-        logger.info("🐳 Running inside a Docker container.")
-        logger.info("💡 The app listens on the internal container port (default 80) 🎛️.\n"
-                    "🌍 To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker 🔄.")
-        logger.info("🔗 If using Docker Compose or custom networks, check your port mappings and network mode 🔍.")
-    else:
-        logger.info("❌ Not running in Docker 🚢. If using Docker, make sure to map ports correctly 🎯.")
 
