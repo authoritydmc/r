@@ -1,65 +1,98 @@
-import sys
-import os
-import tempfile
-import sqlite3
-import pytest
-from flask import Flask, g
+import unittest
+from unittest.mock import patch, MagicMock, mock_open, call
+import json
+from datetime import datetime, timezone
+import logging
 
-# Ensure app/ is importable
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import app.utils
-utils = app.utils
+from app.utils import utils
 
-@pytest.fixture
-def app():
-    app = Flask(__name__)
-    db_fd, db_path = tempfile.mkstemp()
-    app.config['DATABASE'] = db_path
-    utils.DATABASE = db_path
-    # Create the DB and keep a reference to the test-created connection
-    with app.app_context():
-        db = sqlite3.connect(db_path)
-        db.execute('CREATE TABLE IF NOT EXISTS redirects (pattern TEXT PRIMARY KEY, target TEXT, type TEXT)')
-        db.execute('CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
-        db.commit()
-        db.close()  # Close the test-created connection
-    yield app
-    # Properly close the utils connection inside an app context
-    with app.app_context():
-        if hasattr(g, '_database') and g._database:
-            g._database.close()
-    os.close(db_fd)
-    import gc
-    gc.collect()  # Force garbage collection to release file handles
-    os.unlink(db_path)
+# Assuming the tests are run from the root directory 'r' (d:\codelab\r)
+# and 'app' is in the PYTHONPATH.
 
-@pytest.fixture
-def client(app):
-    return app.test_client()
+# Disable logging for tests to keep output clean
+logging.disable(logging.CRITICAL)
 
-# --- Tests ---
-def test_set_and_get_config(app):
-    with app.app_context():
-        utils.set_config('test_key', 'test_value')
-        assert utils.get_config('test_key') == 'test_value'
+# Define a mock for app.CONSTANTS as it's used in utils.py
+class MockConstants:
+    data_source_redis = "redis_source"
+    data_source_redirect = "db_redirect_source"
+    data_source_upstream = "db_upstream_source"
+    DATA_TYPE_STATIC = "static_type"
+    DATA_TYPE_DYNAMIC = "dynamic_type"
 
-def test_increment_and_get_access_count(app):
-    with app.app_context():
-        db = utils.get_db()
-        db.execute('INSERT INTO redirects (pattern, target, type) VALUES (?, ?, ?)', ('foo', 'http://example.com', 'static'))
-        db.commit()
-        assert utils.get_access_count('foo') == 0
-        utils.increment_access_count('foo')
-        assert utils.get_access_count('foo') == 1
-        utils.increment_access_count('foo')
-        assert utils.get_access_count('foo') == 2
+# Path for patching names within the 'utils' module
+UTILS_MODULE_PATH = 'app.utils.utils'
 
-def test_get_created_updated(app):
-    with app.app_context():
-        db = utils.get_db()
-        db.execute('INSERT INTO redirects (pattern, target, type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-                   ('bar', 'http://example.com', 'static', '2024-01-01', '2024-01-02'))
-        db.commit()
-        created, updated = utils.get_created_updated('bar')
-        assert created == '2024-01-01'
-        assert updated == '2024-01-02'
+class TestUtils(unittest.TestCase):
+
+
+
+    @patch(f'{UTILS_MODULE_PATH}._save_config')
+    @patch(f'{UTILS_MODULE_PATH}.config')
+    def test_get_config_key_exists(self, mock_config_module, mock_save_config):
+        """Test get_config when key exists."""
+        mock_config_module.get_configuration.return_value = {"existing_key": "existing_value"}
+
+        result = utils.get_config("existing_key", "default_value")
+
+        self.assertEqual(result, "existing_value")
+        mock_config_module.get_configuration.assert_called_once()
+        mock_save_config.assert_not_called()
+
+    @patch(f'{UTILS_MODULE_PATH}._save_config')
+    @patch(f'{UTILS_MODULE_PATH}.config')
+    def test_get_config_key_not_exists_sets_default(self, mock_config_module, mock_save_config):
+        """Test get_config when key does not exist, sets default and saves."""
+        current_config = {}
+        mock_config_module.get_configuration.return_value = current_config
+
+        result = utils.get_config("new_key", "default_value")
+
+        self.assertEqual(result, "default_value")
+        self.assertEqual(current_config["new_key"], "default_value")
+        mock_config_module.get_configuration.assert_called_once()
+        mock_save_config.assert_called_once()
+
+    @patch(f'{UTILS_MODULE_PATH}._save_config')
+    @patch(f'{UTILS_MODULE_PATH}.config')
+    def test_set_config(self, mock_config_module, mock_save_config):
+        """Test set_config sets key and saves."""
+        current_config = {}
+        mock_config_module.get_configuration.return_value = current_config
+
+        utils.set_config("another_key", "another_value")
+
+        self.assertEqual(current_config["another_key"], "another_value")
+        mock_config_module.get_configuration.assert_called_once()
+        mock_save_config.assert_called_once()
+
+
+
+    def test_destructure_subpath(self):
+        test_cases = [
+            ("raj", ("raj", [])),
+            ("json/1", ("json", ["1"])),
+            ("json/1/2", ("json", ["1", "2"])),
+            ("/foo/bar", ("foo", ["bar"])),
+            ("  leadingtrailing  ", ("leadingtrailing", [])),
+            ("  lead/trail/path  ", ("lead", ["trail", "path"])),
+            ("/", ("", [])),
+            ("", ("", [])),
+            ("UPPER/case/Test", ("upper", ["case", "test"])),
+        ]
+        for subpath_input, expected_output in test_cases:
+            with self.subTest(subpath_input=subpath_input):
+                self.assertEqual(utils.destructureSubPath(subpath_input), expected_output)
+
+    def test_replace_placeholders(self):
+        self.assertEqual(utils.replacePlaceHolders("api/{id}/data", "123"), "api/123/data")
+        self.assertEqual(utils.replacePlaceHolders("api/{id}/{name}", "val"), "api/val/val")
+        self.assertEqual(utils.replacePlaceHolders("no_placeholders", "val"), "no_placeholders")
+
+    def test_get_placeholder_vars(self):
+        self.assertEqual(utils.get_placeholder_vars("api/{id}/data/{name}"), ["id", "name"])
+        self.assertEqual(utils.get_placeholder_vars("no_placeholders"), [])
+
+
+if __name__ == '__main__':
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)

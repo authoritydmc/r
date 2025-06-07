@@ -39,7 +39,7 @@
             {% set status_code = details.split('status_code=')[1].split(',')[0].strip() if 'status_code=' in details else '-' %}
             {% set actual_url = details.split('actual_url=')[1].split(',')[0].strip() if 'actual_url=' in details else '-' %}
             {% set exception_msg = details if is_exception else '' %}
-            {% set cache_info = cache_status_map.get((log.shortcut, log.upstream)) %}
+            {% set cache_info = log.cache_info if log.cache_info else False %}
             <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800">
               <td class="px-4 py-2 font-mono text-xs text-gray-800 dark:text-gray-100">{{ log.time or log.timestamp or '-' }}</td>
               <td class="px-4 py-2 font-mono text-gray-800 dark:text-gray-100">{{ log.shortcut or '-' }}</td>

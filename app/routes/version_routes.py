@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template
 import subprocess
 import socket
-from app.utils import get_config, get_port
-from functools import wraps
+from app.utils.utils import  get_port
 
-bp_version = Blueprint('version', __name__)
+
+bp = Blueprint('version', __name__)
 
 def get_accessible_urls(port):
     urls = []
@@ -35,16 +35,15 @@ def get_accessible_urls(port):
     # Remove duplicates
     return sorted(set(urls))
 
-@bp_version.route('/version')
+@bp.route('/version')
 def version_page():
     from datetime import datetime
     try:
         commit_count = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], encoding='utf-8').strip()
         commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], encoding='utf-8').strip()
         commit_date = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=short'], encoding='utf-8').strip()
-        version = f"v1.{commit_count}.{commit_hash}"
     except Exception:
         commit_count = commit_hash = commit_date = version = 'unknown'
     port = get_port()
     urls = get_accessible_urls(port)
-    return render_template('version.html', version=version, commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls, now=datetime.utcnow)
+    return render_template('version.html',commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls)

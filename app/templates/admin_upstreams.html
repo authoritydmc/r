@@ -48,7 +48,7 @@
             <td class="py-2 px-2 sm:px-3">
               <div class="flex flex-col sm:flex-row gap-2">
                 <button type="submit" name="delete" value="{{ loop.index0 }}" class="text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-trash"></i> Delete</button>
-                <a href="{{ url_for('main.admin_upstream_cache', upstream=up.name) }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-database"></i> View Cache</a>
+                <a href="{{ url_for('upstream.admin_upstream_cache', upstream=up.name) }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-database"></i> View Cache</a>
               </div>
             </td>
           </tr>
