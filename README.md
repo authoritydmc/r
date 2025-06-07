@@ -12,7 +12,6 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
   - [Manual (Python)](#manual-python)
 - [Configuration](#configuration)
 - [Database URI Construction Guide](#database-uri-construction-guide)
-- [Key Components]
 - [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
 - [Data Persistence](#data-persistence)
 - [Reverse Proxy Example](#reverse-proxy-example-nginx)
@@ -167,7 +166,7 @@ All configuration is managed in the `data/redirect.config.json` file (auto-creat
   "upstream_cache": {
     "enabled": true // Enable upstream shortcut caching (recommended)
   },
-  "database":"sqlite:///data/redirects.db"  //uri for database
+  "database":"sqlite:///data/redirects.db"  //uri for database 
 }
 ```
 
@@ -179,12 +178,13 @@ All configuration is managed in the `data/redirect.config.json` file (auto-creat
 - `upstreams`: List of upstream redirectors (e.g., Bitly, go/). Each must have a `name`, `base_url`, and optionally `fail_url` and `fail_status_code` to detect non-existent shortcuts.
 - `redis`: Redis config. Set `enabled` to true for best performance. Use `host: redis` in Docker Compose, or `localhost` for local testing.
 - `upstream_cache`: Set `enabled` to true to cache successful upstream lookups for fast future redirects.
+- `database` : Set `database` uri , read more [here](#database-uri-construction-guide)
 
 You can edit this file directly or use the admin UI for most settings. Changes take effect immediately after saving the file or restarting the app/container.
 
 ---
 
-# **Database URI Construction Guide** 📌
+# **Database URI Construction Guide**
 
 This guide explains how to format database connection URIs dynamically for **SQLite, PostgreSQL, and MySQL**.
 
