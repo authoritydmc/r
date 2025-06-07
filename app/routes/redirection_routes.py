@@ -123,7 +123,7 @@ def handle_redirect(subpath):
         return redirect(url_for('upstream.check_upstreams_ui', pattern=first_segment), code=302)
 
     logger.info(f"No upstreams configured. Redirecting to create shortcut page for '{subpath}'.")
-    return redirect(url_for('main.edit_redirect', subpath=subpath))
+    return redirect(url_for('redirection.edit_redirect', subpath=subpath))
 
 @bp.route('/edit/', methods=['GET', 'POST'])
 def edit_redirect_blank():
