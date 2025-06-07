@@ -124,7 +124,7 @@ class Config:
             "admin_password": random_pwd,
             "delete_requires_password": True,
             "upstreams": [],
-            "log_level": "DEBUG",  # Default log level (can be changed in config file)
+            "log_level": "INFO",  # Default log level (can be changed in config file)
             "redis": {
                 "enabled": True,
                 "host": redis_default.get("host"),

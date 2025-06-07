@@ -1,4 +1,3 @@
-import json
 import logging
 import secrets
 from flask import Flask
@@ -48,21 +47,21 @@ def create_app():
     return app
 
 
-def run_standalone_startup(app):
-    """Standalone startup routine for debugging and route discovery."""
-    app_startup_banner(app)
-
-    try:
-        routes = [
-            {"route": rule.rule, "methods": list(rule.methods), "endpoint": rule.endpoint}
-            for rule in app.url_map.iter_rules()
-        ]
-
-        file_path = "urlMap.json"
-        with open(file_path, "w") as f:
-            json.dump(routes, f, indent=4)
-
-        logger.info(f"Route mappings saved to {file_path}")
-
-    except Exception as e:
-        logger.exception("Failed to generate URL map.", exc_info=e)
+# def run_standalone_startup(app):
+#     """Standalone startup routine for debugging and route discovery."""
+#     app_startup_banner(app)
+#
+#     try:
+#         routes = [
+#             {"route": rule.rule, "methods": list(rule.methods), "endpoint": rule.endpoint}
+#             for rule in app.url_map.iter_rules()
+#         ]
+#
+#         file_path = "urlMap.json"
+#         with open(file_path, "w") as f:
+#             json.dump(routes, f, indent=4)
+#
+#         logger.info(f"Route mappings saved to {file_path}")
+#
+#     except Exception as e:
+#         logger.exception("Failed to generate URL map.", exc_info=e)
