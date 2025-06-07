@@ -74,7 +74,7 @@ class Config:
         """Fetch Redis configurations dynamically."""
         try:
             redis_host = os.getenv('REDIS_HOST', 'redis' if self.RUNNING_IN_DOCKER else 'localhost')
-            redis_port = int(os.getenv('REDIS_PORT', 6379))
+            redis_port = 6379
             return {
                 "host": redis_host,
                 "port": redis_port
