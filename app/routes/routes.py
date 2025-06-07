@@ -2,6 +2,7 @@ import io
 import json
 import logging  # Import logging
 import os
+import re
 import time
 from datetime import datetime, timezone
 from functools import wraps
@@ -14,15 +15,7 @@ from flask import session as flask_session
 from app import CONSTANTS
 from model.redirect import Redirect  # Import Redirect model for export/import
 from model.upstream_check_log import UpstreamCheckLog  # For clearing upstream logs
-from app.utils import (
-    _load_config, _save_config,
-    get_admin_password, get_auto_redirect_delay, get_delete_requires_password,
-    increment_access_count, log_upstream_check, get_upstream_logs, deleteShortCut,
-    get_shortcut, set_shortcut, isPatternExists,
-    is_upstream_cache_enabled, cache_upstream_result, clear_upstream_cache,
-    list_upstream_cache, _redis_enabled,
-    import_redirects_from_json  # Import _redis_enabled and redis_delete for import cache purge
-)
+import app.utils as utils
 
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
@@ -42,7 +35,7 @@ def inject_now():
         logger.debug(f"Could not determine version from git: {e}")
 
     # Add redis_connected context (already relies on _redis_enabled from utils)
-    redis_connected = bool(_redis_enabled)  # _redis_enabled is now a global var from utils
+    redis_connected = bool(utils._redis_enabled)  # _redis_enabled is now a global var from utils
 
     # --- FIX: Use datetime.now(timezone.utc) ---
     return {'now': lambda: datetime.now(timezone.utc), 'version': version, 'redis_connected': redis_connected,
@@ -53,14 +46,14 @@ def inject_now():
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.config.json')
 
 def get_upstreams():
-    cfg = _load_config()
+    cfg = utils._load_config()
     return cfg.get('upstreams', [])
 
 
 def set_upstreams(upstreams):
-    cfg =_load_config()
+    cfg = utils._load_config()
     cfg['upstreams'] = upstreams
-    _save_config(cfg)
+    utils._save_config(cfg)
 
 # --- Simple Auth Decorator ---
 def login_required(f):
@@ -84,7 +77,7 @@ def login_required(f):
 def admin_login():
     error = None
     if request.method == 'POST':
-        admin_pwd = get_admin_password()
+        admin_pwd = utils.get_admin_password()
         if request.form.get('password') == admin_pwd:
             session['admin_logged_in'] = True
             next_url = request.args.get('next') or url_for('main.dashboard')
@@ -135,11 +128,11 @@ def dashboard():
 @bp.route('/delete/<path:subpath>', methods=['GET', 'POST'])
 @login_required
 def dashboard_delete(subpath):
-    if get_delete_requires_password():
+    if utils.get_delete_requires_password():
         if request.method == 'POST':
-            admin_pwd = get_admin_password()
+            admin_pwd = utils.get_admin_password()
             if request.form.get('password') == admin_pwd:
-                deleteShortCut(subpath)
+                utils.deleteShortCut(subpath)
                 logger.info(f"Shortcut '{subpath}' deleted by admin.")
                 return redirect(url_for('main.dashboard'))
             else:
@@ -151,15 +144,15 @@ def dashboard_delete(subpath):
             return render_template('delete_confirm.html', subpath=subpath, error=None)
     else:
         logger.info(f"Shortcut '{subpath}' deleted (password not required).")
-        deleteShortCut(subpath)
+        utils.deleteShortCut(subpath)
         return redirect(url_for('main.dashboard'))
 
 
 # GET/POST: Edit or create shortcut. Triggered when user visits /edit/<subpath> or submits edit form.
 @bp.route('/edit/<path:subpath>', methods=['GET', 'POST'])
-@login_required
 def edit_redirect(subpath):
-    shortcut, source_data, resp_time = get_shortcut(subpath)
+
+    shortcut, source_data, resp_time = utils.get_shortcut(subpath)
 
     if request.method == 'POST':
         type_ = request.form['type']
@@ -168,7 +161,7 @@ def edit_redirect(subpath):
         ip_address = request.remote_addr or 'unknown'
 
         try:
-            set_shortcut(
+            utils.set_shortcut(
                 pattern=subpath,
                 type_=type_,
                 target=target,
@@ -191,53 +184,50 @@ def edit_redirect(subpath):
         return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'])
 
 
-# GET: Handle redirect for static and dynamic shortcuts. Triggered for any /<subpath> not matching other routes.
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
     logger.info(f"Attempting to handle redirect for subpath: '{subpath}'")
-    shortcut, data_source, resp_time = get_shortcut(subpath)
-
+    # sanitize  pattern
+    pattern,dynamicProp= utils.destructureSubPath(subpath)
+    shortcut, data_source, resp_time = utils.get_shortcut(pattern)
+    print(shortcut,data_source,resp_time)
     if shortcut:
         if (data_source == CONSTANTS.data_source_redirect or data_source == CONSTANTS.data_source_redis) and \
                 shortcut.get(CONSTANTS.KEY_DATA_TYPE) == CONSTANTS.DATA_TYPE_STATIC:
-            increment_access_count(subpath)
+            utils.increment_access_count(subpath)
             logger.info(
                 f"Redirecting static shortcut: '{subpath}' -> '{shortcut['target']}' (Source: {data_source}, Time: {resp_time:.4f}s)")
-            if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), source=data_source, response_time=resp_time)
+            if utils.get_auto_redirect_delay() > 0:
+                return render_template('redirect.html', target=shortcut['target'], delay=utils.get_auto_redirect_delay(), source=data_source, response_time=resp_time)
             return redirect(shortcut['target'], code=302)
 
+        # UPSTREAM _HANDLING :::
         if data_source == CONSTANTS.data_source_upstream and shortcut.get('resolved_url'):
             logger.info(
                 f"Redirecting upstream shortcut: '{subpath}' -> '{shortcut['resolved_url']}' (Source: {data_source}, Time: {resp_time:.4f}s)")
-            if get_auto_redirect_delay() > 0:
+            if utils.get_auto_redirect_delay() > 0:
                 return render_template('redirect.html', target=shortcut['resolved_url'],
-                                       delay=get_auto_redirect_delay(), source=data_source,
+                                       delay=utils.get_auto_redirect_delay(), source=data_source,
                                        response_time=resp_time)
             return redirect(shortcut['resolved_url'], code=302)
 
         if (data_source == CONSTANTS.data_source_redirect or data_source == CONSTANTS.data_source_redis) and \
                 shortcut.get(CONSTANTS.KEY_DATA_TYPE) == CONSTANTS.DATA_TYPE_DYNAMIC:
-            pattern = shortcut['pattern']
-            target = shortcut['target']
-            import re as _re
-            match = _re.search(r'\{(\w+)\}', target)
-            var_name = match.group(1) if match else 'name'
+            target=shortcut['target']
 
             if subpath == pattern:
                 example_var = 'yourvalue'
-                example_target = target.replace(f'{{{var_name}}}', example_var)
+                example_target = utils.replacePlaceHolders(target, example_var)
                 logger.info(f"Dynamic shortcut '{pattern}' accessed without variable. Showing usage instructions.")
-                return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=var_name,
+                return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=utils.get_placeholder_vars(target)[0],
                                        example_target=example_target)
-
             if subpath.startswith(pattern + "/"):
                 variable = subpath[len(pattern) + 1:]
-                dest_url = _re.sub(r"\{\w+\}", variable, target)
-                increment_access_count(pattern)
+                dest_url = re.sub(r"\{\w+\}", variable, target)
+                utils.increment_access_count(pattern)
                 logger.info(f"Redirecting dynamic shortcut: '{subpath}' -> '{dest_url}' (Source: {data_source})")
-                if get_auto_redirect_delay() > 0:
-                    return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), source=data_source)
+                if utils.get_auto_redirect_delay() > 0:
+                    return render_template('redirect.html', target=dest_url, delay=utils.get_auto_redirect_delay(), source=data_source)
                 return redirect(dest_url, code=302)
 
     logger.info(f"No direct shortcut found for '{subpath}'. Checking live upstreams.")
@@ -370,12 +360,12 @@ def stream_check_upstreams(pattern):
                 if not fail_url_match and (fail_status_code is None or not fail_status_match):
                     found = True
                     redirect_url = actual_url
-                    log_upstream_check(
+                    utils.log_upstream_check(
                         pattern, up_name, check_url, 'success',
                         f"actual_url={actual_url}, status_code={status_code}", tried_at
                     )
-                    if is_upstream_cache_enabled():
-                        cache_upstream_result(pattern, up_name, actual_url, tried_at)
+                    if utils.is_upstream_cache_enabled():
+                        utils.cache_upstream_result(pattern, up_name, actual_url, tried_at)
                     yield from send_log(
                         f"✅ Shortcut found in {up_name} (redirected to {actual_url}, status {status_code})",
                         {'found': True, 'redirect_url': redirect_url}
@@ -383,7 +373,7 @@ def stream_check_upstreams(pattern):
                     logger.info(f"Shortcut '{pattern}' successfully found in upstream '{up_name}'.")
                     break
                 else:
-                    log_upstream_check(
+                    utils.log_upstream_check(
                         pattern, up_name, check_url, 'fail',
                         f"actual_url={actual_url}, status_code={status_code}, fail_url_match={fail_url_match}, fail_status_match={fail_status_match}",
                         tried_at
@@ -392,20 +382,20 @@ def stream_check_upstreams(pattern):
                     logger.info(f"Shortcut '{pattern}' not found in upstream '{up_name}' (matched fail criteria).")
 
             except requests.exceptions.Timeout:
-                log_upstream_check(pattern, up_name, check_url, 'timeout', 'Request timed out', tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'timeout', 'Request timed out', tried_at)
                 yield from send_log(f"⚠️ Timeout checking {up_name}: Request timed out after 5 seconds.",
                                     {'error': True})
                 logger.error(f"Upstream check for '{up_name}' timed out for pattern '{pattern}'.")
             except requests.exceptions.ConnectionError as e:
-                log_upstream_check(pattern, up_name, check_url, 'connection_error', str(e), tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'connection_error', str(e), tried_at)
                 yield from send_log(f"⚠️ Connection error checking {up_name}: {str(e)}", {'error': True})
                 logger.error(f"Connection error for upstream '{up_name}' and pattern '{pattern}': {e}")
             except requests.exceptions.RequestException as e:
-                log_upstream_check(pattern, up_name, check_url, 'request_exception', str(e), tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'request_exception', str(e), tried_at)
                 yield from send_log(f"⚠️ HTTP request error for {up_name}: {str(e)}", {'error': True})
                 logger.error(f"HTTP request error for upstream '{up_name}' and pattern '{pattern}': {e}")
             except Exception as e:
-                log_upstream_check(pattern, up_name, check_url, 'exception', str(e), tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'exception', str(e), tried_at)
                 yield from send_log(f"⚠️ An unexpected error occurred for {up_name}: {str(e)}", {'error': True})
                 logger.exception(f"Unexpected error during upstream check for '{up_name}' and pattern '{pattern}'.")
 
@@ -591,7 +581,7 @@ def admin_upstream_cache_resync(upstream, pattern):
 
             if not fail_url_match and (fail_status_code is None or not fail_status_match):
                 tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
-                cache_upstream_result(pattern, upstream, actual_url, tried_at)
+                utils.cache_upstream_result(pattern, upstream, actual_url, tried_at)
                 logger.info(f"Resync for '{pattern}' in '{upstream}' successful, cache updated.")
                 return jsonify({'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
             else:
@@ -662,7 +652,7 @@ def admin_upstream_cache_resync_all(upstream):
                 tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
 
                 if not fail_url_match and (fail_status_code is None or not fail_status_match):
-                    cache_upstream_result(pattern, upstream, actual_url, tried_at)
+                    utils.cache_upstream_result(pattern, upstream, actual_url, tried_at)
                     results.append(
                         {'pattern': pattern, 'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
                     logger.debug(f"Resync-all: Pattern '{pattern}' in '{upstream}' successful.")

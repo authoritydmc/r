@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import time
 import redis
 from datetime import datetime
@@ -318,15 +319,12 @@ def get_shortcut(pattern):
     logger.info(f"Shortcut '{pattern}' not found in local DB or upstream cache.")
     return None, None, round(time.time() - start_time, 6)
 
-def set_shortcut(pattern, type_, target, access_count=0, created_at=None, updated_at=None, created_ip=None, updated_ip=None):
+def set_shortcut(pattern, type_, target, created_at=None, updated_at=None, created_ip=None, updated_ip=None):
     redirect_obj = Redirect.query.filter_by(pattern=pattern).first()
     if redirect_obj:
         # Update existing shortcut
         redirect_obj.type = type_
         redirect_obj.target = target
-        # Only update access_count if explicitly provided, otherwise retain current
-        if access_count is not None:
-             redirect_obj.access_count = access_count
         redirect_obj.updated_at = updated_at or datetime.utcnow().isoformat(sep=' ', timespec='seconds')
         redirect_obj.updated_ip = updated_ip
         logger.info(f"Updated existing shortcut: '{pattern}'")
@@ -336,7 +334,7 @@ def set_shortcut(pattern, type_, target, access_count=0, created_at=None, update
             pattern=pattern,
             type=type_,
             target=target,
-            access_count=access_count,
+            access_count=0,
             created_at=created_at or datetime.utcnow().isoformat(sep=' ', timespec='seconds'),
             updated_at=updated_at or datetime.utcnow().isoformat(sep=' ', timespec='seconds'),
             created_ip=created_ip,
@@ -668,3 +666,85 @@ def import_redirects_from_json(json_data):
         db.session.rollback()
         logger.exception(f"Unexpected error during redirect import.")
         return {'success': False, 'message': f'Import failed: An unexpected error occurred: {e}'}
+
+
+
+def destructureSubPath(subPath: str) -> tuple[str, list[str]]:
+    """
+    Destructures a URL subpath into a base pattern and a list of dynamic properties.
+
+    Examples:
+    - "raj"        -> ("raj", [])
+    - "json/1"     -> ("json", ["1"])
+    - "json/1/2"   -> ("json", ["1", "2"])
+    - "/foo/bar "  -> ("foo/bar", []) (after sanitization, if 'foo/bar' is the pattern)
+
+    Args:
+        subPath: The raw subpath string from the URL (e.g., from Flask's <path:subpath>).
+
+    Returns:
+        A tuple containing:
+        - The base pattern string (e.g., "json", "raj").
+        - A list of strings representing the dynamic properties (e.g., ["1"], ["1", "2"]).
+    """
+    logger.debug(f"Destructuring subpath: '{subPath}'")
+
+    # 1. Sanitize the subpath:
+    #    - Strip leading/trailing whitespace.
+    #    - Convert to lowercase (assuming patterns are case-insensitive).
+    #    - Ensure no leading slash remains.
+    sanitized_subpath = subPath.strip().lower()
+    if sanitized_subpath.startswith('/'):
+        sanitized_subpath = sanitized_subpath[1:]
+
+    # Handle empty string after sanitization (e.g., if subPath was just '/')
+    if not sanitized_subpath:
+        return "", [] # Or raise an error, depending on how you want to handle '/' as input
+
+    # 2. Split the sanitized subpath into segments
+    segments = sanitized_subpath.split('/')
+
+    # 3. The first segment is the base pattern for lookup
+    pattern = segments[0]
+
+    # 4. The remaining segments are the dynamic properties
+    dynamic_properties = segments[1:]
+
+    logger.debug(f"Destructured: pattern='{pattern}', dynamic_properties={dynamic_properties}")
+    return pattern, dynamic_properties
+
+
+def replacePlaceHolders(target_string, replacement_value):
+    """
+    Replaces all occurrences of {placeholder} in a string with a given replacement value.
+
+    Args:
+        target_string (str): The string containing placeholders (e.g., "https://example.com/data/{id}/{name}").
+        replacement_value (str): The value to replace all placeholders with.
+
+    Returns:
+        str: The string with all placeholders replaced.
+    """
+    return re.sub(r'\{[^}]+\}', str(replacement_value), target_string)
+
+
+def get_placeholder_vars(target_string: str) -> list[str]:
+    """
+    Extracts a list of all placeholder variable names from a string.
+    Placeholders are expected to be in the format {variable_name}.
+
+    Args:
+        target_string (str): The string to parse (e.g., "https://example.com/data/{id}/details/{user_name}").
+
+    Returns:
+        list[str]: A list of extracted variable names (e.g., ["id", "user_name"]).
+                   Returns an empty list if no placeholders are found.
+    """
+    # The regex r'\{([^}]+)\}' does the following:
+    # \{       - Matches a literal opening curly brace '{'
+    # (        - Starts a capturing group
+    # [^}]+    - Matches one or more characters that are NOT a closing curly brace '}'
+    # )        - Ends the capturing group
+    # \}       - Matches a literal closing curly brace '}'
+    # re.findall returns a list of all strings matched by the capturing group.
+    return re.findall(r'\{([^}]+)\}', target_string)
