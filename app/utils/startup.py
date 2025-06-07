@@ -1,8 +1,6 @@
 import logging
 
 from ..config import config
-from app.utils import redis_enabled
-
 logger = logging.getLogger(__name__)
 
 def app_startup_banner(app=None):
@@ -53,8 +51,8 @@ def app_startup_banner(app=None):
         logger.info("Your OS is not explicitly supported. Please manually update your hosts file:\n")
         logger.info("  127.0.0.1   r")
     # Print Redis status
-    if redis_enabled:
-        logger.info(f"Redis enabled: host={redis_host}, port={redis_port}")
+    if config.redis_enabled:
+        logger.info(f"Redis enabled: host={config.redis_host}, port={config.redis_port}")
     else:
         logger.info("Redis is disabled (see config)")
 

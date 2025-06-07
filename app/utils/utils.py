@@ -9,6 +9,7 @@ from model.upstream_cache import UpstreamCache
 from model.redirect import Redirect
 from app import CONSTANTS  # Import CONSTANTS for data source strings
 
+
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
 
@@ -214,9 +215,9 @@ def get_upstream_logs():
 
 
 def redis_get(key):
-    if redis_enabled and redis_client:
+    if config.config.redis_enabled and config.config.redis_client:
         try:
-            value = redis_client.get(key)
+            value = config.redis_client.get(key)
             logger.debug(f"Redis GET '{key}': {'HIT' if value else 'MISS'}")
             return value
         except Exception as e:
@@ -226,9 +227,9 @@ def redis_get(key):
     return None
 
 def redis_set(key, value, ex=None): # Added optional expiry 'ex'
-    if redis_enabled and redis_client:
+    if config.config.redis_enabled and config.redis_client:
         try:
-            redis_client.set(key, value, ex=ex)
+            config.redis_client.set(key, value, ex=ex)
             logger.debug(f"Redis SET '{key}' successfully.")
         except Exception as e:
             logger.error(f"Redis SET failed for key '{key}': {e}")
@@ -237,9 +238,9 @@ def redis_set(key, value, ex=None): # Added optional expiry 'ex'
         logger.debug(f"Redis SET '{key}': Skipped (Redis disabled/not connected).")
 
 def redis_delete(key):
-    if redis_enabled and redis_client:
+    if config.config.redis_enabled and config.redis_client:
         try:
-            redis_client.delete(key)
+            config.redis_client.delete(key)
             logger.debug(f"Redis DELETE '{key}' successfully.")
         except Exception as e:
             logger.error(f"Redis DELETE failed for key '{key}': {e}")
@@ -253,7 +254,7 @@ def get_shortcut(pattern):
     shortcut = None
     source = CONSTANTS.data_source_redis # Default source assumption
 
-    if redis_enabled:
+    if config.config.redis_enabled:
         val = redis_get(f"shortcut:{pattern}")
         if val:
             try:
@@ -284,7 +285,7 @@ def get_shortcut(pattern):
             'data_type': redirect_obj.type # Assuming 'type' maps to CONSTANTS.DATA_TYPE_STATIC/DYNAMIC
         }
         # Hydrate Redis
-        if redis_enabled:
+        if config.redis_enabled:
             try:
                 redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
                 logger.debug(f"Shortcut '{pattern}' MISS from Redis, HIT from DB. Hydrated Redis.")
@@ -337,7 +338,7 @@ def set_shortcut(pattern, type_, target, created_at=None, updated_at=None, creat
         db.session.commit()
         logger.debug(f"DB commit successful for shortcut '{pattern}'.")
         # Invalidate (or re-set) Redis cache for this shortcut after update/set
-        if redis_enabled:
+        if config.redis_enabled:
             # Fetch the updated shortcut from DB to ensure consistency before caching
             updated_shortcut = Redirect.query.filter_by(pattern=pattern).first()
             if updated_shortcut:
@@ -367,7 +368,7 @@ def init_upstream_cache_table(db_session):
 
 
 def is_upstream_cache_enabled():
-    cfg = _load_config()
+    cfg = config.get_configuration()
     enabled = cfg.get('upstream_cache', {}).get('enabled', True)
     logger.debug(f"Upstream cache enabled status: {enabled}")
     return enabled
@@ -410,7 +411,7 @@ def cache_upstream_result(pattern: str, upstream_name: str, resolved_url: str):
         logger.debug(f"DB commit successful for upstream cache '{pattern}'.")
 
         # update redis is enabled
-        if  redis_enabled:
+        if  config.redis_enabled:
             # Prepare data for Redis cache (using the same fields as the DB entry)
             redis_data = {
                 'pattern': pattern,
@@ -432,7 +433,7 @@ def get_cached_upstream_result(pattern):
     # This function primarily attempts to get from Redis,
     # then calls the DB specific one if not found in Redis,
     # which in turn hydrates Redis.
-    if redis_enabled:
+    if config.redis_enabled:
         val = redis_get(f"upstream_cache:{pattern}")
         if val:
             try:
@@ -460,7 +461,7 @@ def get_cached_upstream_result_from_db(pattern):
             'checked_at': cache_entry.checked_at
         }
         # Hydrate Redis
-        if redis_enabled:
+        if config.redis_enabled:
             try:
                 redis_set(f"upstream_cache:{pattern}", json.dumps(result))
                 logger.debug(f"Upstream cache HIT from DB for '{pattern}'. Hydrated Redis.")
@@ -487,7 +488,7 @@ def clear_upstream_cache(pattern):
     db.session.commit()
     logger.info(f"Cleared {num_deleted} upstream cache entries from DB for '{pattern}'.")
     # Delete from Redis
-    if redis_enabled:
+    if config.redis_enabled:
         try:
             redis_delete(f"upstream_cache:{pattern}")
             logger.debug(f"Cleared upstream cache entry from Redis for '{pattern}'.")
@@ -509,7 +510,7 @@ def deleteShortCut(pattern):
             db.session.commit()
             logger.info(f"Deleted shortcut: '{pattern}'")
             # Invalidate Redis cache for this shortcut
-            if redis_enabled:
+            if config.redis_enabled:
                 redis_delete(f"shortcut:{pattern}")
         except Exception as e:
             db.session.rollback()
@@ -572,14 +573,13 @@ def import_redirects_from_json(json_data):
         logger.info(f"Imported {imported_count} redirects successfully into DB.")
 
         # Clear Redis cache if enabled
-        if redis_enabled:
-            # Get the _redis_client instance from utils (already defined globally in utils)
-            global _redis_client
-            if _redis_client:
+        if config.redis_enabled:
+
+            if config.redis_client:
                 try:
-                    keys_to_delete = _redis_client.keys('shortcut:*')
+                    keys_to_delete = config.redis_client.keys('shortcut:*')
                     if keys_to_delete:
-                        _redis_client.delete(*keys_to_delete)
+                        config.redis_client.delete(*keys_to_delete)
                         logger.info(f"Cleared {len(keys_to_delete)} shortcut caches from Redis after import.")
                     else:
                         logger.debug("No shortcut keys found in Redis to clear after import.")
