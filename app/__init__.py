@@ -1,73 +1,67 @@
-import json
-from flask import Flask
-from .utils import get_db, get_port, init_redis_from_config, app_startup_banner, init_upstream_cache_table, init_upstream_check_log_table
+import logging
 import secrets
+from flask import Flask
+from flask_migrate import Migrate
+from model import db
+
+from .routes import register_blueprints
+from .utils.utils import get_db_uri, get_port
+from .utils.startup import app_startup_banner
+
+logger = logging.getLogger(__name__)
+
 
 def create_app():
+    """Create and configure the Flask application."""
     app = Flask(__name__)
-    # Set secret key for session management
+    app_startup_banner(app)
     app.secret_key = secrets.token_urlsafe(32)
 
-    from .routes import bp
-    from .version import bp_version
-    app.register_blueprint(bp)
-    app.register_blueprint(bp_version)
+    # Setup DB URL
+    db_uri = get_db_uri()
+    if not db_uri:
+        logger.error("Database URI could not be determined. Exiting application.")
+        raise RuntimeError("Invalid DB URI")
+
+    logger.info(f"Initializing database with URI: {db_uri}")
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+
+    # Initialize database and migrations
+    db.init_app(app)
+    migrate = Migrate(app, db)
+
+    # Register all routes
+    register_blueprints(app)
 
     with app.app_context():
         app.config['port'] = get_port()
+        try:
+            db.create_all()  # If using Flask-Migrate, this may not be needed
+        except Exception as e:
+            logger.exception("Database initialization failed.", exc_info=e)
+            raise
 
-    @app.teardown_appcontext
-    def close_connection(exception):
-        db = getattr(app, '_database', None)
-        if db is not None:
-            db.close()
-
-    def init_db():
-        with app.app_context():
-            db = get_db()
-            cursor = db.cursor()
-
-            # Check if 'redirects' table exists before creating it
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='redirects'")
-            table_exists = cursor.fetchone()
-
-            if not table_exists:
-                print("🛠 Initializing 'redirects' table...")
-
-                # Create redirects table only if it does not exist
-                cursor.execute('''
-                    CREATE TABLE redirects (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        type TEXT NOT NULL,
-                        pattern TEXT NOT NULL,
-                        target TEXT NOT NULL
-                    )
-                ''')
-                db.commit()
-
-            # Call to initialize upstream cache table
-            init_upstream_cache_table(db)
-
-            # Call to initialize upstream check log table   
-            init_upstream_check_log_table(db)
-
-    app.init_db = init_db
+    # Display application startup details
 
 
     return app
 
-def run_standalone_startup(app):
-    init_redis_from_config()
-    app_startup_banner(app)
-    app.init_db()
-    routes = []
-    for rule in app.url_map.iter_rules():
-        routes.append({
-            "route": rule.rule,
-            "methods": list(rule.methods),
-            "endpoint": rule.endpoint
-        })
 
-    # Write to urlMap.json
-    with open("urlMap.json", "w") as f:
-        json.dump(routes, f, indent=4)
+# def run_standalone_startup(app):
+#     """Standalone startup routine for debugging and route discovery."""
+#     app_startup_banner(app)
+#
+#     try:
+#         routes = [
+#             {"route": rule.rule, "methods": list(rule.methods), "endpoint": rule.endpoint}
+#             for rule in app.url_map.iter_rules()
+#         ]
+#
+#         file_path = "urlMap.json"
+#         with open(file_path, "w") as f:
+#             json.dump(routes, f, indent=4)
+#
+#         logger.info(f"Route mappings saved to {file_path}")
+#
+#     except Exception as e:
+#         logger.exception("Failed to generate URL map.", exc_info=e)

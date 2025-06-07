@@ -1,4 +1,7 @@
 data_source_redirect="redirect_table"
 data_source_upstream="upstream_table"
 data_source_redis="redis cache"
-upstreamCheckLogTable="upstream_check_log_table"   
+upstreamCheckLogTable="upstream_check_log_table"
+KEY_DATA_TYPE="type"
+DATA_TYPE_DYNAMIC="dynamic"
+DATA_TYPE_STATIC="static"
