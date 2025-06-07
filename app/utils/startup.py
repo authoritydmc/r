@@ -1,12 +1,10 @@
 import logging
+import platform
 
 from .. import get_port
 from ..config import config
 logger = logging.getLogger(__name__)
-
-def app_startup_banner(app=None):
-    import platform
-    ascii_art = r'''
+ascii_art = r'''
 
 ██████╗ ███████╗██████╗ ██╗██████╗ ███████╗ ██████╗████████╗ ██████╗ ██████╗ 
 ██╔══██╗██╔════╝██╔══██╗██║██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
@@ -16,6 +14,8 @@ def app_startup_banner(app=None):
 ╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
                                                                              
 '''
+os_name = platform.system().lower()
+def app_startup_banner(app=None):
     print("\n" + ascii_art) # Log the banner
     logger.info(f"\n   {config.start_mode} - READY 🚀\n")
     logger.info("🌐 URL Shortener & Redirector app initialized.")
@@ -37,9 +37,6 @@ def app_startup_banner(app=None):
     else:
         logger.info("❌ Not running in Docker 🚢. If using Docker, make sure to map ports correctly 🎯.")
         
-        # Detect OS and print instructions for host file entry
-    os_name = platform.system().lower()
-
     # Define OS-specific emojis
     os_emojis = {
         "windows": "🖥️",
@@ -47,13 +44,36 @@ def app_startup_banner(app=None):
         "linux": "🐧",
         "unknown": "❓"
     }
-
     # Get the emoji based on the OS, defaulting to "unknown"
     emoji = os_emojis.get(os_name, os_emojis["unknown"])
-
-
     logger.info(f"{emoji} Detected OS: {os_name.capitalize()}")
 
+    # Print Redis status
+    if not config.redis_enabled:
+        logger.info("🚫 Redis is disabled (see config)")
+
+
+        # Check if 'r' hostname resolves to localhost
+    import socket
+
+    try:
+        r_ip = socket.gethostbyname('r')
+        if r_ip == '127.0.0.1':
+            logger.info("✅ Hostname 'r' resolves to 127.0.0.1 (OK) 🎯")
+
+        else:
+            logger.warning(f"⚠️ Hostname 'r' resolves to {r_ip} (not 127.0.0.1) ❌. Check your hosts/DNS setup 🌐.")
+            print_os_instruction_on_r_setup()
+    except socket.gaierror:  # Specific exception for name resolution failures
+        logger.warning("🚨 Hostname 'r' does not resolve ❗. Add '127.0.0.1   r' to your hosts file or set up DNS 📜.")
+        print_os_instruction_on_r_setup()
+    except Exception as e:
+        logger.exception(f"🔥 Unexpected error checking hostname 'r' resolution: {e} 🚑")
+        print_os_instruction_on_r_setup()
+
+
+def print_os_instruction_on_r_setup():
+        
     if os_name == "windows":
         logger.info(
             "💻 Run the following command in PowerShell as Administrator:\n"
@@ -83,24 +103,3 @@ def app_startup_banner(app=None):
     else:
         logger.info("❓ Your OS is not explicitly supported. Please manually update your hosts file:\n")
         logger.info("  🏠 127.0.0.1   r")
-
-        # Print Redis status
-    if not config.redis_enabled:
-        logger.info("🚫 Redis is disabled (see config)")
-
-
-        # Check if 'r' hostname resolves to localhost
-    import socket
-
-    try:
-        r_ip = socket.gethostbyname('r')
-        if r_ip == '127.0.0.1':
-            logger.info("✅ Hostname 'r' resolves to 127.0.0.1 (OK) 🎯")
-        else:
-            logger.warning(f"⚠️ Hostname 'r' resolves to {r_ip} (not 127.0.0.1) ❌. Check your hosts/DNS setup 🌐.")
-    except socket.gaierror:  # Specific exception for name resolution failures
-        logger.warning("🚨 Hostname 'r' does not resolve ❗. Add '127.0.0.1   r' to your hosts file or set up DNS 📜.")
-    except Exception as e:
-        logger.exception(f"🔥 Unexpected error checking hostname 'r' resolution: {e} 🚑")
-
-

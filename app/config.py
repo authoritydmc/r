@@ -39,9 +39,6 @@ class Config:
         self.redis_client = None
         self.database=self.cfg.get('database')
 
-        if self.redis_enabled:
-            self.init_redis()
-
     def get_configuration(self):
         return self.cfg
 
@@ -75,23 +72,35 @@ class Config:
 
     def get_redis_default_config(self):
         """Fetch Redis configurations dynamically."""
-        redis_host = os.getenv('REDIS_HOST', 'redis' if self.RUNNING_IN_DOCKER else 'localhost')
-        redis_port = os.getenv('REDIS_PORT', 6379)
-        return {
-            "host": redis_host,
-            "port": redis_port
-        }
+        try:
+            redis_host = os.getenv('REDIS_HOST', 'redis' if self.RUNNING_IN_DOCKER else 'localhost')
+            redis_port = int(os.getenv('REDIS_PORT', 6379))
+            return {
+                "host": redis_host,
+                "port": redis_port
+            }
+        except Exception as e:
+            self.logger.error(f"❌ Error fetching Redis default config: {e}")
+            return {
+                "host": "localhost",
+                "port": 6379
+            }
 
     def init_redis(self):
         """Initialize Redis client and handle connection errors."""
         try:
+            if not self.redis_enabled:
+                self.logger.debug("🔗 Redis is disabled, skipping initialization.")
+                return
+            self.logger.debug(f"🔗 Initializing Redis client at {self.redis_host}:{self.redis_port}")
             self.redis_client = redis.Redis(
                 host=self.redis_host,
                 port=self.redis_port,
                 decode_responses=True,
                 socket_connect_timeout=1
             )
-            self.redis_client.ping()
+            self.redis_client.ping() 
+
             self.logger.info(f"✅ Redis connected at {self.redis_host}:{self.redis_port}")
         except redis.exceptions.ConnectionError as e:
             self.logger.warning(f"⚠️ Redis connection failed: {e}")
