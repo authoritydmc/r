@@ -13,9 +13,9 @@ from flask import Blueprint, render_template, request, redirect, stream_with_con
 from flask import session as flask_session
 
 from app import CONSTANTS
+from app.utils import utils
 from model.redirect import Redirect  # Import Redirect model for export/import
 from model.upstream_check_log import UpstreamCheckLog  # For clearing upstream logs
-import app.utils as utils
 
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ def inject_now():
         logger.debug(f"Could not determine version from git: {e}")
 
     # Add redis_connected context (already relies on _redis_enabled from utils)
-    redis_connected = bool(utils._redis_enabled)  # _redis_enabled is now a global var from utils
+    redis_connected = bool(utils.redis_enabled)  # _redis_enabled is now a global var from utils
 
     # --- FIX: Use datetime.now(timezone.utc) ---
     return {'now': lambda: datetime.now(timezone.utc), 'version': version, 'redis_connected': redis_connected,
@@ -45,15 +45,7 @@ def inject_now():
 # These config functions are mostly for internal use, can be kept for consistency but main config is in utils
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'redirect.config.json')
 
-def get_upstreams():
-    cfg = utils._load_config()
-    return cfg.get('upstreams', [])
 
-
-def set_upstreams(upstreams):
-    cfg = utils._load_config()
-    cfg['upstreams'] = upstreams
-    utils._save_config(cfg)
 
 # --- Simple Auth Decorator ---
 def login_required(f):
@@ -231,7 +223,7 @@ def handle_redirect(subpath):
                 return redirect(dest_url, code=302)
 
     logger.info(f"No direct shortcut found for '{subpath}'. Checking live upstreams.")
-    if get_upstreams():
+    if utils.get_upstreams():
         first_segment = subpath.split('/')[0]
         logger.debug(f"Redirecting to upstream check UI for first segment: '{first_segment}'")
         return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
@@ -252,14 +244,14 @@ def tutorial():
 @login_required
 def admin_upstreams():
     error = None
-    upstreams = get_upstreams()
+    upstreams = utils.get_upstreams()
     if request.method == 'POST':
         if 'delete' in request.form:
             idx = int(request.form['delete'])
             if 0 <= idx < len(upstreams):
                 deleted_name = upstreams[idx].get('name', 'Unnamed Upstream')
                 del upstreams[idx]
-                set_upstreams(upstreams)
+                utils.set_upstreams(upstreams)
                 logger.info(f"Deleted upstream: '{deleted_name}'")
                 return redirect(url_for('main.admin_upstreams'))
             else:
@@ -291,7 +283,7 @@ def admin_upstreams():
                         'verify_ssl': verify_ssl
                     })
                 i += 1
-            set_upstreams(new_upstreams)
+            utils.set_upstreams(new_upstreams)
             logger.info("Upstream configuration updated.")
             upstreams = new_upstreams  # Refresh the list for rendering
     logger.debug("Rendering admin upstreams page.")
@@ -322,7 +314,7 @@ def stream_check_upstreams(pattern):
         yield from send_log(f"🔍 Starting upstream check for pattern: `{pattern}`")
         logger.info(f"Stream initiated for upstream check of pattern: '{pattern}'")
 
-        for up in get_upstreams():
+        for up in utils.get_upstreams():
             up_name = up.get('name', '[unnamed]')
             base_url = up.get('base_url', '').rstrip('/')
             fail_url = up.get('fail_url', '')  # Keep as is, rstrip is not desired for comparison here
@@ -548,7 +540,7 @@ def admin_upstream_cache(upstream):
 def admin_upstream_cache_resync(upstream, pattern):
     try:
         logger.info(f"Admin initiated resync for upstream='{upstream}', pattern='{pattern}'")
-        up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
+        up = next((u for u in utils.get_upstreams() if u.get('name') == upstream), None)
         if not up:
             logger.warning(f"Upstream '{upstream}' not found during resync operation.")
             return jsonify({'success': False, 'error': 'Upstream not found'}), 404
@@ -618,7 +610,7 @@ def admin_upstream_cache_purge(upstream):
 def admin_upstream_cache_resync_all(upstream):
     try:
         logger.info(f"Admin initiated full resync for all cached patterns in upstream: '{upstream}'.")
-        up = next((u for u in get_upstreams() if u.get('name') == upstream), None)
+        up = next((u for u in utils.get_upstreams() if u.get('name') == upstream), None)
         if not up:
             logger.warning(f"Upstream '{upstream}' not found during resync-all operation.")
             return jsonify({'success': False, 'error': 'Upstream not found'}), 404

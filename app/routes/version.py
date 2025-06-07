@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for
 import subprocess
 import socket
-from app.utils import get_config, get_port
+from app.utils.utils import get_config, get_port
 from functools import wraps
 
 bp = Blueprint('version', __name__)

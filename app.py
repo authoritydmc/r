@@ -1,9 +1,7 @@
-import platform
 import argparse
-from app import create_app, run_standalone_startup
+from app import create_app
 
 app = create_app()
-run_standalone_startup(app)
 
 if __name__ == "__main__":
     print("Running app.py")

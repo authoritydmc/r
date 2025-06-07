@@ -6,7 +6,7 @@ import redis
 from datetime import datetime, timezone
 import logging # Import logging
 
-
+from .  import redis_port,redis_enabled,redis_host,redis_client
 from model import db
 from model.upstream_check_log import UpstreamCheckLog
 from model.upstream_cache import UpstreamCache
@@ -145,9 +145,6 @@ def increment_access_count(pattern):
         redirect_obj.access_count = (redirect_obj.access_count or 0) + 1
         db.session.commit()
         logger.info(f"Access count incremented for shortcut '{pattern}'. New count: {redirect_obj.access_count}")
-        # Invalidate Redis cache for this shortcut after update
-        if _redis_enabled:
-            redis_delete(f"shortcut:{pattern}")
     else:
         logger.warning(f"Attempted to increment access count for non-existent shortcut: '{pattern}'")
 
@@ -178,8 +175,8 @@ def log_upstream_check(pattern: str, upstream_name: str, check_url: str,
 
     Args:
         pattern (str): The shortcut pattern that was checked.
-        upstream_name (str): The name of the upstream service checked.
-        check_url (str): The specific URL that was tried for the check.
+        upstream_name (str): The name of the upstream service is checked.
+        check_url (str): The specific URL tried for the check.
         result (str): The outcome of the check (e.g., 'success', 'fail', 'exception').
         detail (str): Detailed information about the check, often including status codes or errors.
         cached (bool): True if the result was served from cache, False otherwise.
@@ -258,37 +255,33 @@ def get_upstream_logs():
 
     return processed_logs
 
-# --- Redis helpers ---
-_redis_client = None
-_redis_enabled = False
-_redis_host = 'localhost'
-_redis_port = 6379
+
 
 def init_redis_from_config():
-    global _redis_client, _redis_enabled, _redis_host, _redis_port
+    global redis_enabled, redis_client, redis_host, redis_port
     cfg = _load_config()
     redis_cfg = cfg.get('redis', {})
-    _redis_enabled = redis_cfg.get('enabled', False)
-    _redis_host = redis_cfg.get('host', 'redis') # Default to 'redis' for Docker
-    _redis_port = redis_cfg.get('port', 6379)
-    if _redis_enabled:
+    redis_enabled = redis_cfg.get('enabled', False)
+    redis_host = redis_cfg.get('host', 'redis') # Default to 'redis' for Docker
+    redis_port = redis_cfg.get('port', 6379)
+    if redis_enabled:
         try:
-            _redis_client = redis.Redis(host=_redis_host, port=_redis_port, decode_responses=True, socket_connect_timeout=1) # Added timeout
-            _redis_client.ping()
-            logger.info(f"Redis enabled and connected: host={_redis_host}, port={_redis_port}")
+            redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True, socket_connect_timeout=1) # Added timeout
+            redis_client.ping()
+            logger.info(f"Redis enabled and connected: host={redis_host}, port={redis_port}")
         except redis.exceptions.ConnectionError as e:
-            logger.warning(f"Redis config enabled but connection failed to '{_redis_host}:{_redis_port}': {e}. Redis functionality disabled.")
-            _redis_enabled = False
+            logger.warning(f"Redis config enabled but connection failed to '{redis_host}:{redis_port}': {e}. Redis functionality disabled.")
+            redis_enabled = False
         except Exception as e:
             logger.exception(f"Unexpected error initializing Redis. Redis functionality disabled.")
-            _redis_enabled = False
+            redis_enabled = False
     else:
         logger.info("Redis is disabled (see config).")
 
 def redis_get(key):
-    if _redis_enabled and _redis_client:
+    if redis_enabled and redis_client:
         try:
-            value = _redis_client.get(key)
+            value = redis_client.get(key)
             logger.debug(f"Redis GET '{key}': {'HIT' if value else 'MISS'}")
             return value
         except Exception as e:
@@ -298,9 +291,9 @@ def redis_get(key):
     return None
 
 def redis_set(key, value, ex=None): # Added optional expiry 'ex'
-    if _redis_enabled and _redis_client:
+    if redis_enabled and redis_client:
         try:
-            _redis_client.set(key, value, ex=ex)
+            redis_client.set(key, value, ex=ex)
             logger.debug(f"Redis SET '{key}' successfully.")
         except Exception as e:
             logger.error(f"Redis SET failed for key '{key}': {e}")
@@ -309,9 +302,9 @@ def redis_set(key, value, ex=None): # Added optional expiry 'ex'
         logger.debug(f"Redis SET '{key}': Skipped (Redis disabled/not connected).")
 
 def redis_delete(key):
-    if _redis_enabled and _redis_client:
+    if redis_enabled and redis_client:
         try:
-            _redis_client.delete(key)
+            redis_client.delete(key)
             logger.debug(f"Redis DELETE '{key}' successfully.")
         except Exception as e:
             logger.error(f"Redis DELETE failed for key '{key}': {e}")
@@ -325,7 +318,7 @@ def get_shortcut(pattern):
     shortcut = None
     source = CONSTANTS.data_source_redis # Default source assumption
 
-    if _redis_enabled:
+    if redis_enabled:
         val = redis_get(f"shortcut:{pattern}")
         if val:
             try:
@@ -356,7 +349,7 @@ def get_shortcut(pattern):
             'data_type': redirect_obj.type # Assuming 'type' maps to CONSTANTS.DATA_TYPE_STATIC/DYNAMIC
         }
         # Hydrate Redis
-        if _redis_enabled:
+        if redis_enabled:
             try:
                 redis_set(f"shortcut:{pattern}", json.dumps(shortcut))
                 logger.debug(f"Shortcut '{pattern}' MISS from Redis, HIT from DB. Hydrated Redis.")
@@ -409,7 +402,7 @@ def set_shortcut(pattern, type_, target, created_at=None, updated_at=None, creat
         db.session.commit()
         logger.debug(f"DB commit successful for shortcut '{pattern}'.")
         # Invalidate (or re-set) Redis cache for this shortcut after update/set
-        if _redis_enabled:
+        if redis_enabled:
             # Fetch the updated shortcut from DB to ensure consistency before caching
             updated_shortcut = Redirect.query.filter_by(pattern=pattern).first()
             if updated_shortcut:
@@ -482,7 +475,7 @@ def cache_upstream_result(pattern: str, upstream_name: str, resolved_url: str):
         logger.debug(f"DB commit successful for upstream cache '{pattern}'.")
 
         # update redis is enabled
-        if  _redis_enabled:
+        if  redis_enabled:
             # Prepare data for Redis cache (using the same fields as the DB entry)
             redis_data = {
                 'pattern': pattern,
@@ -504,7 +497,7 @@ def get_cached_upstream_result(pattern):
     # This function primarily attempts to get from Redis,
     # then calls the DB specific one if not found in Redis,
     # which in turn hydrates Redis.
-    if _redis_enabled:
+    if redis_enabled:
         val = redis_get(f"upstream_cache:{pattern}")
         if val:
             try:
@@ -532,7 +525,7 @@ def get_cached_upstream_result_from_db(pattern):
             'checked_at': cache_entry.checked_at
         }
         # Hydrate Redis
-        if _redis_enabled:
+        if redis_enabled:
             try:
                 redis_set(f"upstream_cache:{pattern}", json.dumps(result))
                 logger.debug(f"Upstream cache HIT from DB for '{pattern}'. Hydrated Redis.")
@@ -559,87 +552,13 @@ def clear_upstream_cache(pattern):
     db.session.commit()
     logger.info(f"Cleared {num_deleted} upstream cache entries from DB for '{pattern}'.")
     # Delete from Redis
-    if _redis_enabled:
+    if redis_enabled:
         try:
             redis_delete(f"upstream_cache:{pattern}")
             logger.debug(f"Cleared upstream cache entry from Redis for '{pattern}'.")
         except Exception as e:
             logger.error(f"Redis DELETE failed for upstream_cache:{pattern}: {e}")
 
-def app_startup_banner(app=None):
-    import platform
-    ascii_art = r''' _______  _______  ______  _________ _______  _______  _______ _________ _______  _______
-(  ____ )(  ____ \\  __  \\ \__   __/(  ____ )(  ____ \\  ____ \\__   __/(  ___  )(  ____ )
-| (    )|| (    \/| (  \  )   ) (   | (    )|| (    \/| (    \/   ) (   | (   ) || (    )|
-| (____)|| (__    | |   ) |   | |   | (____)|| (__    | |         | |   | |   | || (____)|
-|     __)|  __)   | |   | |   | |   |     __)|  __)   | |         | |   | |   | ||     __)
-| (\ (   | (      | |   ) |   | |   | (\ (   | (      | |         | |   | |   | || (\ (
-| ) \ \__| (____/\\| (__/  )___) (___| ) \ \__| (____/\\| (____/\\   | |   | (___) || ) \ \__
-|/   \__/(_______/(______/ \_______/|/   \__/(_______/(_______/   )_(   (_______)|/   \__/
-
-'''
-    logger.info("\n" + ascii_art) # Log the banner
-    logger.info("==============================\n   GUNICORN MODE - READY\n==============================")
-    logger.info("URL Shortener & Redirector app initialized.")
-    if app is not None:
-        logger.info(f"Configured to run on port: {app.config.get('port', 'unknown')}")
-    else:
-        logger.info("(Port unknown: app not provided)")
-    # Detect OS and print instructions for host file entry
-    os_name = platform.system().lower()
-    logger.info("\n==============================")
-    logger.info(f"Detected OS: {os_name.capitalize()}")
-    logger.info("==============================\n")
-    if os_name == "windows":
-        logger.info("Run the following command in PowerShell as Administrator:")
-        logger.info("  .\\scripts\\add-r-host-windows.ps1")
-        logger.info("Or manually add this line to C:\\Windows\\System32\\drivers\\etc\\hosts:")
-        logger.info("  127.0.0.1   r\n")
-    elif os_name == "darwin":
-        logger.info("Run the following command in Terminal:")
-        logger.info("  bash scripts/add-r-host-macos.sh")
-        logger.info("Or manually edit /etc/hosts using:")
-        logger.info("  sudo nano /etc/hosts")
-        logger.info("Then add this line:")
-        logger.info("  127.0.0.1   r\n")
-        logger.info("Run `dscacheutil -flushcache && sudo killall -HUP mDNSResponder` to apply changes.\n")
-    elif os_name == "linux":
-        logger.info("Run the following command in Terminal:")
-        logger.info("  bash scripts/add-r-host-linux.sh")
-        logger.info("Or manually edit /etc/hosts using:")
-        logger.info("  sudo nano /etc/hosts")
-        logger.info("Then add this line:")
-        logger.info("  127.0.0.1   r\n")
-    else:
-        logger.info("Your OS is not explicitly supported. Please manually update your hosts file:\n")
-        logger.info("  127.0.0.1   r")
-    # Print Redis status
-    if _redis_enabled:
-        logger.info(f"Redis enabled: host={_redis_host}, port={_redis_port}")
-    else:
-        logger.info("Redis is disabled (see config)")
-
-    # Check if 'r' hostname resolves to localhost
-    import socket
-    try:
-        r_ip = socket.gethostbyname('r')
-        if r_ip == '127.0.0.1':
-            logger.info("Hostname 'r' resolves to 127.0.0.1 (OK)")
-        else:
-            logger.warning(f"Hostname 'r' resolves to {r_ip} (not 127.0.0.1). Check your hosts/DNS setup.")
-    except socket.gaierror: # Specific exception for name resolution failures
-        logger.warning("Hostname 'r' does not resolve. Add '127.0.0.1   r' to your hosts file or set up DNS.")
-    except Exception as e:
-        logger.exception(f"Unexpected error checking hostname 'r' resolution: {e}")
-
-    # Docker environment and port/network info
-    running_in_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER')
-    if running_in_docker:
-        logger.info("[INFO] Running inside a Docker container.")
-        logger.info("      The app listens on the internal container port (default 80).\n      To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker.")
-        logger.info("      If using Docker Compose or custom networks, check your port mappings and network mode.")
-    else:
-        logger.info("Not running in Docker. If using Docker, make sure to map ports correctly.")
 
 
 def get_db():
@@ -655,7 +574,7 @@ def deleteShortCut(pattern):
             db.session.commit()
             logger.info(f"Deleted shortcut: '{pattern}'")
             # Invalidate Redis cache for this shortcut
-            if _redis_enabled:
+            if redis_enabled:
                 redis_delete(f"shortcut:{pattern}")
         except Exception as e:
             db.session.rollback()
@@ -718,7 +637,7 @@ def import_redirects_from_json(json_data):
         logger.info(f"Imported {imported_count} redirects successfully into DB.")
 
         # Clear Redis cache if enabled
-        if _redis_enabled:
+        if redis_enabled:
             # Get the _redis_client instance from utils (already defined globally in utils)
             global _redis_client
             if _redis_client:
@@ -829,3 +748,14 @@ def get_placeholder_vars(target_string: str) -> list[str]:
     # \}       - Matches a literal closing curly brace '}'
     # re.findall returns a list of all strings matched by the capturing group.
     return re.findall(r'\{([^}]+)\}', target_string)
+
+
+def get_upstreams():
+    cfg = _load_config()
+    return cfg.get('upstreams', [])
+
+
+def set_upstreams(upstreams):
+    cfg = _load_config()
+    cfg['upstreams'] = upstreams
+    _save_config(cfg)
