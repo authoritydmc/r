@@ -2,18 +2,18 @@
     {
         "route": "/static/<path:filename>",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "static"
     },
     {
         "route": "/admin-login",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.admin_login"
@@ -21,27 +21,27 @@
     {
         "route": "/logout",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.admin_logout"
     },
     {
         "route": "/",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.dashboard"
     },
     {
         "route": "/delete/<path:subpath>",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.dashboard_delete"
@@ -49,9 +49,9 @@
     {
         "route": "/edit/<path:subpath>",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.edit_redirect"
@@ -59,27 +59,27 @@
     {
         "route": "/<path:subpath>",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.handle_redirect"
     },
     {
         "route": "/tutorial",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.tutorial"
     },
     {
         "route": "/admin/upstreams",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.admin_upstreams"
@@ -87,45 +87,45 @@
     {
         "route": "/check-upstreams-ui/<pattern>",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.check_upstreams_ui"
     },
     {
         "route": "/stream/check-upstreams/<pattern>",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.stream_check_upstreams"
     },
     {
         "route": "/admin/upstream-logs",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.admin_upstream_logs"
     },
     {
         "route": "/admin/export-redirects",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.admin_export_redirects"
     },
     {
         "route": "/admin/import-redirects",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.admin_import_redirects"
@@ -133,18 +133,18 @@
     {
         "route": "/api/check-shortcut-exists/<pattern>",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.api_check_shortcut_exists"
     },
     {
         "route": "/edit/",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.edit_redirect_blank"
@@ -152,27 +152,27 @@
     {
         "route": "/enable-r-instructions",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.enable_r_instructions"
     },
     {
         "route": "/admin/upstream-cache/<upstream>",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "main.admin_upstream_cache"
     },
     {
         "route": "/admin/upstream-cache/resync/<upstream>/<pattern>",
         "methods": [
+            "GET",
             "OPTIONS",
             "HEAD",
-            "GET",
             "POST"
         ],
         "endpoint": "main.admin_upstream_cache_resync"
@@ -180,33 +180,33 @@
     {
         "route": "/admin/upstream-cache/purge/<upstream>",
         "methods": [
-            "OPTIONS",
-            "POST"
+            "POST",
+            "OPTIONS"
         ],
         "endpoint": "main.admin_upstream_cache_purge"
     },
     {
         "route": "/admin/upstream-cache/resync-all/<upstream>",
         "methods": [
-            "OPTIONS",
-            "POST"
+            "POST",
+            "OPTIONS"
         ],
         "endpoint": "main.admin_upstream_cache_resync_all"
     },
     {
         "route": "/admin/clear-upstream-logs",
         "methods": [
-            "OPTIONS",
-            "POST"
+            "POST",
+            "OPTIONS"
         ],
         "endpoint": "main.clear_upstream_logs"
     },
     {
         "route": "/version",
         "methods": [
+            "GET",
             "OPTIONS",
-            "HEAD",
-            "GET"
+            "HEAD"
         ],
         "endpoint": "version.version_page"
     }
