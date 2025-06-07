@@ -39,7 +39,8 @@ def register_blueprints(app):
 
         redis_connected = bool(config.redis_enabled)
 
+        redis_connected_location = f"{config.redis_host}:{config.redis_port}"
+
 
         return {'now': lambda: datetime.now(timezone.utc), 'version': version, 'redis_connected': redis_connected,
-                'constants': CONSTANTS}
-
+                'constants': CONSTANTS,'redis_connected_location': redis_connected_location}
