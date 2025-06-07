@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template
 import subprocess
 import socket
-from app.utils.utils import get_config, get_port
-from functools import wraps
+from app.utils.utils import  get_port
+
 
 bp = Blueprint('version', __name__)
 
@@ -42,9 +42,8 @@ def version_page():
         commit_count = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], encoding='utf-8').strip()
         commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], encoding='utf-8').strip()
         commit_date = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=short'], encoding='utf-8').strip()
-        version = f"v1.{commit_count}.{commit_hash}"
     except Exception:
         commit_count = commit_hash = commit_date = version = 'unknown'
     port = get_port()
     urls = get_accessible_urls(port)
-    return render_template('version.html', version=version, commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls, now=datetime.utcnow)
+    return render_template('version.html',commit_count=commit_count, commit_hash=commit_hash, commit_date=commit_date, urls=urls)

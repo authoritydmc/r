@@ -32,7 +32,7 @@ def register_blueprints(app):
             import subprocess
             commit_count = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], encoding='utf-8').strip()
             commit_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], encoding='utf-8').strip()
-            version = f"v1.{commit_count}.{commit_hash}"
+            version = f"v2.{commit_count}.{commit_hash}"
         except Exception as e:
             version = 'unknown'
             logger.debug(f"Could not determine version from git: {e}")
