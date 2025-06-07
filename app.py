@@ -1,6 +1,8 @@
 import argparse
 from app import create_app
+from app.config import config
 
+config.start_mode = 'Local App.py MODE'
 app = create_app()
 
 if __name__ == "__main__":
@@ -9,5 +11,6 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
     args = parser.parse_args()
     mode = "DEV" if args.debug else "PROD"
+
     print("\n==============================\n")
     app.run(debug=args.debug, host="0.0.0.0", port=app.config['port'])

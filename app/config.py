@@ -16,7 +16,9 @@ class Config:
         self.DATA_DIR = os.path.join(self.PROJECT_ROOT, 'data')
         os.makedirs(self.DATA_DIR, exist_ok=True)
         self.CONFIG_FILE = os.path.join(self.DATA_DIR, 'redirect.config.json')
-
+        # Detect Docker environment
+        self.RUNNING_IN_DOCKER = os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER') is not None
+        self.start_mode = "Gunicorn MODE"
         # Load basic config (used for logging level)
         temp_cfg = self.load_raw_config()
 
@@ -27,8 +29,7 @@ class Config:
         self.logger.debug(f"Config file path: {self.CONFIG_FILE}")
         self.cfg = temp_cfg
 
-        # Detect Docker environment
-        self.RUNNING_IN_DOCKER = os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER') is not None
+
 
         # Redis configuration
         self.redis_cfg = self.cfg.get('redis', {})

@@ -15,8 +15,8 @@ def app_startup_banner(app=None):
 |/   \__/(_______/(______/ \_______/|/   \__/(_______/(_______/   )_(   (_______)|/   \__/
 
 '''
-    logger.info("\n" + ascii_art) # Log the banner
-    logger.info("==============================\n   GUNICORN MODE - READY\n==============================")
+    print("\n" + ascii_art) # Log the banner
+    logger.info(f"==============================\n   {config.start_mode} - READY\n==============================")
     logger.info("URL Shortener & Redirector app initialized.")
     if app is not None:
         logger.info(f"Configured to run on port: {app.config.get('port', 'unknown')}")
@@ -28,32 +28,37 @@ def app_startup_banner(app=None):
     logger.info(f"Detected OS: {os_name.capitalize()}")
     logger.info("==============================\n")
     if os_name == "windows":
-        logger.info("Run the following command in PowerShell as Administrator:")
-        logger.info("  .\\scripts\\add-r-host-windows.ps1")
-        logger.info("Or manually add this line to C:\\Windows\\System32\\drivers\\etc\\hosts:")
-        logger.info("  127.0.0.1   r\n")
+        logger.info(
+            "Run the following command in PowerShell as Administrator:\n"
+            "  .\\scripts\\add-r-host-windows.ps1\n"
+            "Or manually add this line to C:\\Windows\\System32\\drivers\\etc\\hosts:\n"
+            "  127.0.0.1   r\n"
+        )
     elif os_name == "darwin":
-        logger.info("Run the following command in Terminal:")
-        logger.info("  bash scripts/add-r-host-macos.sh")
-        logger.info("Or manually edit /etc/hosts using:")
-        logger.info("  sudo nano /etc/hosts")
-        logger.info("Then add this line:")
-        logger.info("  127.0.0.1   r\n")
-        logger.info("Run `dscacheutil -flushcache && sudo killall -HUP mDNSResponder` to apply changes.\n")
+        logger.info(
+            "Run the following command in Terminal:\n"
+            "  bash scripts/add-r-host-macos.sh\n"
+            "Or manually edit /etc/hosts using:\n"
+            "  sudo nano /etc/hosts\n"
+            "Then add this line:\n"
+            "  127.0.0.1   r\n"
+            "Run `dscacheutil -flushcache && sudo killall -HUP mDNSResponder` to apply changes.\n"
+        )
     elif os_name == "linux":
-        logger.info("Run the following command in Terminal:")
-        logger.info("  bash scripts/add-r-host-linux.sh")
-        logger.info("Or manually edit /etc/hosts using:")
-        logger.info("  sudo nano /etc/hosts")
-        logger.info("Then add this line:")
-        logger.info("  127.0.0.1   r\n")
+        logger.info(
+            "Run the following command in Terminal:\n"
+            "  bash scripts/add-r-host-linux.sh\n"
+            "Or manually edit /etc/hosts using:\n"
+            "  sudo nano /etc/hosts\n"
+            "Then add this line:\n"
+            "  127.0.0.1   r\n"
+        )
+
     else:
         logger.info("Your OS is not explicitly supported. Please manually update your hosts file:\n")
         logger.info("  127.0.0.1   r")
     # Print Redis status
-    if config.redis_enabled:
-        logger.info(f"Redis enabled: host={config.redis_host}, port={config.redis_port}")
-    else:
+    if not config.redis_enabled:
         logger.info("Redis is disabled (see config)")
 
     # Check if 'r' hostname resolves to localhost
