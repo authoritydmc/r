@@ -313,7 +313,7 @@ def stream_check_upstreams(pattern):
         redirect_url = None
 
         def send_log(message, extra_data=None):
-            timestamp = datetime.utcnow().strftime("%H:%M:%S")
+            timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
             data = {'log': f"[{timestamp}] {message}"}
             if extra_data:
                 data.update(extra_data)
@@ -345,7 +345,6 @@ def stream_check_upstreams(pattern):
             yield from send_log(f"Fail criteria → URL: '{fail_url}', Status: {fail_status_code or 'Not specified'}")
             yield from send_log(f"SSL Verification: {'Enabled' if verify_ssl else 'Disabled'}")
 
-            tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
             try:
                 resp = requests.get(check_url, allow_redirects=True, timeout=5, verify=verify_ssl)
                 actual_url = resp.url
@@ -361,11 +360,11 @@ def stream_check_upstreams(pattern):
                     found = True
                     redirect_url = actual_url
                     utils.log_upstream_check(
-                        pattern, up_name, check_url, 'success',
-                        f"actual_url={actual_url}, status_code={status_code}", tried_at
+                       pattern= pattern,upstream_name= up_name,check_url= check_url, result='success',
+                        detail=f"actual_url={actual_url}, status_code={status_code}",cached=utils.is_upstream_cache_enabled()
                     )
                     if utils.is_upstream_cache_enabled():
-                        utils.cache_upstream_result(pattern, up_name, actual_url, tried_at)
+                        utils.cache_upstream_result(pattern, up_name, actual_url)
                     yield from send_log(
                         f"✅ Shortcut found in {up_name} (redirected to {actual_url}, status {status_code})",
                         {'found': True, 'redirect_url': redirect_url}
@@ -376,26 +375,26 @@ def stream_check_upstreams(pattern):
                     utils.log_upstream_check(
                         pattern, up_name, check_url, 'fail',
                         f"actual_url={actual_url}, status_code={status_code}, fail_url_match={fail_url_match}, fail_status_match={fail_status_match}",
-                        tried_at
+
                     )
                     yield from send_log(f"❌ Shortcut not found in {up_name} — matched fail criteria.")
                     logger.info(f"Shortcut '{pattern}' not found in upstream '{up_name}' (matched fail criteria).")
 
             except requests.exceptions.Timeout:
-                utils.log_upstream_check(pattern, up_name, check_url, 'timeout', 'Request timed out', tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'timeout', 'Request timed out')
                 yield from send_log(f"⚠️ Timeout checking {up_name}: Request timed out after 5 seconds.",
                                     {'error': True})
                 logger.error(f"Upstream check for '{up_name}' timed out for pattern '{pattern}'.")
             except requests.exceptions.ConnectionError as e:
-                utils.log_upstream_check(pattern, up_name, check_url, 'connection_error', str(e), tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'connection_error', str(e))
                 yield from send_log(f"⚠️ Connection error checking {up_name}: {str(e)}", {'error': True})
                 logger.error(f"Connection error for upstream '{up_name}' and pattern '{pattern}': {e}")
             except requests.exceptions.RequestException as e:
-                utils.log_upstream_check(pattern, up_name, check_url, 'request_exception', str(e), tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'request_exception', str(e))
                 yield from send_log(f"⚠️ HTTP request error for {up_name}: {str(e)}", {'error': True})
                 logger.error(f"HTTP request error for upstream '{up_name}' and pattern '{pattern}': {e}")
             except Exception as e:
-                utils.log_upstream_check(pattern, up_name, check_url, 'exception', str(e), tried_at)
+                utils.log_upstream_check(pattern, up_name, check_url, 'exception', str(e))
                 yield from send_log(f"⚠️ An unexpected error occurred for {up_name}: {str(e)}", {'error': True})
                 logger.exception(f"Unexpected error during upstream check for '{up_name}' and pattern '{pattern}'.")
 
@@ -416,14 +415,8 @@ def stream_check_upstreams(pattern):
 @login_required
 def admin_upstream_logs():
     logs = utils.get_upstream_logs()
-    cache_status_map = {}
-    if utils.is_upstream_cache_enabled():
-        for up in get_upstreams():
-            cached = utils.list_upstream_cache(up.get('name'))
-            for entry in cached:
-                cache_status_map[(entry['pattern'], up.get('name'))] = {'checked_at': entry['checked_at']}
     logger.debug("Rendering admin upstream logs page.")
-    return render_template('admin_upstream_logs.html', logs=logs, cache_status_map=cache_status_map)
+    return render_template('admin_upstream_logs.html', logs=logs)
 
 
 @bp.route('/admin/export-redirects')
@@ -584,17 +577,17 @@ def admin_upstream_cache_resync(upstream, pattern):
                 logger.info(f"Resync for '{pattern}' in '{upstream}' successful, cache updated.")
                 return jsonify({'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
             else:
-                clear_upstream_cache(pattern)
+                utils.clear_upstream_cache(pattern)
                 logger.info(f"Resync for '{pattern}' in '{upstream}' failed (matched fail criteria), cache cleared.")
                 return jsonify({'success': False, 'error': 'Pattern not found in upstream (fail criteria matched).',
                                 'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
         except requests.exceptions.RequestException as e:
-            clear_upstream_cache(pattern)
+            utils.clear_upstream_cache(pattern)
             logger.error(f"Resync upstream check for '{pattern}' in '{upstream}' failed with HTTP error: {e}")
             return jsonify({'success': False, 'error': f"Upstream check failed: {str(e)}",
                             'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
         except Exception as e:
-            clear_upstream_cache(pattern)
+            utils.clear_upstream_cache(pattern)
             logger.exception(f"Unexpected error during resync upstream check for '{pattern}' in '{upstream}'.")
             return jsonify({'success': False, 'error': f"An unexpected error occurred during upstream check: {str(e)}",
                             'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
@@ -608,10 +601,10 @@ def admin_upstream_cache_resync(upstream, pattern):
 @login_required
 def admin_upstream_cache_purge(upstream):
     try:
-        cached_entries_for_upstream = list_upstream_cache(upstream)  # Get all entries for the upstream
+        cached_entries_for_upstream = utils.list_upstream_cache(upstream)  # Get all entries for the upstream
         purged_count = 0
         for entry in cached_entries_for_upstream:
-            clear_upstream_cache(entry['pattern'])  # clear_upstream_cache operates on a single pattern
+            utils.clear_upstream_cache(entry['pattern'])  # utils.clear_upstream_cache operates on a single pattern
             purged_count += 1
         logger.info(f"Purged {purged_count} cache entries for upstream: '{upstream}'.")
         return jsonify({'success': True, 'purged': purged_count})
@@ -635,7 +628,7 @@ def admin_upstream_cache_resync_all(upstream):
         fail_status_code = str(up.get('fail_status_code')) if up.get('fail_status_code') else None
         verify_ssl = up.get('verify_ssl', False)
 
-        cached_entries_for_upstream = list_upstream_cache(upstream)
+        cached_entries_for_upstream = utils.list_upstream_cache(upstream)
         patterns_to_check = [entry['pattern'] for entry in cached_entries_for_upstream]
 
         results = []
@@ -656,17 +649,17 @@ def admin_upstream_cache_resync_all(upstream):
                         {'pattern': pattern, 'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
                     logger.debug(f"Resync-all: Pattern '{pattern}' in '{upstream}' successful.")
                 else:
-                    clear_upstream_cache(pattern)
+                    utils.clear_upstream_cache(pattern)
                     results.append({'pattern': pattern, 'success': False, 'error': 'Fail criteria matched',
                                     'checked_at': tried_at})
                     logger.debug(f"Resync-all: Pattern '{pattern}' in '{upstream}' failed (matched fail criteria).")
             except requests.exceptions.RequestException as e:
-                clear_upstream_cache(pattern)
+                utils.clear_upstream_cache(pattern)
                 results.append({'pattern': pattern, 'success': False, 'error': f"Upstream check failed: {str(e)}",
                                 'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
                 logger.error(f"Resync-all: HTTP error for '{pattern}' in '{upstream}': {e}")
             except Exception as e:
-                clear_upstream_cache(pattern)
+                utils.clear_upstream_cache(pattern)
                 results.append(
                     {'pattern': pattern, 'success': False, 'error': f"An unexpected error occurred: {str(e)}",
                      'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})

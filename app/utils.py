@@ -3,7 +3,7 @@ import json
 import re
 import time
 import redis
-from datetime import datetime
+from datetime import datetime, timezone
 import logging # Import logging
 
 
@@ -167,34 +167,96 @@ def get_created_updated(pattern):
     logger.warning(f"Could not retrieve audit info for non-existent shortcut: '{pattern}'")
     return None, None
 
-def log_upstream_check(pattern, upstream_name, check_url, result, detail, tried_at):
-    log_entry = UpstreamCheckLog(
-        pattern=pattern,
-        upstream_name=upstream_name,
-        check_url=check_url,
-        result=result,
-        detail=detail,
-        tried_at=tried_at # This is already an ISO string
-    )
-    db.session.add(log_entry)
-    db.session.commit()
-    logger.info(f"Upstream check logged: pattern='{pattern}', upstream='{upstream_name}', result='{result}'")
+
+
+def log_upstream_check(pattern: str, upstream_name: str, check_url: str,
+                       result: str, detail: str, cached: bool = False):
+    """
+    Logs an upstream check result. If an entry for the given pattern and upstream_name
+    already exists, it updates the existing entry (including incrementing its count);
+    otherwise, it creates a new log entry.
+
+    Args:
+        pattern (str): The shortcut pattern that was checked.
+        upstream_name (str): The name of the upstream service checked.
+        check_url (str): The specific URL that was tried for the check.
+        result (str): The outcome of the check (e.g., 'success', 'fail', 'exception').
+        detail (str): Detailed information about the check, often including status codes or errors.
+        cached (bool): True if the result was served from cache, False otherwise.
+    """
+    try:
+        # This call assumes UpstreamCheckLog.upsert_log is correctly implemented
+        # to handle the ON CONFLICT DO UPDATE logic, passing all required arguments.
+        UpstreamCheckLog.upsert_log(
+            pattern=pattern,
+            upstream_name=upstream_name,
+            check_url=check_url,
+            result=result,
+            detail=detail,
+            # 'tried_at' is not passed here because upsert_log now generates
+            # the current timestamp internally for consistency during UPSERT.
+            cached=cached
+        )
+        db.session.commit() # Commit the transaction to save changes to the database
+        logger.info(f"Upstream check logged/updated: pattern='{pattern}', upstream='{upstream_name}', result='{result}'.")
+    except Exception as e:
+        db.session.rollback() # Rollback the session if any error occurs
+        logger.exception(f"Failed to log/update upstream check for '{pattern}' in '{upstream_name}'. Rolled back transaction. Error: {e}")
+        raise # Re-raise the exception to propagate it up the call stack for proper error handling
 
 def get_upstream_logs():
-    # Order by id descending to get latest logs first
+    """
+    Retrieves upstream check logs, orders them, and converts them
+    to a list of dictionaries for easier template rendering.
+    Parses 'detail' string to extract status_code and actual_url.
+    """
+
     logs = UpstreamCheckLog.query.order_by(UpstreamCheckLog.id.desc()).all()
     logger.debug(f"Retrieved {len(logs)} upstream check logs.")
-    # Convert SQLAlchemy objects to dictionaries for easier template rendering
-    return [{
-        'id': log.id,
-        'pattern': log.pattern,
-        'upstream_name': log.upstream_name,
-        'check_url': log.check_url,
-        'result': log.result,
-        'detail': log.detail,
-        'tried_at': log.tried_at,
-        'count': log.count
-    } for log in logs]
+
+    # Convert SQLAlchemy objects to dictionaries, processing 'detail' field
+    processed_logs = []
+    for log_entry in logs:
+        # Prepare common fields
+        log_dict = {
+            'time': log_entry.tried_at,  # Using tried_at directly
+            'shortcut': log_entry.pattern,
+            'upstream': log_entry.upstream_name,
+            'result': log_entry.result,
+            'details': log_entry.detail,  # Keep raw detail for full display
+            'cache_info': log_entry.cached  # This will be True/False
+        }
+
+        # --- Parse status_code and actual_url from 'detail' string ---
+        # This parsing logic now happens in Python, making the template simpler
+        status_code = '-'
+        actual_url = '-'
+        exception_msg = ''
+
+        details_str = log_entry.detail or ''
+        is_exception = (log_entry.result or '').lower() == 'exception'
+
+        if 'status_code=' in details_str:
+            match = re.search(r'status_code=(\d+)', details_str)
+            if match:
+                status_code = match.group(1)
+
+        if 'actual_url=' in details_str:
+            # Matches actual_url= then captures everything until the next comma or end of string
+            match = re.search(r'actual_url=([^,]+)', details_str)
+            if match:
+                actual_url = match.group(1).strip()
+
+        if is_exception:
+            exception_msg = details_str  # If it's an exception, the detail IS the message
+
+        log_dict['status_code'] = status_code
+        log_dict['actual_url'] = actual_url
+        log_dict['exception_msg'] = exception_msg  # Add for direct use in template
+
+        processed_logs.append(log_dict)
+
+    return processed_logs
 
 # --- Redis helpers ---
 _redis_client = None
@@ -382,7 +444,20 @@ def is_upstream_cache_enabled():
     logger.debug(f"Upstream cache enabled status: {enabled}")
     return enabled
 
-def cache_upstream_result(pattern, upstream_name, resolved_url, checked_at):
+def cache_upstream_result(pattern: str, upstream_name: str, resolved_url: str):
+    """
+    Caches the resolved URL for an upstream check result in the database and optionally in Redis.
+
+    Args:
+        pattern (str): The shortcut pattern.
+        upstream_name (str): The name of the upstream service.
+        resolved_url (str): The URL resolved from the upstream check.
+        caching (bool): If True, the result will also be stored in Redis.
+                        If False, only the database will be updated.
+    """
+    # Use ISO format for consistent datetime storage
+    current_time_iso = datetime.now(timezone.utc).isoformat()
+
     cache_entry = UpstreamCache.query.filter_by(
         pattern=pattern,
         upstream_name=upstream_name
@@ -390,33 +465,39 @@ def cache_upstream_result(pattern, upstream_name, resolved_url, checked_at):
 
     if cache_entry:
         cache_entry.resolved_url = resolved_url
-        cache_entry.checked_at = checked_at
+        cache_entry.checked_at = current_time_iso # Use the freshly generated timestamp
         logger.info(f"Updated upstream cache for '{pattern}' in '{upstream_name}'.")
     else:
         new_cache_entry = UpstreamCache(
             pattern=pattern,
             upstream_name=upstream_name,
             resolved_url=resolved_url,
-            checked_at=checked_at
+            checked_at=current_time_iso # Use the freshly generated timestamp
         )
         db.session.add(new_cache_entry)
         logger.info(f"Created new upstream cache entry for '{pattern}' in '{upstream_name}'.")
+
     try:
         db.session.commit()
         logger.debug(f"DB commit successful for upstream cache '{pattern}'.")
-        # Also update Redis cache for single pattern lookup (cache-aside for main lookup)
-        if _redis_enabled:
-            redis_set(f"upstream_cache:{pattern}", json.dumps({
+
+        # update redis is enabled
+        if  _redis_enabled:
+            # Prepare data for Redis cache (using the same fields as the DB entry)
+            redis_data = {
                 'pattern': pattern,
                 'upstream_name': upstream_name,
                 'resolved_url': resolved_url,
-                'checked_at': checked_at
-            }))
-            logger.debug(f"Redis cache updated for upstream_cache:'{pattern}'.")
+                'checked_at': current_time_iso # Ensure Redis gets the same timestamp
+            }
+            # Store in Redis. Consider adding an expiration time if needed (e.g., EX=3600)
+            redis_set(f"upstream_cache:{pattern}:{upstream_name}", json.dumps(redis_data)) # More specific key
+            logger.debug(f"Redis cache updated for upstream_cache:'{pattern}:{upstream_name}'.")
+
     except Exception as e:
         db.session.rollback()
         logger.exception(f"Failed to cache upstream result for '{pattern}' in '{upstream_name}'. Rolled back transaction.")
-        raise
+        raise # Re-raise the exception after logging and rollback
 
 
 def get_cached_upstream_result(pattern):

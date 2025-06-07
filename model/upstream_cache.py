@@ -1,4 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
+from pygments.lexer import default
+
 from . import db
 
 class UpstreamCache(db.Model):
