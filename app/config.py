@@ -3,7 +3,6 @@ import os
 
 import logging
 
-from app.utils import running_in_docker
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +18,20 @@ CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.config.json')
 logger.debug(f"Data directory created at: {DATA_DIR}")
 logger.debug(f"Config file path set to: {CONFIG_FILE}")
 
+# Detect if running inside Docker
+running_in_docker = os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER') is not None
+
+
+def get_redis_default_config():
+    redis_host = os.getenv('REDIS_HOST',
+                           'redis' if running_in_docker else 'localhost')  # Use env var or default to 'localhost'
+    # Get Redis settings from environment variables with defaults
+    redis_port = int(os.getenv('REDIS_PORT', 6379))  # Convert to int, default to 6379
+
+    return {
+        "host": redis_host,
+        "port": redis_port
+    }
 
 def get_Default_Config():
     import secrets
@@ -27,7 +40,7 @@ def get_Default_Config():
     logger.info(
         f"Generated password for admin access. Please check your console for the password if running for the first time.")
     logger.info(f"Admin Password: {random_pwd}")  # Log it at INFO level for visibility during first run
-
+    redis_default=get_redis_default_config()
     return {
         "port": 80,
         "auto_redirect_delay": 3,
@@ -37,8 +50,8 @@ def get_Default_Config():
         "upstreams": [],
         "redis": {
             "enabled": True,
-            "host": "redis" if running_in_docker else "localhost",
-            "port": 6379
+            "host": redis_default.get("host"),
+            "port": redis_default.get("port")
         },
         "upstream_cache": {
             "enabled": True

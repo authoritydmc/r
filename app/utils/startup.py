@@ -1,7 +1,7 @@
 import logging
-import os
 
-from app.utils import redis_enabled, redis_port, redis_host, running_in_docker
+from app.config import running_in_docker
+from app.utils import redis_enabled
 
 logger = logging.getLogger(__name__)
 
