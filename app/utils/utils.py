@@ -48,14 +48,7 @@ def set_config(key, value):
     logger.info(f"Config key '{key}' set to '{value}'")
 
 
-# --- SQLAlchemy schema setup (no direct ALTER TABLE needed with Flask-Migrate) ---
-def ensure_access_count_column(db_session):
-    logger.debug("Skipping ensure_access_count_column (handled by Flask-Migrate).")
-    pass
 
-def ensure_audit_columns(db_session):
-    logger.debug("Skipping ensure_audit_columns (handled by Flask-Migrate).")
-    pass
 
 
 def get_admin_password():
