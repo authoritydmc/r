@@ -14,7 +14,7 @@ from flask import session as flask_session
 from app import CONSTANTS
 from model.redirect import Redirect  # Import Redirect model for export/import
 from model.upstream_check_log import UpstreamCheckLog  # For clearing upstream logs
-from .utils import (
+from app.utils import (
     _load_config, _save_config,
     get_admin_password, get_auto_redirect_delay, get_delete_requires_password,
     increment_access_count, log_upstream_check, get_upstream_logs, deleteShortCut,
@@ -204,7 +204,7 @@ def handle_redirect(subpath):
             logger.info(
                 f"Redirecting static shortcut: '{subpath}' -> '{shortcut['target']}' (Source: {data_source}, Time: {resp_time:.4f}s)")
             if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(),source=data_source, response_time=resp_time)
+                return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(), source=data_source, response_time=resp_time)
             return redirect(shortcut['target'], code=302)
 
         if data_source == CONSTANTS.data_source_upstream and shortcut.get('resolved_url'):

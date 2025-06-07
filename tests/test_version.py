@@ -1,17 +1,16 @@
 import sys
 import os
-import pytest
 from flask import Flask
 
 # Ensure app/ is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import app.version
+import app.routes.version
 
 
 def create_app():
     flask_app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), '../app/templates'))
     flask_app.secret_key = 'test'
-    flask_app.register_blueprint(app.version.bp_version)
+    flask_app.register_blueprint(app.routes.routes.version.bp_version)
     return flask_app
 
 def test_version_route_runs(monkeypatch):

@@ -14,8 +14,8 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Print environment details and host setup tips
-app_startup_banner(app)
-
-# Expose app variable for Gunicorn
-# Gunicorn will look for: `wsgi:app`
+# # Print environment details and host setup tips
+# app_startup_banner(app)
+#
+# # Expose app variable for Gunicorn
+# # Gunicorn will look for: `wsgi:app`

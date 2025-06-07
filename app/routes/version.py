@@ -4,7 +4,7 @@ import socket
 from app.utils import get_config, get_port
 from functools import wraps
 
-bp_version = Blueprint('version', __name__)
+bp = Blueprint('version', __name__)
 
 def get_accessible_urls(port):
     urls = []
@@ -35,7 +35,7 @@ def get_accessible_urls(port):
     # Remove duplicates
     return sorted(set(urls))
 
-@bp_version.route('/version')
+@bp.route('/version')
 def version_page():
     from datetime import datetime
     try:
