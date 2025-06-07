@@ -27,7 +27,7 @@ def admin_upstreams():
                 del upstreams[idx]
                 utils.set_upstreams(upstreams)
                 logger.info(f"Deleted upstream: '{deleted_name}'")
-                return redirect(url_for('main.admin_upstreams'))
+                return redirect(url_for('upstream.admin_upstreams'))
             else:
                 logger.warning(f"Attempted to delete non-existent upstream index: {idx}")
         else:
@@ -331,4 +331,4 @@ def clear_upstream_logs():
     db.session.query(UpstreamCheckLog).delete()
     db.session.commit()
     logger.info("All upstream check logs cleared.")
-    return redirect(url_for('main.admin_upstream_logs'))
+    return redirect(url_for('upstream.admin_upstream_logs'))
