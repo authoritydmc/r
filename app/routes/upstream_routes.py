@@ -122,7 +122,7 @@ def stream_check_upstreams(pattern):
                 fail_url_match = actual_url.startswith(fail_url) if fail_url else False
                 fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
 
-                if not fail_url_match and (fail_status_code is None or not fail_status_match):
+                if not fail_url_match or (fail_status_code and not fail_status_match):
                     found = True
                     redirect_url = actual_url
                     utils.log_upstream_check(
