@@ -35,7 +35,11 @@ class Config:
         self.redis_cfg = self.cfg.get('redis', {})
         self.redis_enabled = self.redis_cfg.get('enabled', False)
         self.redis_host = self.redis_cfg.get('host', 'redis')
-        self.redis_port = int(self.redis_cfg.get('port', 6379))
+        try:
+            self.redis_port = int(self.redis_cfg.get('port', 6379))
+        except ValueError:
+            self.logger.error("Invalid Redis port in config, defaulting to 6379.")
+            self.redis_port = 6379
         self.redis_client = None
         self.database=self.cfg.get('database')
 
