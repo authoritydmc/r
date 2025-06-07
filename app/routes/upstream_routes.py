@@ -11,7 +11,7 @@ from app.utils import utils
 from model import UpstreamCheckLog
 
 logger = logging.getLogger(__name__)
-bp=Blueprint('upstreamRoutes', __name__)
+bp=Blueprint('upstream', __name__)
 
 # --- Upstreams Config API ---
 @bp.route('/admin/upstreams', methods=['GET', 'POST'])

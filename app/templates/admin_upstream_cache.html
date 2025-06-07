@@ -13,7 +13,7 @@
     <div class="flex flex-col sm:flex-row gap-2">
       <button class="bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700 flex items-center gap-1" onclick="resyncAllCache('{{ upstream }}', this)"><i class="fa-solid fa-arrows-rotate"></i> Resync All</button>
       <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1" onclick="purgeAllCache('{{ upstream }}', this)"><i class="fa-solid fa-trash"></i> Purge All</button>
-      <a href="{{ url_for('main.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-left"></i> Back to Upstreams</a>
+      <a href="{{ url_for('upstream.admin_upstreams') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"><i class="fa-solid fa-arrow-left"></i> Back to Upstreams</a>
     </div>
   </div>
   {% if cached %}

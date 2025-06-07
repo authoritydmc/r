@@ -215,7 +215,7 @@ def get_upstream_logs():
 
 
 def redis_get(key):
-    if config.config.redis_enabled and config.config.redis_client:
+    if config.redis_enabled and config.redis_client:
         try:
             value = config.redis_client.get(key)
             logger.debug(f"Redis GET '{key}': {'HIT' if value else 'MISS'}")
@@ -227,7 +227,7 @@ def redis_get(key):
     return None
 
 def redis_set(key, value, ex=None): # Added optional expiry 'ex'
-    if config.config.redis_enabled and config.redis_client:
+    if config.redis_enabled and config.redis_client:
         try:
             config.redis_client.set(key, value, ex=ex)
             logger.debug(f"Redis SET '{key}' successfully.")
@@ -238,7 +238,7 @@ def redis_set(key, value, ex=None): # Added optional expiry 'ex'
         logger.debug(f"Redis SET '{key}': Skipped (Redis disabled/not connected).")
 
 def redis_delete(key):
-    if config.config.redis_enabled and config.redis_client:
+    if config.redis_enabled and config.redis_client:
         try:
             config.redis_client.delete(key)
             logger.debug(f"Redis DELETE '{key}' successfully.")
@@ -251,10 +251,9 @@ def redis_delete(key):
 
 def get_shortcut(pattern):
     start_time = time.time()
-    shortcut = None
     source = CONSTANTS.data_source_redis # Default source assumption
 
-    if config.config.redis_enabled:
+    if config.redis_enabled:
         val = redis_get(f"shortcut:{pattern}")
         if val:
             try:
