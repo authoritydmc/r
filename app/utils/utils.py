@@ -22,7 +22,7 @@ def get_db_uri():
         return db_url
     default_db_uri = "sqlite:///" + os.path.join(config.DATA_DIR, "redirect.db")
     logger.warning(f"Database URI not found in config, defaulting to {default_db_uri}")
-    return 
+    return default_db_uri
 
 def _save_config():
     try:

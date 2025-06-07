@@ -35,8 +35,15 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
+
+    try:
+        db.init_app(app)
+        logger.info("✅ Database connection successful!")
+    except Exception as e:
+        logger.error(f"❌ Database connection failed: {e}")
+
     # Initialize database and migrations
-    db.init_app(app)
+   
     migrate = Migrate(app, db)
 
     # Register all routes

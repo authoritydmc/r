@@ -17,8 +17,12 @@ ascii_art = r'''
 os_name = platform.system().lower()
 def app_startup_banner(app=None):
     print("\n" + ascii_art) # Log the banner
-    logger.info(f"\n   {config.start_mode} - READY 🚀\n")
-    logger.info("🌐 URL Shortener & Redirector app initialized.")
+    print("+" + "=" * 80)
+    print("Welcome to the URL Shortener & Redirector app! 🚀\n")
+    print("This app is designed to help you shorten and redirect URLs easily. 🌐\n")
+    print("For more information, visit:https://github.com/authoritydmc/redirector")
+    print(f"Running Mode : {config.start_mode}")
+    print("+" + "=" * 80 + "\n")
 
     if app is not None:
         logger.info(f"🖥️ Configured to run on port: {get_port()}")
