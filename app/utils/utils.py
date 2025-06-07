@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -19,8 +20,9 @@ def get_db_uri():
     if "database" in cfg:
         db_url=cfg["database"]
         return db_url
-    logger.warning("Database URI not found in config, defaulting to sqlite:///redirects.db")
-    return "sqlite:///redirects.db"
+    default_db_uri = "sqlite:///" + os.path.join(config.DATA_DIR, "redirect.db")
+    logger.warning(f"Database URI not found in config, defaulting to {default_db_uri}")
+    return 
 
 def _save_config():
     try:

@@ -1,3 +1,4 @@
+import os
 import gevent.monkey
 gevent.monkey.patch_all()
 
@@ -32,6 +33,7 @@ def create_app():
 
     logger.info(f"Initializing database with URI: {db_uri}")
     app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
     # Initialize database and migrations
     db.init_app(app)

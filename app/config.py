@@ -133,7 +133,7 @@ class Config:
         return {
             "port": 80,
             "auto_redirect_delay": 3,
-            "database": "sqlite:///redirects.db",
+            "database": "sqlite:///" + os.path.join(self.DATA_DIR, "redirect.db"),
             "admin_password": random_pwd,
             "delete_requires_password": True,
             "upstreams": [],
