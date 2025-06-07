@@ -11,6 +11,8 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
   - [Docker Compose](#docker-compose)
   - [Manual (Python)](#manual-python)
 - [Configuration](#configuration)
+- [Database URI Construction Guide](#database-uri-construction-guide)
+- [Key Components]
 - [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
 - [Data Persistence](#data-persistence)
 - [Reverse Proxy Example](#reverse-proxy-example-nginx)
@@ -164,7 +166,8 @@ All configuration is managed in the `data/redirect.config.json` file (auto-creat
   },
   "upstream_cache": {
     "enabled": true // Enable upstream shortcut caching (recommended)
-  }
+  },
+  "database":"sqlite:///data/redirects.db"  //uri for database
 }
 ```
 
@@ -178,6 +181,63 @@ All configuration is managed in the `data/redirect.config.json` file (auto-creat
 - `upstream_cache`: Set `enabled` to true to cache successful upstream lookups for fast future redirects.
 
 You can edit this file directly or use the admin UI for most settings. Changes take effect immediately after saving the file or restarting the app/container.
+
+---
+
+# **Database URI Construction Guide** 📌
+
+This guide explains how to format database connection URIs dynamically for **SQLite, PostgreSQL, and MySQL**.
+
+---
+
+## **1️⃣ Understanding Database URI Format**
+A database connection URI follows this general structure:
+
+```
+dialect+driver://username:password@host:port/database
+```
+
+### **Key Components**
+- **dialect** → Type of database (`sqlite`, `postgresql`, `mysql`)
+- **driver** → Connection adapter (`pymysql`, `psycopg2`, etc.)
+- **username/password** → Authentication credentials
+- **host** → Database server location (`localhost`, IP, or domain)
+- **port** → Connection port (`5432` for PostgreSQL, `3306` for MySQL)
+- **database** → Name or file path (for SQLite)
+
+---
+
+## **2️⃣ Example Database URIs for Different Databases**
+
+### **🔹 SQLite (Local File-Based Database)**
+SQLite doesn’t require authentication:
+```sh
+sqlite:///absolute/path/to/database.db
+```
+For relative paths:
+```sh
+sqlite:///data/mydatabase.db  # Stored inside 'data' folder
+```
+
+### **🔹 PostgreSQL (Production-Grade Database)**
+Use PostgreSQL with credentials:
+```sh
+postgresql+psycopg2://user:password@localhost:5432/mydatabase
+```
+For a remote PostgreSQL server:
+```sh
+postgresql+psycopg2://user:password@db.example.com:5432/mydatabase
+```
+
+### **🔹 MySQL (Popular Web Database)**
+Use MySQL with authentication:
+```sh
+mysql+pymysql://user:password@localhost:3306/mydatabase
+```
+For a remote MySQL instance:
+```sh
+mysql+pymysql://user:password@db.example.com:3306/mydatabase
+```
 
 ---
 
