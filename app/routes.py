@@ -188,8 +188,7 @@ def edit_redirect(subpath):
             logger.debug(f"Displaying create shortcut page for new pattern: '{subpath}'.")
             return render_template('create_shortcut.html', pattern=subpath)
         logger.debug(f"Displaying edit shortcut page for existing pattern: '{subpath}'.")
-        return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'],
-                               now=datetime.utcnow())
+        return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'])
 
 
 # GET: Handle redirect for static and dynamic shortcuts. Triggered for any /<subpath> not matching other routes.
@@ -205,8 +204,7 @@ def handle_redirect(subpath):
             logger.info(
                 f"Redirecting static shortcut: '{subpath}' -> '{shortcut['target']}' (Source: {data_source}, Time: {resp_time:.4f}s)")
             if get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(),
-                                       now=datetime.utcnow(), source=data_source, response_time=resp_time)
+                return render_template('redirect.html', target=shortcut['target'], delay=get_auto_redirect_delay(),source=data_source, response_time=resp_time)
             return redirect(shortcut['target'], code=302)
 
         if data_source == CONSTANTS.data_source_upstream and shortcut.get('resolved_url'):
@@ -239,8 +237,7 @@ def handle_redirect(subpath):
                 increment_access_count(pattern)
                 logger.info(f"Redirecting dynamic shortcut: '{subpath}' -> '{dest_url}' (Source: {data_source})")
                 if get_auto_redirect_delay() > 0:
-                    return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(),
-                                           now=datetime.utcnow(), source=data_source)
+                    return render_template('redirect.html', target=dest_url, delay=get_auto_redirect_delay(), source=data_source)
                 return redirect(dest_url, code=302)
 
     logger.info(f"No direct shortcut found for '{subpath}'. Checking live upstreams.")
@@ -436,8 +433,7 @@ def admin_upstream_logs():
             for entry in cached:
                 cache_status_map[(entry['pattern'], up.get('name'))] = {'checked_at': entry['checked_at']}
     logger.debug("Rendering admin upstream logs page.")
-    return render_template('admin_upstream_logs.html', logs=logs, cache_status_map=cache_status_map,
-                           now=datetime.utcnow())
+    return render_template('admin_upstream_logs.html', logs=logs, cache_status_map=cache_status_map)
 
 
 @bp.route('/admin/export-redirects')
@@ -499,8 +495,7 @@ def admin_import_redirects():
             logger.warning("Import failed: No file or invalid file type uploaded.")
 
     logger.debug("Rendering admin import/export page.")
-    return render_template('admin_import_export.html', error=error, success=success, session=flask_session,
-                           now=datetime.utcnow())
+    return render_template('admin_import_export.html', error=error, success=success, session=flask_session)
 
 
 
@@ -523,8 +518,7 @@ def edit_redirect_blank():
 
         if not pattern:
             logger.warning("Attempted to create shortcut with empty pattern.")
-            return render_template('create_shortcut.html', pattern='', error='Shortcut pattern cannot be empty.',
-                                   now=datetime.utcnow())
+            return render_template('create_shortcut.html', pattern='', error='Shortcut pattern cannot be empty.')
 
         if isPatternExists(pattern):
             logger.warning(f"Attempted to create shortcut '{pattern}' which already exists.")
