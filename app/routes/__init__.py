@@ -34,7 +34,7 @@ ALL_APP_BLUEPRINTS = [
 def register_blueprints(app):
     for bp in ALL_APP_BLUEPRINTS:
         app.register_blueprint(bp)
-        logger.info(f"Registered blueprint: {bp.name}")
+        logger.debug(f"Registered blueprint: {bp.name}")
 
     @app.context_processor
     def inject_now():

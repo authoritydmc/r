@@ -1,8 +1,6 @@
-import os
 import json
 import re
 import time
-import redis
 from datetime import datetime, timezone
 import logging # Import logging
 from model import db
@@ -10,65 +8,42 @@ from model.upstream_check_log import UpstreamCheckLog
 from model.upstream_cache import UpstreamCache
 from model.redirect import Redirect
 from app import CONSTANTS  # Import CONSTANTS for data source strings
-from ..config import CONFIG_FILE
 
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
 
-
-
-
-# --- JSON config helpers ---
-def _load_config():
-    logger.info(f"Loading configuration from {CONFIG_FILE}")
-    if not os.path.exists(CONFIG_FILE):
-        from ..config import get_Default_Config
-        try:
-            default = get_Default_Config()
-            with open(CONFIG_FILE, 'w') as f:
-                json.dump(default, f, indent=2)
-            logger.info(f"Created default configuration file: {CONFIG_FILE}")
-            return default
-        except IOError as e:
-            logger.error(f"Failed to create default config file {CONFIG_FILE}: {e}")
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            return json.load(f)
-    except (IOError, json.JSONDecodeError) as e:
-        logger.exception(f"Error loading configuration file {CONFIG_FILE}. Using empty config.")
-        return {} # Return empty config on error
-
+from ..config import config
 def get_db_uri():
-    cfg=_load_config()
+    cfg=config.get_configuration()
     if "database" in cfg:
         db_url=cfg["database"]
         return db_url
     logger.warning("Database URI not found in config, defaulting to sqlite:///redirects.db")
     return "sqlite:///redirects.db"
 
-def _save_config(cfg):
+def _save_config():
     try:
-        with open(CONFIG_FILE, 'w') as f:
-            json.dump(cfg, f, indent=2)
-        logger.debug(f"Configuration saved to {CONFIG_FILE}")
+        with open(config.CONFIG_FILE, 'w') as f:
+            json.dump(config.get_configuration(), f, indent=2)
+        logger.debug(f"Configuration saved to {config.CONFIG_FILE}")
     except IOError as e:
-        logger.error(f"Failed to save configuration file {CONFIG_FILE}: {e}")
+        logger.error(f"Failed to save configuration file {config.CONFIG_FILE}: {e}")
 
 
 def get_config(key, default=None):
-    cfg = _load_config()
+    cfg = config.get_configuration()
     if key in cfg:
         return cfg[key]
     # Set and return default if not present
     cfg[key] = default
-    _save_config(cfg)
+    _save_config()
     logger.info(f"Config key '{key}' not found, set to default: {default}")
     return default
 
 def set_config(key, value):
-    cfg = _load_config()
+    cfg = config.get_configuration()
     cfg[key] = value
-    _save_config(cfg)
+    _save_config()
     logger.info(f"Config key '{key}' set to '{value}'")
 
 
@@ -236,26 +211,7 @@ def get_upstream_logs():
 
 
 
-def init_redis_from_config():
-    global redis_enabled, redis_client, redis_host, redis_port
-    cfg = _load_config()
-    redis_cfg = cfg.get('redis', {})
-    redis_enabled = redis_cfg.get('enabled', False)
-    redis_host = redis_cfg.get('host', 'redis') # Default to 'redis' for Docker
-    redis_port = redis_cfg.get('port', 6379)
-    if redis_enabled:
-        try:
-            redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True, socket_connect_timeout=1) # Added timeout
-            redis_client.ping()
-            logger.info(f"Redis enabled and connected: host={redis_host}, port={redis_port}")
-        except redis.exceptions.ConnectionError as e:
-            logger.warning(f"Redis config enabled but connection failed to '{redis_host}:{redis_port}': {e}. Redis functionality disabled.")
-            redis_enabled = False
-        except Exception as e:
-            logger.exception(f"Unexpected error initializing Redis. Redis functionality disabled.")
-            redis_enabled = False
-    else:
-        logger.info("Redis is disabled (see config).")
+
 
 def redis_get(key):
     if redis_enabled and redis_client:
@@ -730,11 +686,11 @@ def get_placeholder_vars(target_string: str) -> list[str]:
 
 
 def get_upstreams():
-    cfg = _load_config()
+    cfg = config.get_configuration()
     return cfg.get('upstreams', [])
 
 
 def set_upstreams(upstreams):
-    cfg = _load_config()
+    cfg = config.get_configuration()
     cfg['upstreams'] = upstreams
-    _save_config(cfg)
+    _save_config()

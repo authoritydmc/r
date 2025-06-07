@@ -1,48 +1,68 @@
 import json
-import os
+import logging
+import secrets
 from flask import Flask
 from flask_migrate import Migrate
-import logging
-from model import  db
+from model import db
+
 from .routes import register_blueprints
-from .utils.utils import get_db_uri, get_port, init_redis_from_config, init_upstream_cache_table
+from .utils.utils import get_db_uri, get_port
 from .utils.startup import app_startup_banner
-import secrets
 
-
-# Get a logger instance for this module
 logger = logging.getLogger(__name__)
 
 
-
 def create_app():
+    """Create and configure the Flask application."""
     app = Flask(__name__)
-    init_redis_from_config()
+    app_startup_banner(app)
     app.secret_key = secrets.token_urlsafe(32)
-    # Setup DB URL :
-    logger.info(    "DB URL ",get_db_uri())
-    app.config["SQLALCHEMY_DATABASE_URI"] = get_db_uri()
+
+    # Setup DB URL
+    db_uri = get_db_uri()
+    if not db_uri:
+        logger.error("Database URI could not be determined. Exiting application.")
+        raise RuntimeError("Invalid DB URI")
+
+    logger.info(f"Initializing database with URI: {db_uri}")
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+
+    # Initialize database and migrations
     db.init_app(app)
     migrate = Migrate(app, db)
+
+    # Register all routes
     register_blueprints(app)
 
     with app.app_context():
         app.config['port'] = get_port()
-        db.create_all()
-    app_startup_banner(app)
+        try:
+            db.create_all()  # If using Flask-Migrate, this may not be needed
+        except Exception as e:
+            logger.exception("Database initialization failed.", exc_info=e)
+            raise
+
+    # Display application startup details
+
+
     return app
 
-def run_standalone_startup(app):
-    init_redis_from_config()
-    app_startup_banner(app)
-    routes = []
-    for rule in app.url_map.iter_rules():
-        routes.append({
-            "route": rule.rule,
-            "methods": list(rule.methods),
-            "endpoint": rule.endpoint
-        })
 
-    # Write to urlMap.json
-    with open("urlMap.json", "w") as f:
-        json.dump(routes, f, indent=4)
+def run_standalone_startup(app):
+    """Standalone startup routine for debugging and route discovery."""
+    app_startup_banner(app)
+
+    try:
+        routes = [
+            {"route": rule.rule, "methods": list(rule.methods), "endpoint": rule.endpoint}
+            for rule in app.url_map.iter_rules()
+        ]
+
+        file_path = "urlMap.json"
+        with open(file_path, "w") as f:
+            json.dump(routes, f, indent=4)
+
+        logger.info(f"Route mappings saved to {file_path}")
+
+    except Exception as e:
+        logger.exception("Failed to generate URL map.", exc_info=e)

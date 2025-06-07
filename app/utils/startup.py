@@ -1,6 +1,6 @@
 import logging
 
-from app.config import running_in_docker
+from ..config import config
 from app.utils import redis_enabled
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ def app_startup_banner(app=None):
 
     # Docker environment and port/network info
 
-    if running_in_docker:
+    if config.RUNNING_IN_DOCKER:
         logger.info("[INFO] Running inside a Docker container.")
         logger.info("      The app listens on the internal container port (default 80).\n      To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker.")
         logger.info("      If using Docker Compose or custom networks, check your port mappings and network mode.")
