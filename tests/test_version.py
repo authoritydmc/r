@@ -4,7 +4,7 @@ from flask import Flask
 
 # Ensure app/ is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import app.routes.version
+import app.routes.version_routes
 
 
 def create_app():

@@ -1,7 +1,8 @@
 import logging
 import os
 
-from app.utils import  redis_enabled,redis_port,redis_host
+from app.utils import redis_enabled, redis_port, redis_host, running_in_docker
+
 logger = logging.getLogger(__name__)
 
 def app_startup_banner(app=None):
@@ -70,8 +71,9 @@ def app_startup_banner(app=None):
     except Exception as e:
         logger.exception(f"Unexpected error checking hostname 'r' resolution: {e}")
 
+
     # Docker environment and port/network info
-    running_in_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER')
+
     if running_in_docker:
         logger.info("[INFO] Running inside a Docker container.")
         logger.info("      The app listens on the internal container port (default 80).\n      To access externally, ensure you map the container port to a host port using '-p <host_port>:80' in Docker.")

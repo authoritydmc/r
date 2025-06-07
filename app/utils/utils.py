@@ -5,54 +5,32 @@ import time
 import redis
 from datetime import datetime, timezone
 import logging # Import logging
-
-from .  import redis_port,redis_enabled,redis_host,redis_client
 from model import db
 from model.upstream_check_log import UpstreamCheckLog
 from model.upstream_cache import UpstreamCache
 from model.redirect import Redirect
-from app import CONSTANTS # Import CONSTANTS for data source strings
+from app import CONSTANTS  # Import CONSTANTS for data source strings
+from ..config import CONFIG_FILE
 
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
 
-# Ensure data directory exists (cross-platform)
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
-os.makedirs(DATA_DIR, exist_ok=True)
-CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.config.json')
+
+
 
 # --- JSON config helpers ---
 def _load_config():
     logger.info(f"Loading configuration from {CONFIG_FILE}")
     if not os.path.exists(CONFIG_FILE):
-        import secrets
-        import string
-        random_pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
-        logger.info(f"Generated password for admin access. Please check your console for the password if running for the first time.")
-        logger.info(f"Admin Password: {random_pwd}") # Log it at INFO level for visibility during first run
-        default = {
-            "port": 80,
-            "auto_redirect_delay": 3,
-            "database":"sqlite:///redirects.db",
-            "admin_password": random_pwd,
-            "delete_requires_password": True,
-            "upstreams": [],
-            "redis": {
-                "enabled": True,
-                "host": "redis",
-                "port": 6379
-            },
-            "upstream_cache": {
-                "enabled": True
-            }
-        }
+        from ..config import get_Default_Config
         try:
+            default = get_Default_Config()
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(default, f, indent=2)
             logger.info(f"Created default configuration file: {CONFIG_FILE}")
+            return default
         except IOError as e:
             logger.error(f"Failed to create default config file {CONFIG_FILE}: {e}")
-        return default
     try:
         with open(CONFIG_FILE, 'r') as f:
             return json.load(f)

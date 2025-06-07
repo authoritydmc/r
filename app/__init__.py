@@ -1,9 +1,10 @@
 import json
+import os
 from flask import Flask
 from flask_migrate import Migrate
 import logging
 from model import  db
-from .routes import ALL_APP_BLUEPRINTS
+from .routes import register_blueprints
 from .utils.utils import get_db_uri, get_port, init_redis_from_config, init_upstream_cache_table
 from .utils.startup import app_startup_banner
 import secrets
@@ -11,6 +12,8 @@ import secrets
 
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
+
+
 
 def create_app():
     app = Flask(__name__)
@@ -21,9 +24,7 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = get_db_uri()
     db.init_app(app)
     migrate = Migrate(app, db)
-    for bp in ALL_APP_BLUEPRINTS:
-        app.register_blueprint(bp)
-        logger.info(f"Registered blueprint: {bp.name}")
+    register_blueprints(app)
 
     with app.app_context():
         app.config['port'] = get_port()
