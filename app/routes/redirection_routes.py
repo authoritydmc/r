@@ -120,7 +120,7 @@ def handle_redirect(subpath):
     if utils.get_upstreams():
         first_segment = subpath.split('/')[0]
         logger.debug(f"Redirecting to upstream check UI for first segment: '{first_segment}'")
-        return redirect(url_for('main.check_upstreams_ui', pattern=first_segment), code=302)
+        return redirect(url_for('upstream.check_upstreams_ui', pattern=first_segment), code=302)
 
     logger.info(f"No upstreams configured. Redirecting to create shortcut page for '{subpath}'.")
     return redirect(url_for('main.edit_redirect', subpath=subpath))
