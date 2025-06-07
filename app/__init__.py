@@ -3,13 +3,13 @@ import secrets
 from flask import Flask
 from flask_migrate import Migrate
 from model import db
-
+import gevent.monkey
 from .routes import register_blueprints
 from .utils.utils import get_db_uri, get_port
 from .utils.startup import app_startup_banner
 
 logger = logging.getLogger(__name__)
-
+gevent.monkey.patch_all()
 
 def create_app():
     """Create and configure the Flask application."""
