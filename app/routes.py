@@ -93,7 +93,7 @@ def admin_login():
         else:
             error = 'Invalid password.'
             logger.warning("Failed admin login attempt (invalid password).")
-    return render_template('admin_login.html', error=error, now=datetime.utcnow())
+    return render_template('admin_login.html', error=error)
 
 
 # GET: Logout endpoint. Triggered when user visits /logout.
@@ -145,10 +145,10 @@ def dashboard_delete(subpath):
             else:
                 error = 'Invalid password.'
                 logger.warning(f"Failed delete attempt for '{subpath}' (invalid password).")
-                return render_template('delete_confirm.html', error=error, subpath=subpath, now=datetime.utcnow())
+                return render_template('delete_confirm.html', error=error, subpath=subpath)
         else:
             logger.debug(f"Displaying delete confirmation for '{subpath}'.")
-            return render_template('delete_confirm.html', subpath=subpath, error=None, now=datetime.utcnow())
+            return render_template('delete_confirm.html', subpath=subpath, error=None)
     else:
         logger.info(f"Shortcut '{subpath}' deleted (password not required).")
         deleteShortCut(subpath)
@@ -164,7 +164,7 @@ def edit_redirect(subpath):
     if request.method == 'POST':
         type_ = request.form['type']
         target = request.form['target']
-        current_time = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+        current_time = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
         ip_address = request.remote_addr or 'unknown'
 
         try:
@@ -178,15 +178,15 @@ def edit_redirect(subpath):
                 updated_ip=ip_address
             )
             logger.info(f"Shortcut '{subpath}' {'updated' if shortcut else 'created'}.")
-            return render_template('success_create.html', pattern=subpath, target=target, now=datetime.utcnow())
+            return render_template('success_create.html', pattern=subpath, target=target)
         except Exception as e:
             logger.exception(f"Failed to {'update' if shortcut else 'create'} shortcut '{subpath}'.")
             # You might want a different error template or message here
-            return render_template('error.html', message=f"Failed to save shortcut: {e}", now=datetime.utcnow())
+            return render_template('error.html', message=f"Failed to save shortcut: {e}")
     else:  # GET request
         if not shortcut:
             logger.debug(f"Displaying create shortcut page for new pattern: '{subpath}'.")
-            return render_template('create_shortcut.html', pattern=subpath, now=datetime.utcnow())
+            return render_template('create_shortcut.html', pattern=subpath)
         logger.debug(f"Displaying edit shortcut page for existing pattern: '{subpath}'.")
         return render_template('edit_shortcut.html', pattern=subpath, type=shortcut['type'], target=shortcut['target'],
                                now=datetime.utcnow())
@@ -214,7 +214,7 @@ def handle_redirect(subpath):
                 f"Redirecting upstream shortcut: '{subpath}' -> '{shortcut['resolved_url']}' (Source: {data_source}, Time: {resp_time:.4f}s)")
             if get_auto_redirect_delay() > 0:
                 return render_template('redirect.html', target=shortcut['resolved_url'],
-                                       delay=get_auto_redirect_delay(), now=datetime.utcnow(), source=data_source,
+                                       delay=get_auto_redirect_delay(), source=data_source,
                                        response_time=resp_time)
             return redirect(shortcut['resolved_url'], code=302)
 
@@ -231,7 +231,7 @@ def handle_redirect(subpath):
                 example_target = target.replace(f'{{{var_name}}}', example_var)
                 logger.info(f"Dynamic shortcut '{pattern}' accessed without variable. Showing usage instructions.")
                 return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=var_name,
-                                       example_target=example_target, now=datetime.utcnow())
+                                       example_target=example_target)
 
             if subpath.startswith(pattern + "/"):
                 variable = subpath[len(pattern) + 1:]
@@ -257,7 +257,7 @@ def handle_redirect(subpath):
 @bp.route('/tutorial', methods=['GET'])
 def tutorial():
     logger.debug("Rendering tutorial page.")
-    return render_template('tutorial.html', now=datetime.utcnow())
+    return render_template('tutorial.html')
 
 
 # --- Upstreams Config API ---
@@ -308,14 +308,14 @@ def admin_upstreams():
             logger.info("Upstream configuration updated.")
             upstreams = new_upstreams  # Refresh the list for rendering
     logger.debug("Rendering admin upstreams page.")
-    return render_template('admin_upstreams.html', upstreams=upstreams, error=error, now=datetime.utcnow())
+    return render_template('admin_upstreams.html', upstreams=upstreams, error=error)
 
 
 @bp.route('/check-upstreams-ui/<path:pattern>')  # Use path converter
 def check_upstreams_ui(pattern):
     delay = get_auto_redirect_delay()
     logger.info(f"Displaying upstream check UI for pattern: '{pattern}', delay: {delay}s")
-    return render_template('check_upstreams_stream.html', pattern=pattern, delay=delay, now=datetime.utcnow())
+    return render_template('check_upstreams_stream.html', pattern=pattern, delay=delay)
 
 
 @bp.route('/stream/check-upstreams/<path:pattern>')  # Use path converter
@@ -529,7 +529,7 @@ def edit_redirect_blank():
         if isPatternExists(pattern):
             logger.warning(f"Attempted to create shortcut '{pattern}' which already exists.")
             return render_template('create_shortcut.html', pattern=pattern,
-                                   error='A shortcut with this pattern already exists.', now=datetime.utcnow())
+                                   error='A shortcut with this pattern already exists.')
 
         try:
             set_shortcut(
@@ -542,20 +542,20 @@ def edit_redirect_blank():
                 updated_ip=ip_address
             )
             logger.info(f"New shortcut '{pattern}' created successfully via blank edit route.")
-            return render_template('success_create.html', pattern=pattern, target=target, now=datetime.utcnow())
+            return render_template('success_create.html', pattern=pattern, target=target)
         except Exception as e:
             logger.exception(f"Failed to create new shortcut '{pattern}' via blank edit route.")
-            return render_template('error.html', message=f"Failed to create shortcut: {e}", now=datetime.utcnow())
+            return render_template('error.html', message=f"Failed to create shortcut: {e}")
 
     logger.debug("Rendering blank create shortcut page.")
-    return render_template('create_shortcut.html', pattern='', now=datetime.utcnow())
+    return render_template('create_shortcut.html', pattern='')
 
 
 # GET: Instructions page for enabling r/ shortcuts
 @bp.route('/enable-r-instructions', methods=['GET'])
 def enable_r_instructions():
     logger.debug("Rendering enable r/ instructions page.")
-    return render_template('enable_r_instructions.html', now=datetime.utcnow())
+    return render_template('enable_r_instructions.html')
 
 
 # --- Upstream Cache Management ---
@@ -564,7 +564,7 @@ def enable_r_instructions():
 def admin_upstream_cache(upstream):
     cached = list_upstream_cache(upstream)
     logger.debug(f"Rendering admin upstream cache page for '{upstream}'.")
-    return render_template('admin_upstream_cache.html', upstream=upstream, cached=cached, now=datetime.utcnow())
+    return render_template('admin_upstream_cache.html', upstream=upstream, cached=cached)
 
 
 @bp.route('/admin/upstream-cache/resync/<upstream>/<path:pattern>', methods=['GET', 'POST'])
@@ -712,4 +712,4 @@ def handle_500_error(e):
     logger.exception("An unhandled 500 error occurred.")  # Log the exception at ERROR level
     if request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']:
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
-    return render_template('500.html', now=datetime.utcnow()), 500
+    return render_template('500.html'), 500
