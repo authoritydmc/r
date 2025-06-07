@@ -23,6 +23,7 @@ CONFIG_FILE = os.path.join(DATA_DIR, 'redirect.config.json')
 
 # --- JSON config helpers ---
 def _load_config():
+    logger.info(f"Loading configuration from {CONFIG_FILE}")
     if not os.path.exists(CONFIG_FILE):
         import secrets
         import string

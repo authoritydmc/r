@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
+    init_redis_from_config()
     app.secret_key = secrets.token_urlsafe(32)
     # Setup DB URL :
     logger.info(    "DB URL ",get_db_uri())
