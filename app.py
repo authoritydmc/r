@@ -8,7 +8,7 @@ config.start_mode = 'Local App.py MODE'
 app = create_app()
 
 if __name__ == "__main__":
-    logger.info("Running app.py")
+    logger.info("🚀 Running Flask Application from app.py")
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true", help="Run Flask in debug mode")
     args = parser.parse_args()

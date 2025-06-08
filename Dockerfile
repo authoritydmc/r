@@ -13,5 +13,5 @@ COPY . .
 
 EXPOSE 80
 
-# Use Gunicorn with gevent as the worker class
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "wsgi:app"]
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
