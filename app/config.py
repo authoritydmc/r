@@ -12,6 +12,7 @@ class Config:
     def __init__(self):
         """Initialize configuration settings."""
         # First setup paths to access config
+        self.setup_logging("INFO")  # Set default logging level to DEBUG
         self.PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.DATA_DIR = os.path.join(self.PROJECT_ROOT, 'data')
         os.makedirs(self.DATA_DIR, exist_ok=True)
@@ -21,9 +22,10 @@ class Config:
         self.start_mode = "Gunicorn MODE"
         # Load basic config (used for logging level)
         temp_cfg = self.load_raw_config()
+        self.ensure_config_defaults(temp_cfg)
+        self.setup_logging(temp_cfg.get("log_level", "INFO"))
 
-        # Setup logging with config or fallback level
-        self.setup_logging(temp_cfg.get("log_level", "DEBUG"))
+
 
         # Now reload config fully (including Redis, etc.)
         self.logger.debug(f"Config file path: {self.CONFIG_FILE}")
@@ -130,14 +132,15 @@ class Config:
         print("\n🔐 Admin password generated for first-time setup.")
         print(f"   Password: {random_pwd}")
 
-        return {
+        _default_config = {
+            "config_version": 1,
             "port": 80,
             "auto_redirect_delay": 3,
             "database": "sqlite:///" + os.path.join(self.DATA_DIR, "redirect.db"),
             "admin_password": random_pwd,
             "delete_requires_password": True,
             "upstreams": [],
-            "log_level": "INFO",  # Default log level (can be changed in config file)
+            "log_level": "INFO",
             "redis": {
                 "enabled": True,
                 "host": redis_default.get("host"),
@@ -148,9 +151,48 @@ class Config:
             }
         }
 
+        # Sort the dictionary by keys (case-insensitive)
+        sorted_default_config = dict(sorted(_default_config.items(), key=lambda x: x[0].lower()))
+        return sorted_default_config
+
+
     def to_dict(self):
         """Expose config for external usage like in templates."""
         return self.cfg
+    
+    def ensure_config_defaults(self, config):
+        """
+        Compare the current config with default config and auto-add missing keys.
+        It updates the config file on disk if any missing keys are found.
+        """
+        default = self.get_default_config()
+        changed = self._merge_config_recursive(config, default)
+
+        # If config updated, write back to file
+        if changed:
+            try:
+                with open(self.CONFIG_FILE, 'w') as f:
+                    json.dump(config, f, indent=2)
+                self.logger.info("🛠 Config file updated with missing defaults.")
+            except Exception as e:
+                self.logger.warning(f"⚠️ Failed to write updated config: {e}")
+
+    def _merge_config_recursive(self, current, default):
+        """
+        Recursively merge missing keys from `default` into `current`.
+        Returns True if any changes were made.
+        """
+        changed = False
+        for key, value in default.items():
+            if key not in current:
+                current[key] = value
+                changed = True
+            elif isinstance(value, dict) and isinstance(current.get(key), dict):
+                # Recurse into nested dicts
+                if self._merge_config_recursive(current[key], value):
+                    changed = True
+        return changed
+
 
 
 config=Config()
