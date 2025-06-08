@@ -27,10 +27,12 @@ def get_db_uri():
 def _save_config():
     try:
         with open(config.CONFIG_FILE, 'w') as f:
-            json.dump(config.get_configuration(), f, indent=2)
-        logger.debug(f"Configuration saved to {config.CONFIG_FILE}")
+            # Save config sorted by keys
+            json.dump(config.get_configuration(), f, indent=2, sort_keys=True)
+        config.logger.debug(f"✅ Configuration saved (sorted) to {config.CONFIG_FILE}")
     except IOError as e:
-        logger.error(f"Failed to save configuration file {config.CONFIG_FILE}: {e}")
+        config.logger.error(f"❌ Failed to save configuration file {config.CONFIG_FILE}: {e}")
+
 
 
 def get_config(key, default=None):
