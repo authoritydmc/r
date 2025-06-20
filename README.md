@@ -498,3 +498,46 @@ This setup allows everyone in your organization to use simple, memorable shortcu
 
 MIT License. See [LICENSE](LICENSE) for details.
 
+---
+
+## Performance & Optimization
+
+- **Efficient Session Management:**
+  The app uses Flask-SQLAlchemy for automatic session handling. For custom scripts or background jobs, ensure sessions are closed after use to prevent leaks.
+
+- **Bulk Operations:**
+  For admin actions like cache resync or log purging, the backend uses SQLAlchemy's bulk methods for efficient database writes.
+
+- **Query Optimization:**
+  Frequently queried fields (like `pattern` and `upstream_name`) are indexed for fast lookups. Only necessary columns are fetched in large queries to reduce memory usage.
+
+- **Connection Pooling:**
+  When using PostgreSQL or MySQL, SQLAlchemy's connection pooling is enabled for high concurrency. You can tune pool size and timeout in your database URI if needed.
+
+- **Redis Caching:**
+  If enabled, Redis is used for ultra-fast shortcut and upstream cache lookups. The app uses specific cache keys and sets expiration to avoid stale data.
+
+- **Robust Error Handling:**
+  All database and cache operations are wrapped in try/except blocks with detailed logging for easy troubleshooting.
+
+- **Template Rendering:**
+  Only required fields are passed to templates, improving rendering speed and reducing memory footprint.
+
+- **Testing:**
+  The test suite uses isolated transactions to keep test data separate from production.
+
+**Recommended for Production:**
+- Use Docker or Gunicorn for serving the app.
+- Enable Redis for best performance.
+- Use PostgreSQL or MySQL for large-scale/team deployments.
+- Regularly backup your `data/` directory (contains config and DB).
+
+---
+
+## Import/Export & Upstream Cache Management
+
+- **Import/Export:** Importing redirects from JSON will NOT delete your existing redirects. Instead, it will upsert (insert or update) each redirect by pattern, and only update if the imported `updated_at` is newer than the existing one.
+- **Upstream Cache:** You can now purge (delete) individual upstream cache entries directly from the UI, as well as purge all entries for an upstream. This helps keep your cache clean and up-to-date.
+
+---
+

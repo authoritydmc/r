@@ -377,10 +377,7 @@ def cache_upstream_result(pattern: str, upstream_name: str, resolved_url: str):
         pattern (str): The shortcut pattern.
         upstream_name (str): The name of the upstream service.
         resolved_url (str): The URL resolved from the upstream check.
-        caching (bool): If True, the result will also be stored in Redis.
-                        If False, only the database will be updated.
     """
-    # Use ISO format for consistent datetime storage
     current_time_iso = datetime.now(timezone.utc).isoformat()
 
     cache_entry = UpstreamCache.query.filter_by(
@@ -390,14 +387,14 @@ def cache_upstream_result(pattern: str, upstream_name: str, resolved_url: str):
 
     if cache_entry:
         cache_entry.resolved_url = resolved_url
-        cache_entry.checked_at = current_time_iso # Use the freshly generated timestamp
+        cache_entry.checked_at = current_time_iso
         logger.info(f"Updated upstream cache for '{pattern}' in '{upstream_name}'.")
     else:
         new_cache_entry = UpstreamCache(
             pattern=pattern,
             upstream_name=upstream_name,
             resolved_url=resolved_url,
-            checked_at=current_time_iso # Use the freshly generated timestamp
+            checked_at=current_time_iso
         )
         db.session.add(new_cache_entry)
         logger.info(f"Created new upstream cache entry for '{pattern}' in '{upstream_name}'.")
@@ -415,9 +412,10 @@ def cache_upstream_result(pattern: str, upstream_name: str, resolved_url: str):
                 'resolved_url': resolved_url,
                 'checked_at': current_time_iso # Ensure Redis gets the same timestamp
             }
-            # Store in Redis. Consider adding an expiration time if needed (e.g., EX=3600)
-            redis_set(f"upstream_cache:{pattern}:{upstream_name}", json.dumps(redis_data)) # More specific key
-            logger.debug(f"Redis cache updated for upstream_cache:'{pattern}:{upstream_name}'.")
+            # Store in Redis under both keys for compatibility
+            redis_set(f"upstream_cache:{pattern}", json.dumps(redis_data))
+            redis_set(f"upstream_cache:{pattern}:{upstream_name}", json.dumps(redis_data))
+            logger.debug(f"Redis cache updated for upstream_cache:'{pattern}' and upstream_cache:'{pattern}:{upstream_name}'.")
 
     except Exception as e:
         db.session.rollback()
@@ -478,16 +476,25 @@ def list_upstream_cache(upstream_name):
         for entry in cached_entries
     ]
 
-def clear_upstream_cache(pattern):
+def clear_upstream_cache(pattern, upstream_name=None):
     # Delete from DB
-    num_deleted = UpstreamCache.query.filter_by(pattern=pattern).delete()
+    if upstream_name:
+        num_deleted = UpstreamCache.query.filter_by(pattern=pattern, upstream_name=upstream_name).delete()
+    else:
+        num_deleted = UpstreamCache.query.filter_by(pattern=pattern).delete()
     db.session.commit()
-    logger.info(f"Cleared {num_deleted} upstream cache entries from DB for '{pattern}'.")
+    logger.info(f"Cleared {num_deleted} upstream cache entries from DB for '{pattern}'{f' in {upstream_name}' if upstream_name else ''}.")
     # Delete from Redis
     if config.redis_enabled:
         try:
             redis_delete(f"upstream_cache:{pattern}")
-            logger.debug(f"Cleared upstream cache entry from Redis for '{pattern}'.")
+            if upstream_name:
+                redis_delete(f"upstream_cache:{pattern}:{upstream_name}")
+            else:
+                # Remove all possible upstream-specific keys for this pattern
+                # (Optional: if you want to be thorough, scan for all matching keys)
+                pass
+            logger.debug(f"Cleared upstream cache entry from Redis for '{pattern}' and '{pattern}:{upstream_name}'.")
         except Exception as e:
             logger.error(f"Redis DELETE failed for upstream_cache:{pattern}: {e}")
 
@@ -526,7 +533,9 @@ def isPatternExists(subpath):
 def import_redirects_from_json(json_data):
     """
     Imports redirect data from a JSON list.
-    Clears existing redirects, imports new ones, and clears Redis cache.
+    Upserts (inserts or updates) each redirect by pattern. If a redirect exists, only update if the imported 'updated_at' is newer.
+    Does NOT delete existing redirects.
+    Clears Redis cache after import.
 
     Args:
         json_data (list): A list of dictionaries, each representing a redirect.
@@ -539,38 +548,51 @@ def import_redirects_from_json(json_data):
             logger.error("Import failed: JSON data is not a list.")
             return {'success': False, 'message': 'Invalid JSON data format: expected a list of redirects.'}
 
-        # Clear existing redirects
-        db.session.query(Redirect).delete()
-        db.session.commit()
-        logger.info("Cleared existing redirects from DB before import.")
-
         imported_count = 0
         for entry in json_data:
-            # Basic validation: ensure 'pattern', 'type', 'target' are present,
-            # though get() with defaults handles missing keys gracefully.
             if not entry.get('pattern') or not entry.get('target'):
                 logger.warning(f"Skipping malformed entry during import: {entry}")
-                continue  # Skip malformed entries
-
-            new_redirect = Redirect(
-                pattern=entry.get('pattern'),
-                type=entry.get('type', CONSTANTS.DATA_TYPE_STATIC),
-                target=entry.get('target'),
-                access_count=entry.get('access_count', 0),
-                created_at=entry.get('created_at', datetime.utcnow().isoformat(sep=' ', timespec='seconds')),
-                updated_at=entry.get('updated_at', datetime.utcnow().isoformat(sep=' ', timespec='seconds')),
-                created_ip=entry.get('created_ip', 'import'),
-                updated_ip=entry.get('updated_ip', 'import')
-            )
-            db.session.add(new_redirect)
-            imported_count += 1
-
+                continue
+            pattern = entry.get('pattern')
+            imported_updated_at = entry.get('updated_at')
+            existing = Redirect.query.filter_by(pattern=pattern).first()
+            if existing:
+                # Only update if imported updated_at is newer
+                try:
+                    existing_dt = datetime.strptime(existing.updated_at, '%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    existing_dt = None
+                try:
+                    imported_dt = datetime.strptime(imported_updated_at, '%Y-%m-%d %H:%M:%S') if imported_updated_at else None
+                except Exception:
+                    imported_dt = None
+                if imported_dt and (not existing_dt or imported_dt > existing_dt):
+                    existing.type = entry.get('type', CONSTANTS.DATA_TYPE_STATIC)
+                    existing.target = entry.get('target')
+                    existing.access_count = entry.get('access_count', existing.access_count)
+                    existing.created_at = entry.get('created_at', existing.created_at)
+                    existing.updated_at = imported_updated_at
+                    existing.created_ip = entry.get('created_ip', existing.created_ip)
+                    existing.updated_ip = entry.get('updated_ip', existing.updated_ip)
+                    imported_count += 1
+            else:
+                new_redirect = Redirect(
+                    pattern=pattern,
+                    type=entry.get('type', CONSTANTS.DATA_TYPE_STATIC),
+                    target=entry.get('target'),
+                    access_count=entry.get('access_count', 0),
+                    created_at=entry.get('created_at', datetime.utcnow().isoformat(sep=' ', timespec='seconds')),
+                    updated_at=entry.get('updated_at', datetime.utcnow().isoformat(sep=' ', timespec='seconds')),
+                    created_ip=entry.get('created_ip', 'import'),
+                    updated_ip=entry.get('updated_ip', 'import')
+                )
+                db.session.add(new_redirect)
+                imported_count += 1
         db.session.commit()
-        logger.info(f"Imported {imported_count} redirects successfully into DB.")
+        logger.info(f"Imported or updated {imported_count} redirects successfully into DB.")
 
         # Clear Redis cache if enabled
         if config.redis_enabled:
-
             if config.redis_client:
                 try:
                     keys_to_delete = config.redis_client.keys('shortcut:*')
@@ -586,7 +608,7 @@ def import_redirects_from_json(json_data):
         else:
             logger.debug("Redis is disabled, skipped clearing shortcut cache after import.")
 
-        return {'success': True, 'message': f'Redirect data imported successfully. {imported_count} records imported.',
+        return {'success': True, 'message': f'Redirect data imported successfully. {imported_count} records imported or updated.',
                 'imported_count': imported_count}
 
     except (json.JSONDecodeError, ValueError) as e:

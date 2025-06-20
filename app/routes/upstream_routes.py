@@ -140,7 +140,7 @@ def stream_check_upstreams(pattern):
                 else:
                     utils.log_upstream_check(
                         pattern, up_name, check_url, 'fail',
-                        f"actual_url={actual_url}, status_code={status_code}, fail_url_match={fail_url_match}, fail_status_match={fail_status_match}",
+                        f"actual_url={actual_url}, status_code={status_code}, fail_url_match={fail_url_match}, fail_status_match={fail_status_code}",
 
                     )
                     yield from send_log(f"❌ Shortcut not found in {up_name} — matched fail criteria.")
@@ -249,14 +249,26 @@ def admin_upstream_cache_resync(upstream, pattern):
 
 
 
+@bp.route('/admin/upstream-cache/purge-entry/<upstream>/<path:pattern>', methods=['POST'])
+@login_required
+def admin_upstream_cache_purge_entry(upstream, pattern):
+    try:
+        utils.clear_upstream_cache(pattern, upstream_name=upstream)
+        return jsonify({'success': True, 'purged': 1})
+    except Exception as e:
+        utils.db.session.rollback()
+        logger.exception(f"Error purging cache entry for pattern '{pattern}' in upstream '{upstream}'.")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @bp.route('/admin/upstream-cache/purge/<upstream>', methods=['POST'])
 @login_required
 def admin_upstream_cache_purge(upstream):
     try:
-        cached_entries_for_upstream = utils.list_upstream_cache(upstream)  # Get all entries for the upstream
+        cached_entries_for_upstream = utils.list_upstream_cache(upstream)
         purged_count = 0
         for entry in cached_entries_for_upstream:
-            utils.clear_upstream_cache(entry['pattern'])  # utils.clear_upstream_cache operates on a single pattern
+            utils.clear_upstream_cache(entry['pattern'], upstream_name=upstream)
             purged_count += 1
         logger.info(f"Purged {purged_count} cache entries for upstream: '{upstream}'.")
         return jsonify({'success': True, 'purged': purged_count})
