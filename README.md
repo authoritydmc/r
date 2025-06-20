@@ -541,3 +541,5 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
+> **For local development, setup, and migration instructions, see [`DEVELOPMENT.md`](DEVELOPMENT.md).**
+
