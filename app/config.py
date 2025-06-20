@@ -72,7 +72,11 @@ class Config:
 
         try:
             with open(self.CONFIG_FILE, 'r') as f:
-                return json.load(f)
+                config_data = json.load(f)
+                # Only print the password if the key is missing (first-time setup)
+                if 'admin_password' not in config_data:
+                    print(f"\n🔐 Admin Password (save this): {config_data.get('admin_password', '[NOT SET]')}")
+                return config_data
         except (IOError, json.JSONDecodeError):
             return {}
 
@@ -129,9 +133,6 @@ class Config:
         random_pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
         redis_default = self.get_redis_default_config()
 
-        print("\n🔐 Admin password generated for first-time setup.")
-        print(f"   Password: {random_pwd}")
-
         _default_config = {
             "config_version": 1,
             "port": 80,
@@ -150,7 +151,6 @@ class Config:
                 "enabled": True
             }
         }
-
         # Sort the dictionary by keys (case-insensitive)
         sorted_default_config = dict(sorted(_default_config.items(), key=lambda x: x[0].lower()))
         return sorted_default_config
