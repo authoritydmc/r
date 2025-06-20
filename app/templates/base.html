@@ -46,18 +46,19 @@
             <span class="text-xs mt-1 group-hover:underline hidden sm:block">Tutorial</span>
           </a>
           {% if session.admin_logged_in %}
-            <a href="/admin/upstreams" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Upstream Config">
-              <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
-              <span class="text-xs mt-1 group-hover:underline hidden sm:block">Upstreams</span>
-            </a>
-            <a href="/admin/upstream-logs" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Upstream Logs">
-              <i class="fa-solid fa-list-alt fa-lg"></i>
-              <span class="text-xs mt-1 group-hover:underline hidden sm:block">Upstream Logs</span>
-            </a>
-            <a href="/admin/import-redirects" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group" title="Import/Export Redirects">
-              <i class="fa-solid fa-file-arrow-up fa-lg"></i>
-              <span class="text-xs mt-1 group-hover:underline hidden sm:block">Import/Export</span>
-            </a>
+            <div class="relative group">
+              <button class="text-blue-700 dark:text-blue-300 flex flex-col items-center group focus:outline-none" title="Admin Tools">
+                <i class="fa-solid fa-toolbox fa-lg"></i>
+                <span class="text-xs mt-1 group-hover:underline hidden sm:block">Admin Tools</span>
+                <i class="fa-solid fa-caret-down text-xs ml-1"></i>
+              </button>
+              <div class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-50">
+                <a href="/admin/upstreams" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Upstreams</a>
+                <a href="/admin/upstream-logs" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-list-alt"></i> Upstream Logs</a>
+                <a href="/admin/import-redirects" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-file-arrow-up"></i> Import/Export</a>
+                <a href="/admin/redis-cache" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-database"></i> Redis Cache</a>
+              </div>
+            </div>
           {% endif %}
           <a href="https://github.com/authoritydmc/redirector" target="_blank" class="flex flex-col items-center text-blue-700 dark:text-blue-300 group" title="GitHub">
             <i class="fab fa-github fa-lg"></i>

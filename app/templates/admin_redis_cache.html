@@ -6,7 +6,7 @@
     <i class="fa-solid fa-database text-red-400"></i> Redis Cache Management
   </h2>
   {% if error %}
-    <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded mb-4">{{ error }}</div>
+    <div class="bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-2 rounded mb-4">{{ error }}</div>
   {% endif %}
   {% if not redis_keys %}
     <div class="text-gray-600 dark:text-gray-300 flex items-center gap-2 mt-6"><i class="fa-solid fa-circle-info text-blue-400"></i> No Redis cache entries found.</div>
@@ -15,18 +15,18 @@
       <table class="w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-blue-50 dark:bg-gray-800">
           <tr>
-            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold">Key</th>
-            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold">Value</th>
-            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold">Actions</th>
+            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold"><i class="fa-solid fa-key"></i> Key</th>
+            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold"><i class="fa-solid fa-database"></i> Value</th>
+            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold"><i class="fa-solid fa-gear"></i> Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for key in redis_keys %}
           <tr class="hover:bg-blue-50 dark:hover:bg-gray-800 transition">
-            <td class="py-2 px-4 font-mono break-all">{{ key }}</td>
-            <td class="py-2 px-4 break-all">{{ redis_values[key] }}</td>
+            <td class="py-2 px-4 font-mono break-all text-gray-800 dark:text-gray-100">{{ key }}</td>
+            <td class="py-2 px-4 break-all text-gray-700 dark:text-gray-200">{{ redis_values[key] }}</td>
             <td class="py-2 px-4">
-              <form method="post" action="/admin/redis-cache/delete" onsubmit="return confirm('Delete this Redis key?');" style="display:inline;">
+              <form class="delete-redis-form" method="post" action="/admin/redis-cache/delete" style="display:inline;">
                 <input type="hidden" name="key" value="{{ key }}">
                 <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1"><i class="fa-solid fa-trash"></i> Delete</button>
               </form>
@@ -35,11 +35,40 @@
           {% endfor %}
         </tbody>
       </table>
-      <form method="post" action="/admin/redis-cache/delete" onsubmit="return confirm('Delete ALL Redis keys?');" class="mt-6">
+      <form class="delete-redis-form" method="post" action="/admin/redis-cache/delete" class="mt-6">
         <input type="hidden" name="key" value="*">
         <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-900 font-bold flex items-center gap-2"><i class="fa-solid fa-trash"></i> Delete All</button>
       </form>
     </div>
   {% endif %}
 </div>
+<script>
+// Intercept all delete forms to use AJAX and redirect after success
+const forms = document.querySelectorAll('.delete-redis-form');
+forms.forEach(form => {
+  form.onsubmit = function(e) {
+    e.preventDefault();
+    if (!confirm(form.querySelector('input[name="key"]').value === '*' ? 'Delete ALL Redis keys?' : 'Delete this Redis key?')) return false;
+    const formData = new FormData(form);
+    fetch(form.action, {
+      method: 'POST',
+      body: formData
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = '/admin/redis-cache?msg=success';
+        } else {
+          alert('Delete failed: ' + (data.error || 'Unknown error'));
+          window.location.href = '/admin/redis-cache?msg=error';
+        }
+      })
+      .catch(() => {
+        alert('Delete failed (network error)');
+        window.location.href = '/admin/redis-cache?msg=error';
+      });
+    return false;
+  };
+});
+</script>
 {% endblock %}
