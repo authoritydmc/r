@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Redis Cache Management{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 mt-10 border border-blue-100 dark:border-gray-700">
+  <h2 class="text-2xl font-bold mb-6 text-blue-700 dark:text-blue-200 flex items-center gap-2">
+    <i class="fa-solid fa-database text-red-400"></i> Redis Cache Management
+  </h2>
+  {% if error %}
+    <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded mb-4">{{ error }}</div>
+  {% endif %}
+  {% if not redis_keys %}
+    <div class="text-gray-600 dark:text-gray-300 flex items-center gap-2 mt-6"><i class="fa-solid fa-circle-info text-blue-400"></i> No Redis cache entries found.</div>
+  {% else %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-blue-50 dark:bg-gray-800">
+          <tr>
+            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold">Key</th>
+            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold">Value</th>
+            <th class="py-2 px-4 text-left text-blue-800 dark:text-blue-200 font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in redis_keys %}
+          <tr class="hover:bg-blue-50 dark:hover:bg-gray-800 transition">
+            <td class="py-2 px-4 font-mono break-all">{{ key }}</td>
+            <td class="py-2 px-4 break-all">{{ redis_values[key] }}</td>
+            <td class="py-2 px-4">
+              <form method="post" action="/admin/redis-cache/delete" onsubmit="return confirm('Delete this Redis key?');" style="display:inline;">
+                <input type="hidden" name="key" value="{{ key }}">
+                <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1"><i class="fa-solid fa-trash"></i> Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <form method="post" action="/admin/redis-cache/delete" onsubmit="return confirm('Delete ALL Redis keys?');" class="mt-6">
+        <input type="hidden" name="key" value="*">
+        <button type="submit" class="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-900 font-bold flex items-center gap-2"><i class="fa-solid fa-trash"></i> Delete All</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

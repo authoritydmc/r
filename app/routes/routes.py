@@ -42,27 +42,18 @@ def admin_logout():
 # GET: Dashboard page. Triggered when user visits the root URL '/'.
 @bp.route('/', methods=['GET'])
 def dashboard():
-    # Get the latest 5 updated shortcuts
     try:
-        latest_shortcuts = Redirect.query.order_by(Redirect.updated_at.desc()).limit(5).all()
-        # You might want to convert these SQLAlchemy objects to dictionaries if your
-        # template expects simpler data, but often Jinja can handle direct object access.
-        # Example for conversion (optional, if needed):
-        # formatted_shortcuts = []
-        # for s in latest_shortcuts:
-        #     formatted_shortcuts.append({
-        #         'pattern': s.pattern,
-        #         'target': s.target,
-        #         'access_count': s.access_count,
-        #         'updated_at': s.updated_at
-        #     })
-        # logger.debug(f"Retrieved {len(formatted_shortcuts)} latest shortcuts for dashboard.")
-
+        count = int(request.args.get('count', 5))
+        sort = request.args.get('sort', 'updated')
+        if sort == 'created':
+            latest_shortcuts = Redirect.query.order_by(Redirect.created_at.desc()).limit(count).all()
+        else:
+            latest_shortcuts = Redirect.query.order_by(Redirect.updated_at.desc()).limit(count).all()
         logger.debug(f"Retrieved {len(latest_shortcuts)} latest shortcuts for dashboard.")
     except Exception as e:
         logger.exception("Failed to retrieve latest shortcuts for dashboard.")
-        latest_shortcuts = []  # Ensure an empty list if there's an error
-    return render_template('dashboard.html', shortcuts=latest_shortcuts)
+        latest_shortcuts = []
+    return render_template('dashboard.html', shortcuts=latest_shortcuts, count=count, sort=sort)
 
 
 
@@ -147,3 +138,67 @@ def api_check_shortcut_exists(pattern):
 def enable_r_instructions():
     logger.debug("Rendering enable r/ instructions page.")
     return render_template('enable_r_instructions.html')
+
+
+# Admin: View and delete Redis cache entries
+@bp.route('/admin/redis-cache', methods=['GET'])
+@login_required
+def admin_redis_cache():
+    redis_keys = []
+    redis_values = {}
+    error = None
+    if utils.config.redis_enabled and utils.config.redis_client:
+        try:
+            redis_keys = utils.config.redis_client.keys('*')
+            for k in redis_keys:
+                try:
+                    redis_values[k] = utils.config.redis_client.get(k)
+                except Exception:
+                    redis_values[k] = '[Error reading value]'
+        except Exception as e:
+            error = str(e)
+    return render_template('admin_redis_cache.html', redis_keys=redis_keys, redis_values=redis_values, error=error)
+
+@bp.route('/admin/redis-cache/delete', methods=['POST'])
+@login_required
+def admin_redis_cache_delete():
+    key = request.form.get('key')
+    if not key:
+        return jsonify({'success': False, 'error': 'No key provided'}), 400
+    try:
+        if utils.config.redis_enabled and utils.config.redis_client:
+            if key == '*':
+                keys = utils.config.redis_client.keys('*')
+                if keys:
+                    utils.config.redis_client.delete(*keys)
+            else:
+                utils.config.redis_client.delete(key)
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Redis not enabled'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Dashboard: Dynamic shortcut count selection
+@bp.route('/dashboard-shortcuts', methods=['GET'])
+def dashboard_shortcuts():
+    try:
+        count = int(request.args.get('count', 5))
+        sort = request.args.get('sort', 'updated')
+        if sort == 'created':
+            shortcuts = Redirect.query.order_by(Redirect.created_at.desc()).limit(count).all()
+        else:
+            shortcuts = Redirect.query.order_by(Redirect.updated_at.desc()).limit(count).all()
+        result = []
+        for s in shortcuts:
+            result.append({
+                'pattern': s.pattern,
+                'type': s.type,
+                'target': s.target,
+                'access_count': s.access_count,
+                'created_at': s.created_at,
+                'updated_at': s.updated_at
+            })
+        return jsonify({'success': True, 'shortcuts': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
