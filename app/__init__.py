@@ -12,16 +12,19 @@ from model import db        # SQLAlchemy db instance
 from .routes import register_blueprints
 from .utils.utils import get_db_uri, get_port
 from .utils.startup import app_startup_banner
+from .CONSTANTS import __version__, get_semver
 
 # Set up logger
 logger = logging.getLogger(__name__)
-
 
 def create_app():
     """Create and configure the Flask application."""
     
     # Initialize Flask app
     app = Flask(__name__)
+
+    # Expose version in templates
+    app.jinja_env.globals['version'] = get_semver()
 
     # Display a custom startup banner
     app_startup_banner(app)

@@ -107,8 +107,11 @@
   
       </div>
       <!-- Right: Version -->
-      <div class="text-xs text-right font-mono text-gray-400 dark:text-gray-500">
-        Version: {{ version if version is defined else 'unknown' }}
+      <div id="footer-version-info" class="text-xs text-right font-mono text-gray-400 dark:text-gray-500 flex items-center gap-1">
+        <span id="footer-version-icon" class="inline-block" title="Checking version...">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+        </span>
+        <span id="footer-version-string">Version: {{ version if version is defined else 'unknown' }}</span>
       </div>
     </div>
   </footer>
@@ -153,6 +156,43 @@
     localStorage.setItem('theme', 'dark');
   }
   updateToggleIcon();
+
+  // Version check logic
+  (function() {
+    const version = '{{ version if version is defined else "unknown" }}';
+    fetch('/api/latest-version').then(r => r.json()).then(data => {
+      if (data.success && data.latest && data.latest !== version) {
+        const notice = document.getElementById('upgrade-notice');
+        notice.textContent = `Upgrade available: v${data.latest}`;
+        notice.style.display = '';
+      }
+    });
+  })();
+
+  // Version check logic for footer
+  async function checkVersionFooter() {
+    const iconSpan = document.getElementById('footer-version-icon');
+    const versionSpan = document.getElementById('footer-version-string');
+    let current = '{{ version if version is defined else "unknown" }}';
+    try {
+      const resp = await fetch('/api/latest-version');
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || 'Unknown error');
+      const latest = data.latest;
+      current = data.current || current;
+      versionSpan.textContent = `Version: ${current}`;
+      if (latest && current && latest.replace(/^v/, '') === current.replace(/^v/, '')) {
+        iconSpan.innerHTML = '<i class="fa-solid fa-circle-check text-green-500" title="You are running the latest version (v' + current + ')."></i>';
+      } else if (latest && current && latest.replace(/^v/, '') > current.replace(/^v/, '')) {
+        iconSpan.innerHTML = '<i class="fa-solid fa-circle-exclamation text-yellow-400" title="A newer version (v' + latest + ') is available! You are running v' + current + '."></i>';
+      } else {
+        iconSpan.innerHTML = '<i class="fa-solid fa-circle-question text-gray-400" title="Version status unknown. Current: v' + current + ', Latest: v' + latest + '"></i>';
+      }
+    } catch (e) {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500" title="Could not check for updates. Current version: v' + current + '"></i>';
+    }
+  }
+  checkVersionFooter();
 </script>
 
   {% block scripts %}{% endblock %}

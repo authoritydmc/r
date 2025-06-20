@@ -9,7 +9,9 @@
     <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-4">Version Information</h1>
 
     <div class="text-gray-700 dark:text-gray-200 space-y-2 mb-6">
-      <p><strong>Version:</strong> {{ version }}</p>
+      <p><strong>Version:</strong> <span id="version-string">{{ version }}</span>
+        <span id="version-status-icon" class="inline-block align-middle ml-1" title="Checking version..."><i class="fa-solid fa-spinner fa-spin"></i></span>
+      </p>
       <p><strong>Commit Count:</strong> {{ commit_count }}</p>
       <p><strong>Commit Hash:</strong> {{ commit_hash }}</p>
       <p><strong>Commit Date:</strong> {{ commit_date }}</p>
@@ -44,5 +46,29 @@ function copyToClipboard(text) {
     // Optionally show feedback
   });
 }
+// Version check logic for version page
+async function checkVersionPage() {
+  const iconSpan = document.getElementById('version-status-icon');
+  const versionSpan = document.getElementById('version-string');
+  let current = versionSpan.textContent.trim();
+  try {
+    const resp = await fetch('/api/latest-version');
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Unknown error');
+    const latest = data.latest;
+    current = data.current || current;
+    versionSpan.textContent = current;
+    if (latest && current && latest.replace(/^v/, '') === current.replace(/^v/, '')) {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-check text-green-500" title="You are running the latest version (v' + current + ')."></i>';
+    } else if (latest && current && latest.replace(/^v/, '') > current.replace(/^v/, '')) {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-exclamation text-yellow-400" title="A newer version (v' + latest + ') is available! You are running v' + current + '."></i>';
+    } else {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-question text-gray-400" title="Version status unknown. Current: v' + current + ', Latest: v' + latest + '"></i>';
+    }
+  } catch (e) {
+    iconSpan.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500" title="Could not check for updates. Current version: v' + current + '"></i>';
+  }
+}
+checkVersionPage();
 </script>
 {% endblock %}
