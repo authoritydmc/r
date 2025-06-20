@@ -170,29 +170,37 @@
   })();
 
   // Version check logic for footer
-  async function checkVersionFooter() {
-    const iconSpan = document.getElementById('footer-version-icon');
-    const versionSpan = document.getElementById('footer-version-string');
-    let current = '{{ version if version is defined else "unknown" }}';
-    try {
-      const resp = await fetch('/api/latest-version');
-      const data = await resp.json();
-      if (!data.success) throw new Error(data.error || 'Unknown error');
-      const latest = data.latest;
-      current = data.current || current;
-      versionSpan.textContent = `Version: ${current}`;
-      if (latest && current && latest.replace(/^v/, '') === current.replace(/^v/, '')) {
-        iconSpan.innerHTML = '<i class="fa-solid fa-circle-check text-green-500" title="You are running the latest version (v' + current + ')."></i>';
-      } else if (latest && current && latest.replace(/^v/, '') > current.replace(/^v/, '')) {
-        iconSpan.innerHTML = '<i class="fa-solid fa-circle-exclamation text-yellow-400" title="A newer version (v' + latest + ') is available! You are running v' + current + '."></i>';
-      } else {
-        iconSpan.innerHTML = '<i class="fa-solid fa-circle-question text-gray-400" title="Version status unknown. Current: v' + current + ', Latest: v' + latest + '"></i>';
-      }
-    } catch (e) {
-      iconSpan.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500" title="Could not check for updates. Current version: v' + current + '"></i>';
+  function parseBaseVersion(ver) {
+  // Extracts major.minor.patch from a version string like 2.1.0+5.gabc1234
+  if (!ver) return '';
+  let m = ver.match(/(\d+\.\d+\.\d+)/);
+  return m ? m[1] : ver;
+}
+async function checkVersionFooter() {
+  const iconSpan = document.getElementById('footer-version-icon');
+  const versionSpan = document.getElementById('footer-version-string');
+  let current = '{{ version if version is defined else "unknown" }}';
+  try {
+    const resp = await fetch('/api/latest-version');
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Unknown error');
+    const latest = data.latest;
+    current = data.current || current;
+    versionSpan.textContent = `Version: ${current}`;
+    const baseCurrent = parseBaseVersion(current);
+    const baseLatest = parseBaseVersion(latest);
+    if (baseLatest && baseCurrent && baseLatest === baseCurrent) {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-check text-green-500" title="You are running the latest version (v' + current + ')."></i>';
+    } else if (baseLatest && baseCurrent && baseLatest > baseCurrent) {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-exclamation text-yellow-400" title="A newer version (v' + latest + ') is available! You are running v' + current + '."></i>';
+    } else {
+      iconSpan.innerHTML = '<i class="fa-solid fa-circle-question text-gray-400" title="Version status unknown. Current: v' + current + ', Latest: v' + latest + '"></i>';
     }
+  } catch (e) {
+    iconSpan.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500" title="Could not check for updates. Current version: v' + current + '"></i>';
   }
-  checkVersionFooter();
+}
+checkVersionFooter();
 </script>
 
   {% block scripts %}{% endblock %}
