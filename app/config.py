@@ -196,3 +196,37 @@ class Config:
 
 
 config=Config()
+
+def get_config_data():
+    """Return the current config as a dict for admin UI."""
+    global config
+    return config.to_dict()
+
+def save_config_data(new_data):
+    """Update config file with new_data and reload config object."""
+    global config
+    # Load current config
+    current = config.to_dict()
+    # Only update allowed fields (skip sensitive/readonly)
+    readonly_keys = {'config_version', 'admin_password'}
+    for k, v in new_data.items():
+        if k in readonly_keys:
+            continue
+        # Try to preserve types (int, bool, etc.)
+        if k in current:
+            if isinstance(current[k], bool):
+                current[k] = v.lower() == 'true' if isinstance(v, str) else bool(v)
+            elif isinstance(current[k], int):
+                try:
+                    current[k] = int(v)
+                except Exception:
+                    current[k] = v
+            else:
+                current[k] = v
+        else:
+            current[k] = v
+    # Write back to file
+    with open(config.CONFIG_FILE, 'w') as f:
+        json.dump(current, f, indent=2)
+    # Reload config object
+    config = Config()

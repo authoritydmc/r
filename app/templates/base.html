@@ -53,6 +53,7 @@
                 <a href="/admin/upstream-logs" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-list-alt"></i> Upstream Logs</a>
                 <a href="/admin/import-redirects" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-file-arrow-up"></i> Import/Export</a>
                 <a href="/admin/redis-cache" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-database"></i> Redis Cache</a>
+                <a href="/admin/config" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> Config</a>
               </div>
             </div>
           {% endif %}
@@ -156,7 +157,7 @@
   // Version check logic
   (function() {
     const version = '{{ version if version is defined else "unknown" }}';
-    fetch('/api/latest-version').then(r => r.json()).then(data => {
+    fetch('/api/latest-version').then r => r.json()).then(data => {
       if (data.success && data.latest && data.latest !== version) {
         const notice = document.getElementById('upgrade-notice');
         notice.textContent = `Upgrade available: v${data.latest}`;

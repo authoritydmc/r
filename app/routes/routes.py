@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, \
-    send_file
+    send_file, flash
 from flask import session as flask_session
 
 from app.routes.routesUtils import login_required
@@ -251,3 +251,20 @@ def api_delete_shortcut(pattern):
     except Exception as e:
         logger.exception(f"Failed to delete shortcut '{pattern}'")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@bp.route('/admin/config', methods=['GET', 'POST'])
+@login_required
+def admin_config():
+    from app.config import get_config_data, save_config_data
+    config_data = get_config_data()
+    if request.method == 'POST':
+        try:
+            # Only update allowed fields
+            form_data = request.form.to_dict()
+            # Optionally: filter/validate fields here
+            save_config_data(form_data)
+            flash('Configuration updated successfully.', 'success')
+            config_data = get_config_data()  # Reload after save
+        except Exception as e:
+            flash(f'Failed to update configuration: {e}', 'error')
+    return render_template('admin_config.html', config_data=config_data)
