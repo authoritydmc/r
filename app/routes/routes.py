@@ -1,7 +1,7 @@
 import io
 import json
 import logging  # Import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, \
@@ -11,6 +11,7 @@ from flask import session as flask_session
 from app.routes.routesUtils import login_required
 from app.utils import utils
 from model.redirect import Redirect  # Import Redirect model for export/import
+from model.user_param import UserParam
 
 # Get a logger instance for this module
 logger = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ def admin_export_redirects():
 
     buf = io.BytesIO(json.dumps(exported_data, indent=2).encode('utf-8'))
     buf.seek(0)
-    timestamp = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
     filename = f'redirects-{timestamp}.json'
     logger.info(f"Exported {len(exported_data)} redirects to {filename}.")
     return send_file(buf, mimetype='application/json', as_attachment=True, download_name=filename)
@@ -268,3 +269,10 @@ def admin_config():
         except Exception as e:
             flash(f'Failed to update configuration: {e}', 'error')
     return render_template('admin_config.html', config_data=config_data)
+
+@bp.route('/api/param-description/<shortcut_pattern>/<param_name>')
+def api_param_description(shortcut_pattern, param_name):
+    param = UserParam.query.filter_by(shortcut_pattern=shortcut_pattern, param_name=param_name).first()
+    if not param:
+        return jsonify({'success': False, 'error': 'Param not found'}), 404
+    return jsonify({'success': True, 'param_name': param.param_name, 'description': param.description, 'required': param.required})

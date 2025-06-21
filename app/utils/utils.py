@@ -312,7 +312,7 @@ def set_shortcut(pattern, type_, target, created_at=None, updated_at=None, creat
         # Update existing shortcut
         redirect_obj.type = type_
         redirect_obj.target = target
-        redirect_obj.updated_at = updated_at or datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+        redirect_obj.updated_at = updated_at or datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
         redirect_obj.updated_ip = updated_ip
         logger.info(f"Updated existing shortcut: '{pattern}'")
     else:
@@ -322,8 +322,8 @@ def set_shortcut(pattern, type_, target, created_at=None, updated_at=None, creat
             type=type_,
             target=target,
             access_count=0,
-            created_at=created_at or datetime.utcnow().isoformat(sep=' ', timespec='seconds'),
-            updated_at=updated_at or datetime.utcnow().isoformat(sep=' ', timespec='seconds'),
+            created_at=created_at or datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds'),
+            updated_at=updated_at or datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds'),
             created_ip=created_ip,
             updated_ip=updated_ip
         )
@@ -581,8 +581,8 @@ def import_redirects_from_json(json_data):
                     type=entry.get('type', CONSTANTS.DATA_TYPE_STATIC),
                     target=entry.get('target'),
                     access_count=entry.get('access_count', 0),
-                    created_at=entry.get('created_at', datetime.utcnow().isoformat(sep=' ', timespec='seconds')),
-                    updated_at=entry.get('updated_at', datetime.utcnow().isoformat(sep=' ', timespec='seconds')),
+                    created_at=entry.get('created_at', datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')),
+                    updated_at=entry.get('updated_at', datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')),
                     created_ip=entry.get('created_ip', 'import'),
                     updated_ip=entry.get('updated_ip', 'import')
                 )

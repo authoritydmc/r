@@ -5,6 +5,7 @@ upstreamCheckLogTable="upstream_check_log_table"
 KEY_DATA_TYPE="type"
 DATA_TYPE_DYNAMIC="dynamic"
 DATA_TYPE_STATIC="static"
+DATA_TYPE_USER_DYNAMIC="user-dynamic"
 import subprocess
 import re
 

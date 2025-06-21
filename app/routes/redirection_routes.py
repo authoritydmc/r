@@ -73,19 +73,19 @@ def edit_redirect(subpath):
 @bp.route('/<path:subpath>', methods=['GET'])
 def handle_redirect(subpath):
     logger.info(f"Attempting to handle redirect for subpath: '{subpath}'")
-    # sanitize  pattern
-    pattern,dynamicProp= utils.destructureSubPath(subpath)
+    pattern, dynamic_props = utils.destructureSubPath(subpath)
     shortcut, data_source, resp_time = utils.get_shortcut(pattern)
-    print(shortcut,data_source,resp_time)
     if shortcut:
+        shortcut_type = shortcut.get(CONSTANTS.KEY_DATA_TYPE)
+        target = shortcut.get('target')
         if (data_source == CONSTANTS.data_source_redirect or data_source == CONSTANTS.data_source_redis) and \
-                shortcut.get(CONSTANTS.KEY_DATA_TYPE) == CONSTANTS.DATA_TYPE_STATIC:
+                shortcut_type == CONSTANTS.DATA_TYPE_STATIC:
             utils.increment_access_count(subpath)
             logger.info(
-                f"Redirecting static shortcut: '{subpath}' -> '{shortcut['target']}' (Source: {data_source}, Time: {resp_time:.4f}s)")
+                f"Redirecting static shortcut: '{subpath}' -> '{target}' (Source: {data_source}, Time: {resp_time:.4f}s)")
             if utils.get_auto_redirect_delay() > 0:
-                return render_template('redirect.html', target=shortcut['target'], delay=utils.get_auto_redirect_delay(), source=data_source, response_time=resp_time)
-            return redirect(shortcut['target'], code=302)
+                return render_template('redirect.html', target=target, delay=utils.get_auto_redirect_delay(), source=data_source, response_time=resp_time)
+            return redirect(target, code=302)
 
         # UPSTREAM _HANDLING :::
         if data_source == CONSTANTS.data_source_upstream and shortcut.get('resolved_url'):
@@ -98,23 +98,50 @@ def handle_redirect(subpath):
             return redirect(shortcut['resolved_url'], code=302)
 
         if (data_source == CONSTANTS.data_source_redirect or data_source == CONSTANTS.data_source_redis) and \
-                shortcut.get(CONSTANTS.KEY_DATA_TYPE) == CONSTANTS.DATA_TYPE_DYNAMIC:
-            target=shortcut['target']
+                shortcut_type in [CONSTANTS.DATA_TYPE_DYNAMIC, CONSTANTS.DATA_TYPE_USER_DYNAMIC]:
+            # --- Robust dynamic param handling ---
+            # Support both {param} and [param] for user-dynamic
+            import re as _re
+            placeholder_names = utils.get_placeholder_vars(target)
+            user_placeholder_names = _re.findall(r'\[([^\]]+)\]', target) if shortcut_type == CONSTANTS.DATA_TYPE_USER_DYNAMIC else []
+            all_placeholders = list(dict.fromkeys(placeholder_names + user_placeholder_names))
+            from model.user_param import UserParam
+            user_param_objs = UserParam.query.filter(
+                (UserParam.shortcut_pattern == pattern) & (UserParam.param_name.in_(all_placeholders))
+            ).all()
+            user_param_info = {p.param_name: {'description': p.description, 'required': p.required} for p in user_param_objs}
 
-            if subpath == pattern:
-                example_var = 'yourvalue'
-                example_target = utils.replacePlaceHolders(target, example_var)
-                logger.info(f"Dynamic shortcut '{pattern}' accessed without variable. Showing usage instructions.")
-                return render_template('dynamic_shortcut_usage.html', pattern=pattern, var_name=utils.get_placeholder_vars(target)[0],
-                                       example_target=example_target)
-            if subpath.startswith(pattern + "/"):
-                variable = subpath[len(pattern) + 1:]
-                dest_url = re.sub(r"\{\w+\}", variable, target)
-                utils.increment_access_count(pattern)
-                logger.info(f"Redirecting dynamic shortcut: '{subpath}' -> '{dest_url}' (Source: {data_source})")
-                if utils.get_auto_redirect_delay() > 0:
-                    return render_template('redirect.html', target=dest_url, delay=utils.get_auto_redirect_delay(), source=data_source)
-                return redirect(dest_url, code=302)
+            # Map dynamic_props to placeholder_names by position
+            param_values = {}
+            for i, name in enumerate(all_placeholders):
+                if i < len(dynamic_props):
+                    param_values[name] = dynamic_props[i]
+            # For required params, check if missing
+            missing_required = []
+            for name in all_placeholders:
+                if user_param_info.get(name, {}).get('required') and not param_values.get(name):
+                    missing_required.append(name)
+            if missing_required:
+                return render_template('redirect.html',
+                    target=target,
+                    delay=utils.get_auto_redirect_delay(),
+                    source=data_source,
+                    response_time=resp_time,
+                    dynamic_params=all_placeholders,
+                    param_values=param_values,
+                    missing_required=missing_required,
+                    user_param_info=user_param_info,
+                    pattern=pattern
+                )
+            dest_url = target
+            for name in all_placeholders:
+                dest_url = dest_url.replace('{' + name + '}', param_values.get(name, ''))
+                dest_url = dest_url.replace('[' + name + ']', param_values.get(name, ''))
+            utils.increment_access_count(pattern)
+            logger.info(f"Redirecting dynamic shortcut: '{subpath}' -> '{dest_url}' (Source: {data_source})")
+            if utils.get_auto_redirect_delay() > 0:
+                return render_template('redirect.html', target=dest_url, delay=utils.get_auto_redirect_delay(), source=data_source)
+            return redirect(dest_url, code=302)
 
     logger.info(f"No direct shortcut found for '{subpath}'. Checking live upstreams.")
     if utils.get_upstreams():
@@ -131,7 +158,7 @@ def edit_redirect_blank():
         pattern = request.form.get('pattern', '').strip()
         type_ = request.form.get('type', CONSTANTS.DATA_TYPE_STATIC)
         target = request.form.get('target', '').strip()
-        current_time = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+        current_time = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
         ip_address = request.remote_addr or 'unknown'
 
         if not pattern:

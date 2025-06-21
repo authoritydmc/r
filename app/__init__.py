@@ -63,3 +63,6 @@ def create_app():
         app.config['port'] = get_port()
 
     return app
+
+# For testing: expose app instance for pytest discovery
+app = create_app()

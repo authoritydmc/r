@@ -15,6 +15,12 @@
       <div class="bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 px-4 py-2 rounded">
         <b>Dynamic shortcuts</b> use curly braces (e.g. <span class="font-mono">{userId}</span>) in the target URL. When someone visits <span class="font-mono">/yourpattern/123</span>, <span class="font-mono">{userId}</span> is replaced with <span class="font-mono">123</span>.
       </div>
+      <div class="bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded">
+        <b>New: Required Dynamic Params</b><br>
+        If a shortcut pattern uses <b>[param]</b> (square brackets), the value is required the first time you use it.<br>
+        <b>How it works:</b> The app will prompt you for the value if it's missing, and store it in your browser (localStorage) for future use.<br>
+        <b>Why?</b> Some shortcuts need a user-specific value (like an API key or username). The reason/description is shown when prompted.
+      </div>
     </div>
 
     <ol class="list-decimal list-inside space-y-2 mb-4">

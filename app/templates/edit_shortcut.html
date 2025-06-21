@@ -11,6 +11,7 @@
         <select name="type" id="type" class="border rounded px-3 py-2 w-full dark:bg-gray-900 dark:text-gray-100">
           <option value="static" {% if type=='static' %}selected{% endif %}>Static</option>
           <option value="dynamic" {% if type=='dynamic' %}selected{% endif %}>Dynamic</option>
+          <option value="user-dynamic" {% if type=='user-dynamic' %}selected{% endif %}>User Dynamic</option>
         </select>
       </div>
       <div>
@@ -41,7 +42,10 @@
       val = targetInput.value;
     }
     const suggestion = document.getElementById('suggestion');
-    if (val.includes('{')) {
+    if (val.includes('[')) {
+      typeSelect.value = 'user-dynamic';
+      suggestion.innerHTML = '<div class="bg-yellow-100 border border-yellow-300 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-4 py-2 rounded mb-2">This is a <b>User Dynamic</b> shortcut. Use square brackets for user-specific variables, e.g. <span class="font-mono">[username]</span>. The value will be prompted and stored in your browser only.</div>';
+    } else if (val.includes('{')) {
       typeSelect.value = 'dynamic';
       suggestion.innerHTML = '<div class="bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-4 py-2 rounded mb-2">This is a <b>Dynamic</b> shortcut. Use curly braces for variables, e.g. <span class="font-mono">{name}</span>.</div>';
     } else {
