@@ -39,6 +39,7 @@
             </td>
             <td class="py-2 px-2 sm:px-4">
               <button class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 flex items-center gap-1" onclick="resyncCache('{{ upstream }}', '{{ entry.pattern }}', this)"><i class="fa-solid fa-arrows-rotate"></i> Resync</button>
+              <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 flex items-center gap-1 ml-2" onclick="purgeCacheEntry('{{ upstream }}', '{{ entry.pattern }}', this)"><i class="fa-solid fa-trash"></i> Purge</button>
             </td>
           </tr>
           {% endfor %}
@@ -82,6 +83,28 @@ function resyncCache(upstream, pattern, btn) {
         msg += '\n\nThe server could not be reached or returned an unexpected error.';
       }
       alert(msg);
+      btn.disabled = false;
+    });
+}
+
+function purgeCacheEntry(upstream, pattern, btn) {
+  if (!confirm('Are you sure you want to purge this cache entry?')) return;
+  btn.disabled = true;
+  fetch(`/admin/upstream-cache/purge-entry/${upstream}/${encodeURIComponent(pattern)}`, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        btn.closest('tr').remove();
+      } else {
+        alert('Failed to purge cache entry: ' + (data.error || 'Unknown error'));
+        btn.disabled = false;
+      }
+    })
+    .catch(() => {
+      alert('Failed to purge cache entry (network error)');
       btn.disabled = false;
     });
 }

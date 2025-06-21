@@ -72,7 +72,11 @@ class Config:
 
         try:
             with open(self.CONFIG_FILE, 'r') as f:
-                return json.load(f)
+                config_data = json.load(f)
+                # Only print the password if the key is missing (first-time setup)
+                if 'admin_password' not in config_data:
+                    print(f"\n🔐 Admin Password (save this): {config_data.get('admin_password', '[NOT SET]')}")
+                return config_data
         except (IOError, json.JSONDecodeError):
             return {}
 
@@ -129,9 +133,6 @@ class Config:
         random_pwd = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
         redis_default = self.get_redis_default_config()
 
-        print("\n🔐 Admin password generated for first-time setup.")
-        print(f"   Password: {random_pwd}")
-
         _default_config = {
             "config_version": 1,
             "port": 80,
@@ -150,7 +151,6 @@ class Config:
                 "enabled": True
             }
         }
-
         # Sort the dictionary by keys (case-insensitive)
         sorted_default_config = dict(sorted(_default_config.items(), key=lambda x: x[0].lower()))
         return sorted_default_config
@@ -193,6 +193,78 @@ class Config:
                     changed = True
         return changed
 
+    def update_from_flat_dict(self, new_data):
+        """Update config from a flat dict (supports dot notation for nested keys), then save and reload."""
+        # Update self.cfg in-place so changes persist
+        current = self.cfg
+        readonly_keys = {'config_version', 'admin_password'}
+        def set_nested(cfg, key_path, value):
+            keys = key_path.split('.')
+            d = cfg
+            for k in keys[:-1]:
+                if k not in d or not isinstance(d[k], dict):
+                    d[k] = {}
+                d = d[k]
+            old = d.get(keys[-1], value)
+            if isinstance(old, bool):
+                d[keys[-1]] = value.lower() == 'true' if isinstance(value, str) else bool(value)
+            elif isinstance(old, int):
+                try:
+                    d[keys[-1]] = int(value)
+                except Exception:
+                    d[keys[-1]] = value
+            else:
+                d[keys[-1]] = value
+        for k, v in new_data.items():
+            if k in readonly_keys:
+                continue
+            if '.' in k:
+                set_nested(current, k, v)
+            else:
+                if k in current:
+                    if isinstance(current[k], bool):
+                        current[k] = v.lower() == 'true' if isinstance(v, str) else bool(v)
+                    elif isinstance(current[k], int):
+                        try:
+                            current[k] = int(v)
+                        except Exception:
+                            current[k] = v
+                    else:
+                        current[k] = v
+                else:
+                    current[k] = v
+        # Sort keys for consistency
+        sorted_config = dict(sorted(current.items(), key=lambda x: x[0].lower()))
+        with open(self.CONFIG_FILE, 'w') as f:
+            json.dump(sorted_config, f, indent=2)
+        # Update self.cfg to sorted version
+        self.cfg = sorted_config
+        # Optionally re-init other config-dependent attributes here
+        self.logger.info("Config updated successfully.")
+        self.reload()
 
+    def reload(self):
+        """Reload config from disk and update all attributes."""
+        temp_cfg = self.load_raw_config()
+        self.ensure_config_defaults(temp_cfg)
+        self.cfg = temp_cfg
+        self.redis_cfg = self.cfg.get('redis', {})
+        self.redis_enabled = self.redis_cfg.get('enabled', False)
+        self.redis_host = self.redis_cfg.get('host', 'redis')
+        try:
+            self.redis_port = int(self.redis_cfg.get('port', 6379))
+        except ValueError:
+            self.redis_port = 6379
+        self.database = self.cfg.get('database')
+        self.init_redis()
+        self.logger.info("Config reloaded from disk.")
 
 config=Config()
+
+def get_config_data():
+    """Return the current config as a dict for admin UI."""
+    return config.to_dict()
+
+def save_config_data(new_data):
+    """Update config file with new_data and reload config object. Uses Config method."""
+    config.update_from_flat_dict(new_data)
