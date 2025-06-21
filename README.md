@@ -561,3 +561,30 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 > **For local development, setup, and migration instructions, see [`DEVELOPMENT.md`](DEVELOPMENT.md).**
 
+---
+## Automated Release Tagging (Windows)
+
+To automate the process of tagging a new release and triggering the GitHub Actions release workflow, use the provided PowerShell script:
+
+### Usage
+
+1. **Ensure your changes are committed and pushed.**
+2. Open PowerShell in the project root directory.
+3. Run:
+
+```powershell
+pwsh scripts/create-release-tag.ps1 -Version v1.2.3
+```
+
+- Replace `v1.2.3` with your desired version tag (must start with `v`).
+- If you omit `-Version`, the script will prompt you to enter one interactively.
+- The script will:
+  - Check if the tag exists
+  - Create the tag
+  - Push it to `origin`
+  - Trigger the GitHub Actions release workflow (if configured)
+
+> **Note:** Tagging is required for the GitHub release workflow to succeed. See [VERSIONING.md](VERSIONING.md) for versioning details.
+
+---
+
