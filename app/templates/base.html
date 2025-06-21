@@ -43,56 +43,56 @@
           </a>
           {% if session.admin_logged_in %}
             <div class="relative" id="admin-tools-wrapper">
-              <button id="admin-tools-btn" type="button" class="text-blue-700 dark:text-blue-300 flex flex-col items-center focus:outline-none" title="Admin Tools" aria-haspopup="true" aria-expanded="false">
-                <i class="fa-solid fa-toolbox fa-lg"></i>
-                <span class="text-xs mt-1 group-hover:underline hidden sm:block">Admin Tools</span>
-                <i class="fa-solid fa-caret-down text-xs ml-1"></i>
+              <button id="admin-tools-btn" type="button" class="text-blue-700 dark:text-blue-300 flex flex-col items-center focus:outline-none relative group" title="Admin Tools" aria-haspopup="true" aria-expanded="false">
+                <span class="flex items-center gap-1">
+                  <i class="fa-solid fa-toolbox fa-lg"></i>
+                  <span class="text-xs mt-1 group-hover:underline hidden sm:block">Admin Tools</span>
+                  <span class="transition-transform duration-300 ml-1" id="admin-chevron">
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </span>
+                </span>
               </button>
               <div id="admin-tools-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50">
                 <a href="/admin/upstreams" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Upstreams</a>
                 <a href="/admin/upstream-logs" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-list-alt"></i> Upstream Logs</a>
                 <a href="/admin/import-redirects" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-file-arrow-up"></i> Import/Export</a>
                 <a href="/admin/redis-cache" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-database"></i> Redis Cache</a>
-                <a href="/admin/config" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> Config</a>
+                <a href="/admin/config" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group relative" title="Config (Experimental WIP)">
+                  <i class="fa-solid fa-sliders fa-lg"></i>
+                  <span class="text-xs mt-1 group-hover:underline hidden sm:block">Config</span>
+                  <span class="absolute -top-2 -right-6 flex items-center gap-1 px-2 py-0.5 rounded bg-yellow-200 text-yellow-900 text-[10px] font-semibold" style="z-index:1;" title="Experimental - Work In Progress">
+                    <i class="fa-solid fa-flask"></i> WIP
+                  </span>
+                </a>
               </div>
               <script>
                 const btn = document.getElementById('admin-tools-btn');
                 const dropdown = document.getElementById('admin-tools-dropdown');
                 const wrapper = document.getElementById('admin-tools-wrapper');
-                function closeDropdown() {
-                  dropdown.classList.add('hidden');
-                  btn.setAttribute('aria-expanded', 'false');
-                }
+                const chevron = document.getElementById('admin-chevron');
                 function openDropdown() {
                   dropdown.classList.remove('hidden');
                   btn.setAttribute('aria-expanded', 'true');
+                  chevron.classList.add('rotate-180');
                 }
-                btn.addEventListener('click', function(e) {
-                  e.stopPropagation();
-                  if (dropdown.classList.contains('hidden')) {
-                    openDropdown();
-                  } else {
-                    closeDropdown();
-                  }
+                function closeDropdown() {
+                  dropdown.classList.add('hidden');
+                  btn.setAttribute('aria-expanded', 'false');
+                  chevron.classList.remove('rotate-180');
+                }
+                wrapper.addEventListener('mouseenter', openDropdown);
+                wrapper.addEventListener('mouseleave', closeDropdown);
+                btn.addEventListener('focus', openDropdown);
+                btn.addEventListener('blur', function(e) {
+                  setTimeout(function() {
+                    if (!wrapper.contains(document.activeElement)) closeDropdown();
+                  }, 10);
                 });
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                  if (!wrapper.contains(e.target)) {
-                    closeDropdown();
-                  }
-                });
-                // Keyboard accessibility: close on Escape
-                btn.addEventListener('keydown', function(e) {
-                  if (e.key === 'Escape') {
-                    closeDropdown();
-                    btn.blur();
-                  }
-                });
-                dropdown.addEventListener('keydown', function(e) {
-                  if (e.key === 'Escape') {
-                    closeDropdown();
-                    btn.blur();
-                  }
+                dropdown.addEventListener('focusin', openDropdown);
+                dropdown.addEventListener('focusout', function(e) {
+                  setTimeout(function() {
+                    if (!wrapper.contains(document.activeElement)) closeDropdown();
+                  }, 10);
                 });
               </script>
             </div>

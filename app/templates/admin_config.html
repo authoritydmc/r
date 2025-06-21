@@ -4,7 +4,12 @@
 {% block content %}
 <div class="flex items-center justify-center min-h-[calc(100vh-160px)]">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-xl sm:max-w-2xl md:max-w-xl lg:max-w-2xl xl:max-w-2xl 2xl:max-w-2xl text-center">
-    <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-4 flex items-center gap-2"><i class="fa-solid fa-gear"></i> Admin Config</h1>
+    <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-gear"></i> Admin Config
+      <span class="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded bg-yellow-200 text-yellow-900 text-xs font-semibold" title="Experimental - Work In Progress">
+        <i class="fa-solid fa-flask"></i> Experimental WIP
+      </span>
+    </h1>
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -117,6 +122,18 @@
       </div>
       <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold shadow flex items-center gap-2"><i class="fa-solid fa-save"></i> Save Config</button>
     </form>
+
+    <!-- Modal for change summary -->
+    <div id="config-summary-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+      <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-lg">
+        <h2 class="text-xl font-bold mb-4 text-blue-700 dark:text-blue-200 flex items-center gap-2"><i class="fa-solid fa-list-check"></i> Confirm Config Changes</h2>
+        <div id="config-changes-list" class="mb-4 text-left text-sm max-h-64 overflow-y-auto"></div>
+        <div class="flex justify-end gap-3">
+          <button id="cancel-config-save" class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded hover:bg-gray-400 dark:hover:bg-gray-600">Cancel</button>
+          <button id="confirm-config-save" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold flex items-center gap-2"><i class="fa-solid fa-check"></i> Confirm & Save</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Database config modal -->
     <div id="db-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
@@ -319,5 +336,55 @@
     });
   }
 })();
+
+// Config summary modal logic
+const configData = {{ config_data|tojson }};
+const form = document.getElementById('config-form');
+const modal = document.getElementById('config-summary-modal');
+const changesList = document.getElementById('config-changes-list');
+const cancelBtn = document.getElementById('cancel-config-save');
+const confirmBtn = document.getElementById('confirm-config-save');
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+  // Gather changes
+  const formData = new FormData(form);
+  let changes = [];
+  for (const [key, oldVal] of Object.entries(configData)) {
+    if (key === 'admin_password' || key === 'upstreams') continue;
+    const input = form.elements.namedItem(key);
+    if (!input) continue;
+    let newVal = input.value;
+    if (input.type === 'checkbox') newVal = input.checked;
+    if (String(newVal) !== String(oldVal)) {
+      changes.push({key, oldVal, newVal});
+    }
+  }
+  if (changes.length === 0) {
+    // No changes, submit directly
+    form.submit();
+    return;
+  }
+  // Show modal with changes
+  changesList.innerHTML = '<ul class="list-disc ml-6">' + changes.map(c => `<li><b>${c.key}</b>: <span class='text-gray-500'>${c.oldVal}</span> <i class='fa-solid fa-arrow-right mx-1'></i> <span class='text-blue-700 dark:text-blue-200'>${c.newVal}</span></li>`).join('') + '</ul>';
+  modal.classList.remove('hidden');
+  // Save changes for confirm
+  modal.dataset.changes = JSON.stringify(changes);
+});
+
+cancelBtn.onclick = function() {
+  modal.classList.add('hidden');
+};
+confirmBtn.onclick = function() {
+  // Actually submit the form
+  modal.classList.add('hidden');
+  form.submit();
+};
+// Optional: close modal on Escape
+window.addEventListener('keydown', function(e) {
+  if (!modal.classList.contains('hidden') && e.key === 'Escape') {
+    modal.classList.add('hidden');
+  }
+});
 </script>
 {% endblock %}

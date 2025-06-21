@@ -241,6 +241,23 @@ class Config:
         self.cfg = sorted_config
         # Optionally re-init other config-dependent attributes here
         self.logger.info("Config updated successfully.")
+        self.reload()
+
+    def reload(self):
+        """Reload config from disk and update all attributes."""
+        temp_cfg = self.load_raw_config()
+        self.ensure_config_defaults(temp_cfg)
+        self.cfg = temp_cfg
+        self.redis_cfg = self.cfg.get('redis', {})
+        self.redis_enabled = self.redis_cfg.get('enabled', False)
+        self.redis_host = self.redis_cfg.get('host', 'redis')
+        try:
+            self.redis_port = int(self.redis_cfg.get('port', 6379))
+        except ValueError:
+            self.redis_port = 6379
+        self.database = self.cfg.get('database')
+        self.init_redis()
+        self.logger.info("Config reloaded from disk.")
 
 config=Config()
 
