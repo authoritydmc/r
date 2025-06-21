@@ -641,66 +641,55 @@ def destructureSubPath(subPath: str) -> tuple[str, list[str]]:
         - A list of strings representing the dynamic properties (e.g., ["1"], ["1", "2"]).
     """
     logger.debug(f"Destructuring subpath: '{subPath}'")
-
-    # 1. Sanitize the subpath:
-    #    - Strip leading/trailing whitespace.
-    #    - Convert to lowercase (assuming patterns are case-insensitive).
-    #    - Ensure no leading slash remains.
+    if subPath is None:
+        return "", []
+    if not isinstance(subPath, str):
+        subPath = str(subPath)
     sanitized_subpath = subPath.strip().lower()
     if sanitized_subpath.startswith('/'):
         sanitized_subpath = sanitized_subpath[1:]
-
-    # Handle empty string after sanitization (e.g., if subPath was just '/')
     if not sanitized_subpath:
-        return "", [] # Or raise an error, depending on how you want to handle '/' as input
-
-    # 2. Split the sanitized subpath into segments
+        return "", []
     segments = sanitized_subpath.split('/')
-
-    # 3. The first segment is the base pattern for lookup
     pattern = segments[0]
-
-    # 4. The remaining segments are the dynamic properties
-    dynamic_properties = segments[1:]
-
-    logger.debug(f"Destructured: pattern='{pattern}', dynamic_properties={dynamic_properties}")
-    return pattern, dynamic_properties
+    props = segments[1:] if len(segments) > 1 else []
+    return pattern, props
 
 
 def replacePlaceHolders(target_string, replacement_value):
     """
-    Replaces all occurrences of {placeholder} in a string with a given replacement value.
-
-    Args:
-        target_string (str): The string containing placeholders (e.g., "https://example.com/data/{id}/{name}").
-        replacement_value (str): The value to replace all placeholders with.
-
-    Returns:
-        str: The string with all placeholders replaced.
+    Replaces all occurrences of {placeholder} in a string with a given replacement value or list of values.
+    If a list is provided, replaces each unique placeholder with the corresponding value (by order of appearance),
+    and repeats the last value for any extra placeholders.
     """
-    return re.sub(r'\{[^}]+\}', str(replacement_value), target_string)
+    import re
+    if isinstance(replacement_value, (list, tuple)):
+        placeholders = re.findall(r'\{([^}]+)\}', target_string)
+        unique_placeholders = []
+        [unique_placeholders.append(p) for p in placeholders if p not in unique_placeholders]
+        mapping = {}
+        for i, name in enumerate(unique_placeholders):
+            if i < len(replacement_value):
+                mapping[name] = str(replacement_value[i])
+            else:
+                mapping[name] = str(replacement_value[-1])
+        def repl(match):
+            name = match.group(1)
+            return mapping.get(name, match.group(0))
+        return re.sub(r'\{([^}]+)\}', repl, target_string)
+    else:
+        return re.sub(r'\{[^}]+\}', str(replacement_value), target_string)
 
 
 def get_placeholder_vars(target_string: str) -> list[str]:
     """
     Extracts a list of all placeholder variable names from a string.
-    Placeholders are expected to be in the format {variable_name}.
-
-    Args:
-        target_string (str): The string to parse (e.g., "https://example.com/data/{id}/details/{user_name}").
-
-    Returns:
-        list[str]: A list of extracted variable names (e.g., ["id", "user_name"]).
-                   Returns an empty list if no placeholders are found.
+    Supports both {variable_name} and [variable_name] formats.
     """
-    # The regex r'\{([^}]+)\}' does the following:
-    # \{       - Matches a literal opening curly brace '{'
-    # (        - Starts a capturing group
-    # [^}]+    - Matches one or more characters that are NOT a closing curly brace '}'
-    # )        - Ends the capturing group
-    # \}       - Matches a literal closing curly brace '}'
-    # re.findall returns a list of all strings matched by the capturing group.
-    return re.findall(r'\{([^}]+)\}', target_string)
+    import re
+    curly = re.findall(r'\{([^}]+)\}', target_string)
+    square = re.findall(r'\[([^\]]+)\]', target_string)
+    return square + curly if square or curly else []
 
 
 def get_upstreams():

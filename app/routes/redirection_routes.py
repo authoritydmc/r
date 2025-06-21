@@ -166,10 +166,20 @@ def edit_redirect_blank():
             return render_template('create_shortcut.html', pattern='', error='Shortcut pattern cannot be empty.')
 
         if utils.isPatternExists(pattern):
-            logger.warning(f"Attempted to create shortcut '{pattern}' which already exists.")
-            return render_template('create_shortcut.html', pattern=pattern,
-                                   error='A shortcut with this pattern already exists.')
-
+            # Instead of error, update the shortcut
+            try:
+                utils.set_shortcut(
+                    pattern=pattern,
+                    type_=type_,
+                    target=target,
+                    updated_at=current_time,
+                    updated_ip=ip_address
+                )
+                logger.info(f"Shortcut '{pattern}' updated successfully via edit route.")
+                return render_template('success_create.html', pattern=pattern, target=target)
+            except Exception as e:
+                logger.exception(f"Failed to update shortcut '{pattern}' via edit route.")
+                return render_template('error.html', message=f"Failed to update shortcut: {e}")
         try:
             utils.set_shortcut(
                 pattern=pattern,
