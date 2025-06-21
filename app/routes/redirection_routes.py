@@ -46,6 +46,35 @@ def edit_redirect(subpath):
         current_time = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
         ip_address = request.remote_addr or 'unknown'
 
+        # --- User-dynamic param description enforcement ---
+        import re as _re
+        user_dynamic_type = getattr(CONSTANTS, 'DATA_TYPE_USER_DYNAMIC', 'user-dynamic')
+        if type_ == user_dynamic_type:
+            # Find all [param] placeholders
+            user_placeholder_names = _re.findall(r'\[([^\]]+)\]', target)
+            param_descriptions = {}
+            missing_desc = []
+            for name in user_placeholder_names:
+                desc = request.form.get(f'param_desc_{name}', '').strip()
+                if not desc:
+                    missing_desc.append(name)
+                else:
+                    param_descriptions[name] = desc
+            if missing_desc:
+                error = 'Please provide a description for all parameters.'
+                return render_template('edit_shortcut.html', pattern=subpath, type=type_, target=target, param_names=user_placeholder_names, param_descriptions=param_descriptions, missing_desc=missing_desc, error=error)
+            # Save param descriptions to DB
+            from model.user_param import UserParam
+            from app import db
+            for name, desc in param_descriptions.items():
+                param = UserParam.query.filter_by(shortcut_pattern=subpath, param_name=name).first()
+                if not param:
+                    param = UserParam(shortcut_pattern=subpath, param_name=name, description=desc, required=True, created_at=current_time, updated_at=current_time)
+                    db.session.add(param)
+                else:
+                    param.description = desc
+                    param.updated_at = current_time
+            db.session.commit()
         try:
             utils.set_shortcut(
                 pattern=subpath,
@@ -60,7 +89,6 @@ def edit_redirect(subpath):
             return render_template('success_create.html', pattern=subpath, target=target)
         except Exception as e:
             logger.exception(f"Failed to {'update' if shortcut else 'create'} shortcut '{subpath}'.")
-            # You might want a different error template or message here
             return render_template('error.html', message=f"Failed to save shortcut: {e}")
     else:  # GET request
         if not shortcut:
@@ -99,18 +127,21 @@ def handle_redirect(subpath):
 
         if (data_source == CONSTANTS.data_source_redirect or data_source == CONSTANTS.data_source_redis) and \
                 shortcut_type in [CONSTANTS.DATA_TYPE_DYNAMIC, CONSTANTS.DATA_TYPE_USER_DYNAMIC]:
-            # --- Robust dynamic param handling ---
-            # Support both {param} and [param] for user-dynamic
             import re as _re
             placeholder_names = utils.get_placeholder_vars(target)
-            user_placeholder_names = _re.findall(r'\[([^\]]+)\]', target) if shortcut_type == CONSTANTS.DATA_TYPE_USER_DYNAMIC else []
+            # Only extract user_placeholder_names if user-dynamic, else empty list
+            if shortcut_type == CONSTANTS.DATA_TYPE_USER_DYNAMIC:
+                user_placeholder_names = _re.findall(r'\[([^\]]+)\]', target)
+            else:
+                user_placeholder_names = []
             all_placeholders = list(dict.fromkeys(placeholder_names + user_placeholder_names))
-            from model.user_param import UserParam
-            user_param_objs = UserParam.query.filter(
-                (UserParam.shortcut_pattern == pattern) & (UserParam.param_name.in_(all_placeholders))
-            ).all()
-            user_param_info = {p.param_name: {'description': p.description, 'required': p.required} for p in user_param_objs}
-
+            user_param_info = {}
+            if shortcut_type == CONSTANTS.DATA_TYPE_USER_DYNAMIC:
+                from model.user_param import UserParam
+                user_param_objs = UserParam.query.filter(
+                    (UserParam.shortcut_pattern == pattern) & (UserParam.param_name.in_(all_placeholders))
+                ).all()
+                user_param_info = {p.param_name: {'description': p.description, 'required': p.required} for p in user_param_objs}
             # Map dynamic_props to placeholder_names by position
             param_values = {}
             for i, name in enumerate(all_placeholders):
@@ -161,6 +192,33 @@ def edit_redirect_blank():
         current_time = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
         ip_address = request.remote_addr or 'unknown'
 
+        # --- User-dynamic param description enforcement ---
+        import re as _re
+        user_dynamic_type = getattr(CONSTANTS, 'DATA_TYPE_USER_DYNAMIC', 'user-dynamic')
+        if type_ == user_dynamic_type:
+            user_placeholder_names = _re.findall(r'\[([^\]]+)\]', target)
+            param_descriptions = {}
+            missing_desc = []
+            for name in user_placeholder_names:
+                desc = request.form.get(f'param_desc_{name}', '').strip()
+                if not desc:
+                    missing_desc.append(name)
+                else:
+                    param_descriptions[name] = desc
+            if missing_desc:
+                error = 'Please provide a description for all parameters.'
+                return render_template('create_shortcut.html', pattern=pattern, type=type_, target=target, param_names=user_placeholder_names, param_descriptions=param_descriptions, missing_desc=missing_desc, error=error)
+            from model.user_param import UserParam
+            from app import db
+            for name, desc in param_descriptions.items():
+                param = UserParam.query.filter_by(shortcut_pattern=pattern, param_name=name).first()
+                if not param:
+                    param = UserParam(shortcut_pattern=pattern, param_name=name, description=desc, required=True, created_at=current_time, updated_at=current_time)
+                    db.session.add(param)
+                else:
+                    param.description = desc
+                    param.updated_at = current_time
+            db.session.commit()
         if not pattern:
             logger.warning("Attempted to create shortcut with empty pattern.")
             return render_template('create_shortcut.html', pattern='', error='Shortcut pattern cannot be empty.')
