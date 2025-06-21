@@ -1,5 +1,10 @@
 name: Release on master
 
+permissions:
+  contents: read
+  packages: write
+  actions: write
+
 on:
   push:
     branches:
