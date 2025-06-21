@@ -147,22 +147,25 @@ def handle_redirect(subpath):
             for i, name in enumerate(all_placeholders):
                 if i < len(dynamic_props):
                     param_values[name] = dynamic_props[i]
-            # For required params, check if missing
+            # For required params, check if missing (user-dynamic) or just if missing (dynamic)
             missing_required = []
-            for name in all_placeholders:
-                if user_param_info.get(name, {}).get('required') and not param_values.get(name):
-                    missing_required.append(name)
+            if shortcut_type == CONSTANTS.DATA_TYPE_USER_DYNAMIC:
+                for name in all_placeholders:
+                    if user_param_info.get(name, {}).get('required') and not param_values.get(name):
+                        missing_required.append(name)
+            else:  # For dynamic, treat all as required
+                for name in all_placeholders:
+                    if not param_values.get(name):
+                        missing_required.append(name)
             if missing_required:
-                return render_template('redirect.html',
-                    target=target,
-                    delay=utils.get_auto_redirect_delay(),
-                    source=data_source,
-                    response_time=resp_time,
+                # For dynamic, show a hint/usage page
+                return render_template('dynamic_shortcut_usage.html',
+                    pattern=pattern,
                     dynamic_params=all_placeholders,
                     param_values=param_values,
                     missing_required=missing_required,
-                    user_param_info=user_param_info,
-                    pattern=pattern
+                    target=target,
+                    example_param=all_placeholders[0] if all_placeholders else None
                 )
             dest_url = target
             for name in all_placeholders:

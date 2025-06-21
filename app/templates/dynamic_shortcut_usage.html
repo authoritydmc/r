@@ -5,12 +5,12 @@
 <div class="flex items-center justify-center min-h-[60vh]">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-lg flex flex-col items-center justify-center">
     <div class="bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-4 py-2 rounded mb-4 text-center">
-      <b>This is a dynamic shortcut:</b> <span class="font-mono">/{{ pattern }}/&#123;{{ var_name }}&#125;</span><br>
+      <b>This is a dynamic shortcut:</b> <span class="font-mono">/{{ pattern }}/&#123;{{ example_param }}&#125;</span><br>
       <span class="text-gray-700 dark:text-gray-200">To use it, add a value after <span class="font-mono">/{{ pattern }}/</span>.</span><br>
       <div class="mt-2 text-gray-700 dark:text-gray-200">
         Example: <span class="font-mono">/{{ pattern }}/yourvalue</span> will redirect to
-        <span class="font-mono">{{ example_target }}</span> (where
-        <span class="font-mono">&#123;{{ var_name }}&#125;</span> is replaced by
+        <span class="font-mono">{{ target.replace('{' ~ example_param ~ '}', 'yourvalue') }}</span> (where
+        <span class="font-mono">&#123;{{ example_param }}&#125;</span> is replaced by
         <span class="font-mono">yourvalue</span>).
       </div>
     </div>
