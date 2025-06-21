@@ -57,10 +57,10 @@
                 <a href="/admin/upstream-logs" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-list-alt"></i> Upstream Logs</a>
                 <a href="/admin/import-redirects" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-file-arrow-up"></i> Import/Export</a>
                 <a href="/admin/redis-cache" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-database"></i> Redis Cache</a>
-                <a href="/admin/config" class="text-blue-700 dark:text-blue-300 flex flex-col items-center group relative" title="Config (Experimental WIP)">
+                <a href="/admin/config" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2 relative" title="Config (Experimental WIP)">
                   <i class="fa-solid fa-sliders fa-lg"></i>
-                  <span class="text-xs mt-1 group-hover:underline hidden sm:block">Config</span>
-                  <span class="absolute -top-2 -right-6 flex items-center gap-1 px-2 py-0.5 rounded bg-yellow-200 text-yellow-900 text-[10px] font-semibold" style="z-index:1;" title="Experimental - Work In Progress">
+                  <span class="text-xs group-hover:underline sm:block">Config</span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-yellow-200 text-yellow-900 text-[10px] font-semibold ml-2 align-middle" style="z-index:1; vertical-align:middle; position:static;" title="Experimental - Work In Progress">
                     <i class="fa-solid fa-flask"></i> WIP
                   </span>
                 </a>
@@ -70,29 +70,42 @@
                 const dropdown = document.getElementById('admin-tools-dropdown');
                 const wrapper = document.getElementById('admin-tools-wrapper');
                 const chevron = document.getElementById('admin-chevron');
+                let dropdownOpen = false;
                 function openDropdown() {
                   dropdown.classList.remove('hidden');
                   btn.setAttribute('aria-expanded', 'true');
                   chevron.classList.add('rotate-180');
+                  dropdownOpen = true;
                 }
                 function closeDropdown() {
                   dropdown.classList.add('hidden');
                   btn.setAttribute('aria-expanded', 'false');
                   chevron.classList.remove('rotate-180');
+                  dropdownOpen = false;
                 }
-                wrapper.addEventListener('mouseenter', openDropdown);
-                wrapper.addEventListener('mouseleave', closeDropdown);
-                btn.addEventListener('focus', openDropdown);
-                btn.addEventListener('blur', function(e) {
-                  setTimeout(function() {
-                    if (!wrapper.contains(document.activeElement)) closeDropdown();
-                  }, 10);
+                function toggleDropdown() {
+                  if (dropdownOpen) {
+                    closeDropdown();
+                  } else {
+                    openDropdown();
+                  }
+                }
+                // Remove hover/focus logic, only expand/collapse on click
+                btn.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  toggleDropdown();
                 });
-                dropdown.addEventListener('focusin', openDropdown);
-                dropdown.addEventListener('focusout', function(e) {
-                  setTimeout(function() {
-                    if (!wrapper.contains(document.activeElement)) closeDropdown();
-                  }, 10);
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                  if (!wrapper.contains(e.target)) {
+                    closeDropdown();
+                  }
+                });
+                // Keyboard accessibility: close on Escape
+                document.addEventListener('keydown', function(e) {
+                  if (e.key === 'Escape') {
+                    closeDropdown();
+                  }
                 });
               </script>
             </div>
@@ -197,7 +210,7 @@
   // Version check logic
   (function() {
     const version = '{{ version if version is defined else "unknown" }}';
-    fetch('/api/latest-version').then r => r.json()).then(data => {
+    fetch('/api/latest-version').then(r => r.json()).then(data => {
       if (data.success && data.latest && data.latest !== version) {
         const notice = document.getElementById('upgrade-notice');
         notice.textContent = `Upgrade available: v${data.latest}`;
