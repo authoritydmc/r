@@ -27,6 +27,7 @@ def register_blueprints(app):
 
     @app.context_processor
     def inject_now():
+        from app.CONSTANTS import get_semver
         # Try to get version string (count from last tag)
         try:
             import subprocess
@@ -48,6 +49,7 @@ def register_blueprints(app):
             version = 'unknown'
             logger.debug(f"Could not determine version from git: {e}")
 
+        version = get_semver()
         redis_connected = bool(config.redis_enabled)
         redis_connected_location = f"{config.redis_host}:{config.redis_port}"
 

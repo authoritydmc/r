@@ -11,12 +11,26 @@
         <select name="type" id="type" class="border rounded px-3 py-2 w-full dark:bg-gray-900 dark:text-gray-100">
           <option value="static" {% if type=='static' %}selected{% endif %}>Static</option>
           <option value="dynamic" {% if type=='dynamic' %}selected{% endif %}>Dynamic</option>
+          <option value="user-dynamic" {% if type=='user-dynamic' %}selected{% endif %}>User Dynamic</option>
         </select>
       </div>
       <div>
         <label class="block mb-1 font-semibold dark:text-gray-200">Target URL <span class="text-gray-500 dark:text-gray-400">(use {name} for dynamic)</span></label>
         <input type="text" name="target" id="target" class="border rounded px-3 py-2 w-full dark:bg-gray-900 dark:text-gray-100" value="{{ target }}" required>
       </div>
+      {% if type == 'user-dynamic' and param_names %}
+      <div class="mt-4">
+        <label class="block mb-1 font-semibold dark:text-gray-200">Parameter Descriptions</label>
+        {% for name in param_names %}
+        <div class="mb-2">
+          <span class="font-mono">[{{ name }}]</span>:
+          <input type="text" name="param_desc_{{ name }}" class="border rounded px-2 py-1 w-64 dark:bg-gray-900 dark:text-gray-100" placeholder="Description for {{ name }}" value="{{ param_descriptions[name]|default('') }}" required />
+          {% if missing_desc and name in missing_desc %}<span class="text-red-600 text-xs ml-2">Required</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% if error %}<div class="text-red-600 text-sm mt-2">{{ error }}</div>{% endif %}
+      </div>
+      {% endif %}
       <button class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 w-full" type="submit">Update Shortcut</button>
       <div class="mt-4 flex justify-between">
         <a href="/" class="text-gray-500 dark:text-gray-300 hover:underline">Back to Dashboard</a>
@@ -41,7 +55,10 @@
       val = targetInput.value;
     }
     const suggestion = document.getElementById('suggestion');
-    if (val.includes('{')) {
+    if (val.includes('[')) {
+      typeSelect.value = 'user-dynamic';
+      suggestion.innerHTML = '<div class="bg-yellow-100 border border-yellow-300 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-4 py-2 rounded mb-2">This is a <b>User Dynamic</b> shortcut. Use square brackets for user-specific variables, e.g. <span class="font-mono">[username]</span>. The value will be prompted and stored in your browser only.</div>';
+    } else if (val.includes('{')) {
       typeSelect.value = 'dynamic';
       suggestion.innerHTML = '<div class="bg-blue-100 border border-blue-300 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-4 py-2 rounded mb-2">This is a <b>Dynamic</b> shortcut. Use curly braces for variables, e.g. <span class="font-mono">{name}</span>.</div>';
     } else {

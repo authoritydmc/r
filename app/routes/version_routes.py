@@ -46,6 +46,7 @@ def get_accessible_urls(port):
 
 @bp.route('/system-info', methods=['GET', 'POST'])
 def system_info_page():
+    from app.CONSTANTS import get_semver
     from datetime import datetime
     from app.utils.utils import get_config, set_config
     import json
@@ -105,6 +106,10 @@ def system_info_page():
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
+        # Remove sensitive fields for read-only mode
+        if not (session.get('admin_logged_in') and request.method == 'POST'):
+            if 'database' in config_data:
+                config_data['database'] = '***hidden***'
         config_data = {k: v for k, v in config_data.items() if 'password' not in k.lower() and k != 'upstreams'}
     except Exception:
         config_data = {}

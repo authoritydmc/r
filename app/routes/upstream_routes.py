@@ -223,7 +223,7 @@ def admin_upstream_cache_resync(upstream, pattern):
                 f"Resync check for '{pattern}' in '{upstream}': actual_url='{actual_url}', status='{status_code}', fail_url_match={fail_url_match}, fail_status_match={fail_status_match}")
 
             if not fail_url_match and (fail_status_code is None or not fail_status_match):
-                tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+                tried_at = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
                 utils.cache_upstream_result(pattern, upstream, actual_url, tried_at)
                 logger.info(f"Resync for '{pattern}' in '{upstream}' successful, cache updated.")
                 return jsonify({'success': True, 'resolved_url': actual_url, 'checked_at': tried_at})
@@ -231,17 +231,17 @@ def admin_upstream_cache_resync(upstream, pattern):
                 utils.clear_upstream_cache(pattern)
                 logger.info(f"Resync for '{pattern}' in '{upstream}' failed (matched fail criteria), cache cleared.")
                 return jsonify({'success': False, 'error': 'Pattern not found in upstream (fail criteria matched).',
-                                'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
+                                'checked_at': datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')})
         except requests.exceptions.RequestException as e:
             utils.clear_upstream_cache(pattern)
             logger.error(f"Resync upstream check for '{pattern}' in '{upstream}' failed with HTTP error: {e}")
             return jsonify({'success': False, 'error': f"Upstream check failed: {str(e)}",
-                            'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
+                            'checked_at': datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')})
         except Exception as e:
             utils.clear_upstream_cache(pattern)
             logger.exception(f"Unexpected error during resync upstream check for '{pattern}' in '{upstream}'.")
             return jsonify({'success': False, 'error': f"An unexpected error occurred during upstream check: {str(e)}",
-                            'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
+                            'checked_at': datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')})
     except Exception as e:
         logger.exception(f"Top-level error during admin_upstream_cache_resync for '{upstream}'.")
         return jsonify(
@@ -305,7 +305,7 @@ def admin_upstream_cache_resync_all(upstream):
 
                 fail_url_match = actual_url.startswith(fail_url) if fail_url else False
                 fail_status_match = (fail_status_code is not None and status_code == fail_status_code)
-                tried_at = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+                tried_at = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
 
                 if not fail_url_match and (fail_status_code is None or not fail_status_match):
                     utils.cache_upstream_result(pattern, upstream, actual_url, tried_at)
@@ -320,13 +320,13 @@ def admin_upstream_cache_resync_all(upstream):
             except requests.exceptions.RequestException as e:
                 utils.clear_upstream_cache(pattern)
                 results.append({'pattern': pattern, 'success': False, 'error': f"Upstream check failed: {str(e)}",
-                                'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
+                                'checked_at': datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')})
                 logger.error(f"Resync-all: HTTP error for '{pattern}' in '{upstream}': {e}")
             except Exception as e:
                 utils.clear_upstream_cache(pattern)
                 results.append(
                     {'pattern': pattern, 'success': False, 'error': f"An unexpected error occurred: {str(e)}",
-                     'checked_at': datetime.utcnow().isoformat(sep=' ', timespec='seconds')})
+                     'checked_at': datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')})
                 logger.exception(f"Resync-all: Unexpected error for '{pattern}' in '{upstream}'.")
         logger.info(f"Finished full resync for upstream: '{upstream}'. Processed {len(patterns_to_check)} patterns.")
         return jsonify({'success': True, 'results': results})

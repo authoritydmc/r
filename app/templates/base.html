@@ -114,6 +114,10 @@
             <i class="fab fa-github fa-lg"></i>
             <span class="text-xs mt-1 group-hover:underline hidden sm:block">GitHub</span>
           </a>
+          <a href="/tutorial" class="flex flex-col items-center text-blue-700 dark:text-blue-300 group" title="How to Create Shortcuts">
+            <i class="fa-solid fa-graduation-cap fa-lg"></i>
+            <span class="text-xs mt-1 group-hover:underline hidden sm:block">Tutorial</span>
+          </a>
         </div>
         <div class="flex items-center gap-4">
           {% if session.admin_logged_in %}
@@ -210,7 +214,7 @@
   // Version check logic
   (function() {
     const version = '{{ version if version is defined else "unknown" }}';
-    fetch('/api/latest-version').then(r => r.json()).then(data => {
+    fetch('/api/latest-version').then r => r.json()).then(data => {
       if (data.success && data.latest && data.latest !== version) {
         const notice = document.getElementById('upgrade-notice');
         notice.textContent = `Upgrade available: v${data.latest}`;
@@ -251,6 +255,22 @@ async function checkVersionFooter() {
   }
 }
 checkVersionFooter();
+
+  // Version check popup for dev mode
+  fetch('https://api.github.com/repos/authoritydmc/redirector/releases/latest')
+    .then(r => r.json())
+    .then(data => {
+      const latest = data.tag_name ? data.tag_name.replace(/^v/, '') : null;
+      const current = '{{ __version__ }}';
+      if (latest && current === '3.0.0' && latest !== current) {
+        showDevPopup();
+      }
+    });
+  function showDevPopup() {
+    const popup = document.createElement('div');
+    popup.innerHTML = `<div style="position:fixed;z-index:9999;top:30px;right:30px;background:#2563eb;color:#fff;padding:24px 32px;border-radius:16px;box-shadow:0 4px 32px #0002;font-size:1.3rem;display:flex;align-items:center;gap:16px;"><i class='fa-solid fa-code-branch fa-2x'></i> <b>Ohoo !! Dev mode on</b><br><span style='font-size:1rem;font-weight:400;'>Keep building</span><button onclick='this.parentNode.remove()' style='margin-left:24px;background:transparent;border:none;color:#fff;font-size:1.5rem;cursor:pointer;'>&times;</button></div>`;
+    document.body.appendChild(popup);
+  }
 </script>
 
   {% block scripts %}{% endblock %}
