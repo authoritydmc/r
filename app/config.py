@@ -263,10 +263,8 @@ config=Config()
 
 def get_config_data():
     """Return the current config as a dict for admin UI."""
-    global config
     return config.to_dict()
 
 def save_config_data(new_data):
     """Update config file with new_data and reload config object. Uses Config method."""
-    global config
     config.update_from_flat_dict(new_data)
