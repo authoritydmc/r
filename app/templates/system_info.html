@@ -40,55 +40,160 @@
       {% if session.admin_logged_in %}
       <form method="post" class="space-y-4" id="config-form">
         {% for k, v in config_data.items() %}
-          <div class="flex flex-col sm:flex-row sm:items-center gap-2 relative group">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 relative group items-center hover:bg-blue-50 dark:hover:bg-gray-700 rounded transition">
             <label class="font-semibold w-40 text-gray-700 dark:text-gray-200">{{ k }}</label>
             {% if k == 'config_version' %}
-              <input name="{{ k }}" value="{{ v }}" class="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 cursor-not-allowed" readonly disabled />
-              <span class="ml-2 text-gray-400 text-xs">(not editable)</span>
-            {% elif k == 'upstream_cache' and v is mapping and 'enabled' in v %}
-              <div class="flex-1 flex items-center gap-2">
-                <select name="upstream_cache.enabled" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" disabled readonly>
-                  <option value="true" {% if v['enabled'] %}selected{% endif %}>True</option>
-                  <option value="false" {% if not v['enabled'] %}selected{% endif %}>False</option>
-                </select>
-                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <span class="flex-1 text-gray-500 dark:text-gray-300">{{ v }}</span>
+            {% elif k == 'redis_enabled' or k == 'redis_host' or k == 'redis_port' %}
+              {% if loop.first or not prev_redis %}<div class="flex-1 flex flex-col gap-1 bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+              <div class="font-semibold text-blue-700 dark:text-blue-300 mb-1 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> Redis Config
+                <button type="button" class="redis-config-btn text-gray-500 hover:text-blue-600 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" title="Configure Redis"><i class="fa-solid fa-pen"></i></button>
+              </div>{% set prev_redis=True %}{% endif %}
+              <div class="flex items-center gap-2">
+                <span class="text-gray-700 dark:text-gray-200">Host: {{ config_data.get('redis_host', 'localhost') }}</span>
+                <span class="text-gray-700 dark:text-gray-200">Port: {{ config_data.get('redis_port', 6379) }}</span>
               </div>
+              {% if loop.last or not (config_data.get('redis_enabled') or config_data.get('redis_host') or config_data.get('redis_port')) %}</div>{% set prev_redis=False %}{% endif %}
             {% elif k == 'log_level' %}
               <div class="flex-1 flex items-center gap-2">
-                <select name="log_level" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" disabled readonly>
-                  {% for level in ['DEBUG','INFO','WARNING','ERROR','CRITICAL'] %}
-                    <option value="{{ level }}" {% if v == level %}selected{% endif %}>{{ level }}</option>
-                  {% endfor %}
-                </select>
-                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <div class="relative loglevel-dropdown-container w-48">
+                  <input type="hidden" name="log_level" id="log_level_input" value="{{ v }}">
+                  <button type="button" id="loglevel-btn" class="w-full flex items-center justify-between px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900" aria-haspopup="listbox">
+                    <span id="loglevel-selected" class="flex items-center gap-2">
+                      <i class="fa-solid fa-bug loglevel-icon" style="color:#6b7280;"></i> DEBUG
+                    </span>
+                    <i class="fa-solid fa-chevron-down ml-2"></i>
+                  </button>
+                  <ul id="loglevel-list" class="absolute left-0 w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded shadow-lg mt-1 z-50 hidden">
+                    <li data-value="DEBUG" class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900"> <i class="fa-solid fa-bug loglevel-icon" style="color:#2563eb;"></i> DEBUG</li>
+                    <li data-value="INFO" class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900"> <i class="fa-solid fa-info-circle loglevel-icon" style="color:#22c55e;"></i> INFO</li>
+                    <li data-value="WARNING" class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900"> <i class="fa-solid fa-triangle-exclamation loglevel-icon" style="color:#eab308;"></i> WARNING</li>
+                    <li data-value="ERROR" class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900"> <i class="fa-solid fa-circle-xmark loglevel-icon" style="color:#ef4444;"></i> ERROR</li>
+                    <li data-value="CRITICAL" class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900"> <i class="fa-solid fa-skull-crossbones loglevel-icon" style="color:#a21caf;"></i> CRITICAL</li>
+                  </ul>
+                </div>
               </div>
             {% elif k == 'auto_redirect_delay' %}
               <div class="flex-1 flex items-center gap-2">
                 <input name="auto_redirect_delay" type="number" min="0" step="1" value="{{ v }}" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 w-32" readonly />
                 <span class="text-xs text-gray-500">seconds</span>
-                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit"><i class="fa-solid fa-pen"></i></button>
               </div>
             {% elif k == 'port' %}
               <div class="flex-1 flex items-center gap-2">
                 <input name="port" type="number" min="1" max="65535" value="{{ v }}" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 w-32" readonly />
-                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit"><i class="fa-solid fa-pen"></i></button>
               </div>
             {% elif k == 'database' %}
               <div class="flex-1 flex items-center gap-2">
-                <input name="database" type="text" value="{{ v }}" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 w-64" readonly />
-                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <input name="database" type="text" value="{{ v }}" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 w-64" readonly id="db-input" />
+                <button type="button" class="db-config-btn text-gray-500 hover:text-blue-600 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Configure database"><i class="fa-solid fa-database"></i></button>
               </div>
-              <div class="w-full text-xs text-gray-400 ml-40">Select a folder; filename will be <b>redirects.db</b></div>
+              <div class="w-full text-xs text-gray-400 ml-40">Configure SQLite, PostgreSQL, or MySQL. For SQLite, select a folder.</div>
             {% else %}
               <div class="flex-1 flex items-center gap-2">
                 <input name="{{ k }}" value="{{ v }}" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" readonly />
-                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit"><i class="fa-solid fa-pen"></i></button>
               </div>
             {% endif %}
           </div>
         {% endfor %}
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-semibold shadow flex items-center gap-2"><i class="fa-solid fa-save"></i> Save Config</button>
       </form>
+
+      <!-- Database config modal -->
+      <div id="db-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+          <h3 class="text-lg font-bold mb-4 text-blue-700 dark:text-blue-200 flex items-center gap-2"><i class="fa-solid fa-database"></i> <span class="dark:text-blue-200">Database Configuration</span></h3>
+          <div class="mb-4">
+            <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">Database Type</label>
+            <select id="db-type" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100">
+              <option value="sqlite">SQLite</option>
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+            </select>
+          </div>
+          <div id="sqlite-config" class="mb-4">
+            <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">SQLite Folder</label>
+            <div class="flex items-center gap-2">
+              <input id="sqlite-folder" type="text" class="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" readonly />
+              <button type="button" id="choose-folder-btn" class="text-gray-500 hover:text-blue-600" title="Choose folder"><i class="fa-solid fa-folder-open"></i></button>
+            </div>
+            <div class="text-xs text-gray-400 dark:text-gray-300 mt-1">The file <b class="dark:text-blue-200">redirects.db</b> will be used in the selected folder.</div>
+          </div>
+          <div id="pg-config" class="mb-4 hidden relative">
+            <div class="floating-label-group">
+              <input id="pg-uri" type="text" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 peer" placeholder=" " autocomplete="off" />
+              <label for="pg-uri" class="floating-label text-gray-500 dark:text-gray-300">PostgreSQL URI (e.g. postgresql://user:pass@host:port/dbname)</label>
+              <span id="pg-uri-status" class="absolute right-2 top-1/2 -translate-y-1/2 text-lg"></span>
+            </div>
+          </div>
+          <div id="mysql-config" class="mb-4 hidden relative">
+            <div class="floating-label-group">
+              <input id="mysql-uri" type="text" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100 peer" placeholder=" " autocomplete="off" />
+              <label for="mysql-uri" class="floating-label text-gray-500 dark:text-gray-300">MySQL URI (e.g. mysql://user:pass@host:port/dbname)</label>
+              <span id="mysql-uri-status" class="absolute right-2 top-1/2 -translate-y-1/2 text-lg"></span>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" id="db-cancel" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100">Cancel</button>
+            <button type="button" id="db-save" class="px-4 py-2 rounded bg-blue-600 text-white font-semibold">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Redis config modal -->
+      <div id="redis-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+          <h3 class="text-lg font-bold mb-4 text-blue-700 dark:text-blue-200 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> <span class="dark:text-blue-200">Redis Configuration</span></h3>
+          <div class="mb-4">
+            <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">Host</label>
+            <input id="redis-host" type="text" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" value="{{ config_data.get('redis_host', 'localhost') }}" autocomplete="off" />
+          </div>
+          <div class="mb-4">
+            <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">Port</label>
+            <input id="redis-port" type="number" min="1" max="65535" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" value="{{ config_data.get('redis_port', 6379) }}" autocomplete="off" />
+          </div>
+          <div class="flex items-center gap-2 mb-4">
+            <span id="redis-status-icon"></span>
+            <span id="redis-status-msg" class="text-sm text-gray-700 dark:text-gray-200"></span>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" id="redis-cancel" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100">Cancel</button>
+            <button type="button" id="redis-save" class="px-4 py-2 rounded bg-blue-600 text-white font-semibold">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <style>
+      .floating-label-group {
+        position: relative;
+      }
+      .floating-label {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        transition: 0.2s;
+        background: transparent;
+        padding: 0 2px;
+      }
+      .peer:focus ~ .floating-label,
+      .peer:not(:placeholder-shown) ~ .floating-label {
+        top: -0.7em;
+        left: 8px;
+        font-size: 0.85em;
+        color: #2563eb;
+        background: #fff;
+        z-index: 10;
+      }
+      .dark .floating-label {
+        background: #232946;
+        color: #60a5fa;
+      }
+      </style>
+
       <script>
       // Per-field edit logic
       [...document.querySelectorAll('.edit-btn')].forEach(function(btn) {
@@ -110,6 +215,41 @@
           });
         });
       });
+      // Log level dropdown logic
+      const loglevelBtn = document.getElementById('loglevel-btn');
+      const loglevelList = document.getElementById('loglevel-list');
+      const loglevelInput = document.getElementById('log_level_input');
+      const loglevelSelected = document.getElementById('loglevel-selected');
+      if (loglevelBtn && loglevelList && loglevelInput && loglevelSelected) {
+        // Set initial selected icon and text
+        function setLogLevelSelected(val) {
+          const item = loglevelList.querySelector(`li[data-value='${val}']`);
+          if (item) {
+            loglevelSelected.innerHTML = item.innerHTML;
+          }
+        }
+        setLogLevelSelected(loglevelInput.value);
+        loglevelBtn.addEventListener('click', function(e) {
+          loglevelList.classList.toggle('hidden');
+          e.stopPropagation();
+        });
+        loglevelList.querySelectorAll('li').forEach(function(item) {
+          item.addEventListener('click', function() {
+            loglevelInput.value = item.getAttribute('data-value');
+            loglevelSelected.innerHTML = item.innerHTML;
+            loglevelList.classList.add('hidden');
+          });
+        });
+        document.addEventListener('click', function() {
+          loglevelList.classList.add('hidden');
+        });
+      }
+      // Add icons to log level dropdown (note: most browsers do not render HTML/icons in <option> elements)
+      function decorateLogLevelDropdown() {
+        // No-op: FontAwesome icons in <option> are not supported in most browsers.
+        // The dropdown will show plain text, but the value is clear.
+      }
+      document.addEventListener('DOMContentLoaded', decorateLogLevelDropdown);
       </script>
       {% else %}
       <pre class="bg-gray-100 dark:bg-gray-900 rounded p-4 text-xs text-left overflow-x-auto text-gray-800 dark:text-blue-100 border border-blue-200 dark:border-blue-700" style="max-height: 350px;">
