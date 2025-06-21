@@ -134,7 +134,7 @@ class Config:
         redis_default = self.get_redis_default_config()
 
         _default_config = {
-            "config_version": 1,
+            "_config_version": 1,
             "port": 80,
             "auto_redirect_delay": 3,
             "database": "sqlite:///" + os.path.join(self.DATA_DIR, "redirect.db"),

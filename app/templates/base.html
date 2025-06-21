@@ -255,6 +255,22 @@ async function checkVersionFooter() {
   }
 }
 checkVersionFooter();
+
+  // Version check popup for dev mode
+  fetch('https://api.github.com/repos/authoritydmc/redirector/releases/latest')
+    .then(r => r.json())
+    .then(data => {
+      const latest = data.tag_name ? data.tag_name.replace(/^v/, '') : null;
+      const current = '{{ __version__ }}';
+      if (latest && current === '3.0.0' && latest !== current) {
+        showDevPopup();
+      }
+    });
+  function showDevPopup() {
+    const popup = document.createElement('div');
+    popup.innerHTML = `<div style="position:fixed;z-index:9999;top:30px;right:30px;background:#2563eb;color:#fff;padding:24px 32px;border-radius:16px;box-shadow:0 4px 32px #0002;font-size:1.3rem;display:flex;align-items:center;gap:16px;"><i class='fa-solid fa-code-branch fa-2x'></i> <b>Ohoo !! Dev mode on</b><br><span style='font-size:1rem;font-weight:400;'>Keep building</span><button onclick='this.parentNode.remove()' style='margin-left:24px;background:transparent;border:none;color:#fff;font-size:1.5rem;cursor:pointer;'>&times;</button></div>`;
+    document.body.appendChild(popup);
+  }
 </script>
 
   {% block scripts %}{% endblock %}
