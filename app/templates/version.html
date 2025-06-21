@@ -52,7 +52,7 @@ function parseBaseVersion(ver) {
   let m = ver.match(/(\d+\.\d+\.\d+)/);
   return m ? m[1] : ver;
 }
-// Version check logic for version page
+// Version check logic for version page (same as footer)
 async function checkVersionPage() {
   const iconSpan = document.getElementById('version-status-icon');
   const versionSpan = document.getElementById('version-string');
@@ -70,11 +70,32 @@ async function checkVersionPage() {
       iconSpan.innerHTML = '<i class="fa-solid fa-circle-check text-green-500" title="You are running the latest version (v' + current + ')."></i>';
     } else if (baseLatest && baseCurrent && baseLatest > baseCurrent) {
       iconSpan.innerHTML = '<i class="fa-solid fa-circle-exclamation text-yellow-400" title="A newer version (v' + latest + ') is available! You are running v' + current + '."></i>';
+      showUpgradeNotice(latest, current);
     } else {
       iconSpan.innerHTML = '<i class="fa-solid fa-circle-question text-gray-400" title="Version status unknown. Current: v' + current + ', Latest: v' + latest + '"></i>';
     }
   } catch (e) {
-    iconSpan.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500" title="Could not check for updates. Current version: v' + current + '"></i>';
+    iconSpan.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500" title="Could not check for updates. Current version: v' + current + ' (' + e + ')"></i>';
+    showUpgradeNotice(null, current, true);
+  }
+}
+function showUpgradeNotice(latest, current, error) {
+  let notice = document.getElementById('upgrade-notice');
+  if (!notice) {
+    notice = document.createElement('div');
+    notice.id = 'upgrade-notice';
+    notice.className = 'mt-4 p-3 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-sm font-semibold flex items-center gap-2 justify-center';
+    versionSpan = document.getElementById('version-string');
+    versionSpan.parentNode.parentNode.insertBefore(notice, versionSpan.parentNode.nextSibling);
+  }
+  if (error) {
+    notice.textContent = 'Could not check for updates. You are running v' + current + '.';
+    notice.style.display = '';
+  } else if (latest && latest !== current) {
+    notice.textContent = `Upgrade available: v${latest} (You are running v${current})`;
+    notice.style.display = '';
+  } else {
+    notice.style.display = 'none';
   }
 }
 checkVersionPage();

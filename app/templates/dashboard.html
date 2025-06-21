@@ -5,9 +5,11 @@
     <a href="/edit/" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-700 font-semibold flex items-center gap-2 transition">
       <i class="fa-solid fa-plus"></i> New Shortcut
     </a>
+    {% if not r_hostname_enabled %}
     <a href="/enable-r-instructions" class="bg-yellow-500 text-white px-5 py-2 rounded-lg shadow hover:bg-yellow-600 font-semibold flex items-center gap-2 transition">
       <i class="fa-solid fa-circle-info"></i> Enable r/ Shortcuts
     </a>
+    {% endif %}
   </div>
   <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
     <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">Show
@@ -59,6 +61,11 @@
           <td class="px-4 py-2 align-top">
             <a class="text-green-600 dark:text-green-400 hover:underline mr-2" href="/{{ shortcut['pattern'] }}" target="_blank" title="Go"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
             <a class="text-yellow-600 dark:text-yellow-400 hover:underline mr-2" href="/edit/{{ shortcut['pattern'] }}" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 21h6a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg></a>
+            {% if session.admin_logged_in %}
+            <button class="text-red-600 hover:text-red-800" title="Delete shortcut" onclick="deleteShortcut('{{ shortcut.pattern }}', this)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            {% endif %}
           </td>
         </tr>
       {% endfor %}
@@ -95,6 +102,11 @@
           <td class="px-4 py-2 align-top">
             <a class="text-green-600 dark:text-green-400 hover:underline mr-2" href="/${shortcut.pattern}" target="_blank" title="Go"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
             <a class="text-yellow-600 dark:text-yellow-400 hover:underline mr-2" href="/edit/${shortcut.pattern}" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 21h6a2 2 0 002-2v-6a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg></a>
+            {% if session.admin_logged_in %}
+            <button class="text-red-600 hover:text-red-800" title="Delete shortcut" onclick="deleteShortcut('${shortcut.pattern}', this)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            {% endif %}
           </td>
         </tr>
               `;
@@ -125,4 +137,26 @@
     </div>
   </div>
   {% endblock %}
+  {% block scripts %}
+<script>
+function deleteShortcut(pattern, btn) {
+  if (!confirm('Are you sure you want to delete this shortcut?')) return;
+  fetch(`/api/delete-shortcut/${encodeURIComponent(pattern)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin'
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      // Remove row from table
+      const row = btn.closest('tr');
+      if (row) row.remove();
+    } else {
+      alert('Delete failed: ' + (data.error || 'Unknown error'));
+    }
+  }).catch(e => {
+    alert('Delete failed: ' + e);
+  });
+}
+</script>
+{% endblock %}
 

@@ -1,6 +1,8 @@
 import io
 import json
 import logging  # Import logging
+from datetime import datetime
+import os
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, \
     send_file
@@ -53,7 +55,29 @@ def dashboard():
     except Exception as e:
         logger.exception("Failed to retrieve latest shortcuts for dashboard.")
         latest_shortcuts = []
-    return render_template('dashboard.html', shortcuts=latest_shortcuts, count=count, sort=sort)
+    # r/ hostname detection logic
+    r_hostname_enabled = False
+    # Check config file for r/ hostname
+    try:
+        from app.utils.utils import get_config
+        hostnames = []
+        config_val = get_config('hostnames', None)
+        if config_val:
+            if isinstance(config_val, list):
+                hostnames = config_val
+            elif isinstance(config_val, str):
+                hostnames = [config_val]
+        # Also check environment variable if set
+        env_host = os.environ.get('HOSTNAME')
+        if env_host:
+            hostnames.append(env_host)
+        for h in hostnames:
+            if h.lower().startswith('r.') or h.lower().startswith('r/'):
+                r_hostname_enabled = True
+                break
+    except Exception:
+        pass
+    return render_template('dashboard.html', shortcuts=latest_shortcuts, count=count, sort=sort, r_hostname_enabled=r_hostname_enabled)
 
 
 
@@ -86,8 +110,10 @@ def admin_export_redirects():
 
     buf = io.BytesIO(json.dumps(exported_data, indent=2).encode('utf-8'))
     buf.seek(0)
-    logger.info(f"Exported {len(exported_data)} redirects.")
-    return send_file(buf, mimetype='application/json', as_attachment=True, download_name='redirects.json')
+    timestamp = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+    filename = f'redirects-{timestamp}.json'
+    logger.info(f"Exported {len(exported_data)} redirects to {filename}.")
+    return send_file(buf, mimetype='application/json', as_attachment=True, download_name=filename)
 
 
 
@@ -202,3 +228,26 @@ def dashboard_shortcuts():
         return jsonify({'success': True, 'shortcuts': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@bp.route('/api/delete-shortcut/<pattern>', methods=['POST'])
+@login_required
+def api_delete_shortcut(pattern):
+    try:
+        shortcut = Redirect.query.filter_by(pattern=pattern).first()
+        if not shortcut:
+            return jsonify({'success': False, 'error': 'Shortcut not found'}), 404
+        utils.db.session.delete(shortcut)
+        utils.db.session.commit()
+        # Clear Redis cache for this shortcut if enabled
+        try:
+            if utils.config.redis_enabled and utils.config.redis_client:
+                redis_key = f"shortcut:{pattern}"
+                utils.config.redis_client.delete(redis_key)
+                logger.info(f"Cleared Redis cache for shortcut '{pattern}' after deletion.")
+        except Exception as e:
+            logger.warning(f"Failed to clear Redis cache for shortcut '{pattern}': {e}")
+        logger.info(f"Shortcut '{pattern}' deleted by admin.")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.exception(f"Failed to delete shortcut '{pattern}'")
+        return jsonify({'success': False, 'error': str(e)}), 500
