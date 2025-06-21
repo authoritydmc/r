@@ -42,19 +42,48 @@
             <span class="text-xs mt-1 group-hover:underline hidden sm:block">System Info</span>
           </a>
           {% if session.admin_logged_in %}
-            <div class="relative group">
-              <button class="text-blue-700 dark:text-blue-300 flex flex-col items-center group focus:outline-none" title="Admin Tools">
+            <div class="relative">
+              <button id="admin-tools-btn" class="text-blue-700 dark:text-blue-300 flex flex-col items-center focus:outline-none" title="Admin Tools" tabindex="0">
                 <i class="fa-solid fa-toolbox fa-lg"></i>
                 <span class="text-xs mt-1 group-hover:underline hidden sm:block">Admin Tools</span>
                 <i class="fa-solid fa-caret-down text-xs ml-1"></i>
               </button>
-              <div class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-50">
+              <div id="admin-tools-dropdown" class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg opacity-0 pointer-events-none transition-opacity z-50">
                 <a href="/admin/upstreams" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Upstreams</a>
                 <a href="/admin/upstream-logs" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-list-alt"></i> Upstream Logs</a>
                 <a href="/admin/import-redirects" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-file-arrow-up"></i> Import/Export</a>
                 <a href="/admin/redis-cache" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-database"></i> Redis Cache</a>
                 <a href="/admin/config" class="block px-4 py-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> Config</a>
               </div>
+              <script>
+                // Show dropdown on button hover/focus, hide on mouseleave/blur
+                const btn = document.getElementById('admin-tools-btn');
+                const dropdown = document.getElementById('admin-tools-dropdown');
+                btn.addEventListener('mouseenter', () => {
+                  dropdown.classList.remove('opacity-0', 'pointer-events-none');
+                  dropdown.classList.add('opacity-100');
+                });
+                btn.addEventListener('focus', () => {
+                  dropdown.classList.remove('opacity-0', 'pointer-events-none');
+                  dropdown.classList.add('opacity-100');
+                });
+                btn.addEventListener('mouseleave', () => {
+                  dropdown.classList.add('opacity-0', 'pointer-events-none');
+                  dropdown.classList.remove('opacity-100');
+                });
+                btn.addEventListener('blur', () => {
+                  dropdown.classList.add('opacity-0', 'pointer-events-none');
+                  dropdown.classList.remove('opacity-100');
+                });
+                dropdown.addEventListener('mouseenter', () => {
+                  dropdown.classList.remove('opacity-0', 'pointer-events-none');
+                  dropdown.classList.add('opacity-100');
+                });
+                dropdown.addEventListener('mouseleave', () => {
+                  dropdown.classList.add('opacity-0', 'pointer-events-none');
+                  dropdown.classList.remove('opacity-100');
+                });
+              </script>
             </div>
           {% endif %}
           <a href="https://github.com/authoritydmc/redirector" target="_blank" class="flex flex-col items-center text-blue-700 dark:text-blue-300 group" title="GitHub">

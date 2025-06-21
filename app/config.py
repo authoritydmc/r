@@ -193,7 +193,54 @@ class Config:
                     changed = True
         return changed
 
-
+    def update_from_flat_dict(self, new_data):
+        """Update config from a flat dict (supports dot notation for nested keys), then save and reload."""
+        # Update self.cfg in-place so changes persist
+        current = self.cfg
+        readonly_keys = {'config_version', 'admin_password'}
+        def set_nested(cfg, key_path, value):
+            keys = key_path.split('.')
+            d = cfg
+            for k in keys[:-1]:
+                if k not in d or not isinstance(d[k], dict):
+                    d[k] = {}
+                d = d[k]
+            old = d.get(keys[-1], value)
+            if isinstance(old, bool):
+                d[keys[-1]] = value.lower() == 'true' if isinstance(value, str) else bool(value)
+            elif isinstance(old, int):
+                try:
+                    d[keys[-1]] = int(value)
+                except Exception:
+                    d[keys[-1]] = value
+            else:
+                d[keys[-1]] = value
+        for k, v in new_data.items():
+            if k in readonly_keys:
+                continue
+            if '.' in k:
+                set_nested(current, k, v)
+            else:
+                if k in current:
+                    if isinstance(current[k], bool):
+                        current[k] = v.lower() == 'true' if isinstance(v, str) else bool(v)
+                    elif isinstance(current[k], int):
+                        try:
+                            current[k] = int(v)
+                        except Exception:
+                            current[k] = v
+                    else:
+                        current[k] = v
+                else:
+                    current[k] = v
+        # Sort keys for consistency
+        sorted_config = dict(sorted(current.items(), key=lambda x: x[0].lower()))
+        with open(self.CONFIG_FILE, 'w') as f:
+            json.dump(sorted_config, f, indent=2)
+        # Update self.cfg to sorted version
+        self.cfg = sorted_config
+        # Optionally re-init other config-dependent attributes here
+        self.logger.info("Config updated successfully.")
 
 config=Config()
 
@@ -203,30 +250,6 @@ def get_config_data():
     return config.to_dict()
 
 def save_config_data(new_data):
-    """Update config file with new_data and reload config object."""
+    """Update config file with new_data and reload config object. Uses Config method."""
     global config
-    # Load current config
-    current = config.to_dict()
-    # Only update allowed fields (skip sensitive/readonly)
-    readonly_keys = {'config_version', 'admin_password'}
-    for k, v in new_data.items():
-        if k in readonly_keys:
-            continue
-        # Try to preserve types (int, bool, etc.)
-        if k in current:
-            if isinstance(current[k], bool):
-                current[k] = v.lower() == 'true' if isinstance(v, str) else bool(v)
-            elif isinstance(current[k], int):
-                try:
-                    current[k] = int(v)
-                except Exception:
-                    current[k] = v
-            else:
-                current[k] = v
-        else:
-            current[k] = v
-    # Write back to file
-    with open(config.CONFIG_FILE, 'w') as f:
-        json.dump(current, f, indent=2)
-    # Reload config object
-    config = Config()
+    config.update_from_flat_dict(new_data)
