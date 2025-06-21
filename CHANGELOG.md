@@ -61,3 +61,15 @@ All notable changes to this project will be documented in this file.
 
 ## [v1.0.0] - Initial release
 - Flask-based URL shortener/redirector with static and dynamic shortcuts, SQLite storage, and web UI.
+
+## [Unreleased] - 2025-06-21
+### Added
+- Modal summary before saving admin config changes, with confirm/cancel.
+- WIP badge and flask icon on admin config page and nav bar.
+- Animated chevron and click-only admin tools dropdown, fully keyboard accessible.
+### Changed
+- Config save logic: config is reloaded and all dependent attributes updated after save.
+- Config change detection now uses deep equality for booleans/objects, so unchanged values do not trigger the confirm modal.
+### Fixed
+- Admin tools dropdown no longer blocks the "New Shortcut" button.
+- Improved text color for config summary modal in dark mode.

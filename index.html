@@ -265,6 +265,18 @@ python app.py</code></pre>
         <li><b>Improved error diagnostics</b> and logging for all cache and upstream operations, with clear UI feedback.</li>
       </ul>
     </section>
+    <section id="admin-config-improvements" class="my-8 p-6 bg-blue-50 dark:bg-gray-800 rounded-lg shadow">
+      <h2 class="text-xl font-bold text-blue-700 dark:text-blue-200 mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-flask text-yellow-500"></i> Admin Config Improvements (June 2025)
+      </h2>
+      <ul class="list-disc ml-6 text-gray-700 dark:text-gray-200">
+        <li>The Admin Config page now shows a summary modal before saving changes, allowing you to confirm or cancel.</li>
+        <li>The summary modal only appears if you actually change a value (deep equality for booleans/objects, not just string compare).</li>
+        <li>WIP badge and flask icon are shown on the config page and nav bar.</li>
+        <li>Admin tools dropdown is fully keyboard accessible, click-only, and does not block other UI elements.</li>
+        <li>Config save logic is more reliable: changes are applied immediately and confirmed visually.</li>
+      </ul>
+    </section>
     <section class="mb-12 text-center">
       <a href="https://github.com/authoritydmc/r" target="_blank" class="inline-block bg-blue-700 text-white px-8 py-4 rounded-lg shadow-lg text-xl font-bold hover:bg-blue-800 transition"><i class="fab fa-github mr-2"></i> View on GitHub</a>
     </section>

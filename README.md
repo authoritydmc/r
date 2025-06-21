@@ -12,14 +12,16 @@ A modern, self-hostable URL shortener and redirector with a beautiful UI, Docker
   - [Manual (Python)](#manual-python)
 - [Configuration](#configuration)
 - [Database URI Construction Guide](#database-uri-construction-guide)
-- [Hostname Setup for r/ Shortcuts](#hostname-setup-for-r-shortcuts)
 - [Data Persistence](#data-persistence)
-- [Reverse Proxy Example](#reverse-proxy-example-nginx)
+- [Reverse Proxy Example (Nginx)](#reverse-proxy-example-nginx)
 - [Upstream Shortcut Checking & Integration](#upstream-shortcut-checking--integration)
+- [Admin Config & UI Improvements](#admin-config--ui-improvements)
 - [Production Deployment](#production-deployment)
 - [Development & Testing](#development--testing)
 - [Project Structure](#project-structure)
 - [Company-Wide Installation & Team Usage](#company-wide-installation--team-usage)
+- [Performance & Optimization](#performance--optimization)
+- [Import/Export & Upstream Cache Management](#importexport--upstream-cache-management)
 - [Version & Credits](#version--credits)
 - [License](#license)
 
@@ -366,6 +368,12 @@ This app supports checking for existing shortcuts in external upstreams (like Bi
 
 ---
 
+## Admin Config & UI Improvements
+
+WIP
+
+---
+
 ## Production Deployment
 
 For production, always use a production-grade WSGI server instead of Flask's built-in server.
@@ -487,19 +495,6 @@ This setup allows everyone in your organization to use simple, memorable shortcu
 
 ---
 
-## Version & Credits
-
-- See `/version` in the app for live version, commit info, and accessible URLs.
-- Created by [@authoritydmc](https://github.com/authoritydmc) and contributors.
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
----
-
 ## Performance & Optimization
 
 - **Efficient Session Management:**
@@ -538,6 +533,19 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 - **Import/Export:** Importing redirects from JSON will NOT delete your existing redirects. Instead, it will upsert (insert or update) each redirect by pattern, and only update if the imported `updated_at` is newer than the existing one.
 - **Upstream Cache:** You can now purge (delete) individual upstream cache entries directly from the UI, as well as purge all entries for an upstream. This helps keep your cache clean and up-to-date.
+
+---
+
+## Version & Credits
+
+- See `/version` in the app for live version, commit info, and accessible URLs.
+- Created by [@authoritydmc](https://github.com/authoritydmc) and contributors.
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
