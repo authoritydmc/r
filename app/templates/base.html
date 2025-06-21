@@ -114,6 +114,10 @@
             <i class="fab fa-github fa-lg"></i>
             <span class="text-xs mt-1 group-hover:underline hidden sm:block">GitHub</span>
           </a>
+          <a href="/tutorial" class="flex flex-col items-center text-blue-700 dark:text-blue-300 group" title="How to Create Shortcuts">
+            <i class="fa-solid fa-graduation-cap fa-lg"></i>
+            <span class="text-xs mt-1 group-hover:underline hidden sm:block">Tutorial</span>
+          </a>
         </div>
         <div class="flex items-center gap-4">
           {% if session.admin_logged_in %}
@@ -210,7 +214,7 @@
   // Version check logic
   (function() {
     const version = '{{ version if version is defined else "unknown" }}';
-    fetch('/api/latest-version').then(r => r.json()).then(data => {
+    fetch('/api/latest-version').then r => r.json()).then(data => {
       if (data.success && data.latest && data.latest !== version) {
         const notice = document.getElementById('upgrade-notice');
         notice.textContent = `Upgrade available: v${data.latest}`;
