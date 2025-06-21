@@ -408,13 +408,23 @@ The official Docker image runs with Gunicorn (production WSGI server) by default
 
 ## Development & Testing
 
-- Run tests:
+To run all tests for this app, use the following command from the project root:
 
 ```sh
-pytest
+python -m pytest tests --maxfail=2 --disable-warnings -v
 ```
 
-- Lint:
+If you see an error like `No module named pytest`, install pytest first:
+
+```sh
+pip install pytest
+```
+
+> **Note:**
+> - Always run tests from the project root directory.
+> - If you get import/module errors with `pytest`, use `python -m pytest` instead. This ensures Python uses the correct module path, especially on Windows or in virtual environments.
+
+- To lint the code:
 
 ```sh
 flake8 app/
