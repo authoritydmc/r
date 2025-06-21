@@ -1,12 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Version Info - URL Shortener/Redirector{% endblock %}
+{% block title %}System Info & Config - URL Shortener/Redirector{% endblock %}
+
 
 {% block content %}
 <!-- Full-height flex container to center the content -->
 <div class="flex items-center justify-center min-h-[calc(100vh-160px)]">
   <!-- Card with version info -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-xl text-center">
-    <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-4">Version Information</h1>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-2xl text-center">
+    <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-4 flex items-center gap-2"><i class="fa-solid fa-server"></i> System Info & Config</h1>
 
     <div class="text-gray-700 dark:text-gray-200 space-y-2 mb-6">
       <p><strong>Version:</strong> <span id="version-string">{{ version }}</span>
@@ -29,6 +30,12 @@
         {% endfor %}
       </ul>
       <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">You can copy or open any URL above with one click.</div>
+    </div>
+
+    <div class="mb-6 text-left">
+      <h2 class="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2"><i class="fa-solid fa-gear"></i> Redirector Config</h2>
+      <pre class="bg-gray-100 dark:bg-gray-900 rounded p-4 text-xs text-left overflow-x-auto text-gray-800 dark:text-blue-100 border border-blue-200 dark:border-blue-700" style="max-height: 350px;">{{ config_data | tojson(indent=2) }}</pre>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mt-2">Sensitive fields (like passwords) are hidden.</div>
     </div>
 
     <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">← Back to Dashboard</a>

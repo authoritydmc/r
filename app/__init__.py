@@ -10,6 +10,7 @@ from flask_migrate import Migrate
 from .config import config  # App config instance
 from model import db        # SQLAlchemy db instance
 from .routes import register_blueprints
+from .routes.version_routes import bp as system_info_bp
 from .utils.utils import get_db_uri, get_port
 from .utils.startup import app_startup_banner
 from .CONSTANTS import __version__, get_semver
