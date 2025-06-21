@@ -14,7 +14,7 @@
     {% endwith %}
     <form method="post" class="space-y-4" id="config-form">
       {% for k, v in config_data.items() %}
-        {% if k not in ['admin_password',  'upstreams'] %}
+        {% if k not in ['admin_password', 'upstreams'] %}
           {% if k == 'config_version' %}
             <div class="flex flex-col sm:flex-row sm:items-center gap-2 group items-center hover:bg-blue-50 dark:hover:bg-gray-700 rounded transition">
               <label class="font-semibold w-40 text-gray-400 dark:text-gray-500">{{ k }}</label>
@@ -39,6 +39,17 @@
                   <option value="WARNING" {% if v == 'WARNING' %}selected{% endif %}>⚡ WARNING</option>
                   <option value="ERROR" {% if v == 'ERROR' %}selected{% endif %}>❌ ERROR</option>
                   <option value="CRITICAL" {% if v == 'CRITICAL' %}selected{% endif %}>💀 CRITICAL</option>
+                </select>
+                <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1 transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              </div>
+            </div>
+          {% elif k == 'upstream_cache' %}
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 group items-center hover:bg-blue-50 dark:hover:bg-gray-700 rounded transition relative">
+              <label class="font-semibold w-40 text-gray-700 dark:text-gray-200">Upstream Cache</label>
+              <div class="flex-1 flex items-center gap-2">
+                <select name="upstream_cache" class="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" disabled readonly>
+                  <option value="true" {% if v %}selected{% endif %}>True</option>
+                  <option value="false" {% if not v %}selected{% endif %}>False</option>
                 </select>
                 <button type="button" class="edit-btn text-gray-500 hover:text-blue-600 ml-1 transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100" title="Edit"><i class="fa-solid fa-pen"></i></button>
               </div>
@@ -151,7 +162,31 @@
         </div>
       </div>
     </div>
-    <!-- Redis config modal (optional, can be added similarly) -->
+    <!-- Redis config modal -->
+    <div id="redis-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-4 text-blue-700 dark:text-blue-200 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> <span class="dark:text-blue-200">Redis Configuration</span></h3>
+        <div class="mb-4">
+          <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">Enabled</label>
+          <select id="redis-enabled" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100">
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">Host</label>
+          <input id="redis-host" type="text" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" />
+        </div>
+        <div class="mb-4">
+          <label class="block font-semibold mb-1 text-gray-700 dark:text-gray-200">Port</label>
+          <input id="redis-port" type="number" min="1" max="65535" class="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:text-gray-100" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="redis-cancel" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100">Cancel</button>
+          <button type="button" id="redis-save" class="px-4 py-2 rounded bg-blue-600 text-white font-semibold">Save</button>
+        </div>
+      </div>
+    </div>
     <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline mt-4 block">← Back to Dashboard</a>
   </div>
 </div>
@@ -267,6 +302,20 @@
   if (dbCancel && dbModal) {
     dbCancel.addEventListener('click', function() {
       dbModal.classList.add('hidden');
+    });
+  }
+  // Redis config popup logic
+  const redisBtn = document.querySelector('.redis-config-btn');
+  const redisModal = document.getElementById('redis-modal');
+  const redisCancel = document.getElementById('redis-cancel');
+  if (redisBtn && redisModal) {
+    redisBtn.addEventListener('click', function() {
+      redisModal.classList.remove('hidden');
+    });
+  }
+  if (redisCancel && redisModal) {
+    redisCancel.addEventListener('click', function() {
+      redisModal.classList.add('hidden');
     });
   }
 })();
